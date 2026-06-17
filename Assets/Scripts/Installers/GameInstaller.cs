@@ -9,10 +9,8 @@ namespace Installers
 {
     public class GameInstaller : MonoInstaller
     {
-        [Header("Scene Objects (Existing)")]
-        [SerializeField] private PageSwitcher _gameCanvas;
-
         [Header("Prefabs")]
+        [SerializeField] private PageSwitcher _gameCanvas;
         [SerializeField] private PauseService _pauseService;
         [SerializeField] private PlayerComponent _player;
         [SerializeField] private PlayerSpawn _playerSpawn;
@@ -22,14 +20,10 @@ namespace Installers
 
         public override void InstallBindings()
         {
-            // Чистый C# класс
+
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
 
-            // ПРИВЯЗКА СУЩЕСТВУЮЩЕГО ОБЪЕКТА (Твой запрос)
-            // Используем FromInstance, чтобы не создавать клон
-            Container.Bind<PageSwitcher>().FromInstance(_gameCanvas).AsSingle().NonLazy();
-
-            // Остальные сервисы (если это префабы, оставляем FromComponentInNewPrefab)
+            Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();
             Container.Bind<PauseSwitcher>().FromComponentInNewPrefab(_pauseSwitcher).AsSingle().NonLazy();
             Container.Bind<AnimatorService>().FromComponentInNewPrefab(_animatorService).AsSingle().NonLazy();

@@ -35,8 +35,8 @@ namespace Services
         {
             OnPlay?.Invoke();
             IsPaused = false;
-            // Cursor.visible = false;
-            // Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
             Time.timeScale = 1f;
         }
 
@@ -44,8 +44,8 @@ namespace Services
         {
             OnPause?.Invoke();
             IsPaused = true;
-            // Cursor.visible = true;
-            // Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
             Time.timeScale = 0f;
         }
     }

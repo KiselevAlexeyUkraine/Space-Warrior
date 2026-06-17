@@ -20,7 +20,6 @@ namespace Components.Ui.Pages.Game
         private void Construct(LocalizationManager localizationManager)
         {
             _localizationManager = localizationManager;
-            //_localizationManager.OnLanguageChanged += ButtonTextsUpdate;
         }
 
         private void Awake()
@@ -32,10 +31,6 @@ namespace Components.Ui.Pages.Game
             {
                 PageSwitcher.Open(PageName.GameExit).Forget();
             });
-        }
-        
-        private void OnEnable()
-        {
             ButtonTextsUpdate();
         }
 
@@ -45,7 +40,6 @@ namespace Components.Ui.Pages.Game
             _restart.onClick.RemoveAllListeners();
             _settings.onClick.RemoveAllListeners();
             _exit.onClick.RemoveAllListeners();
-            //_localizationManager.OnLanguageChanged -= ButtonTextsUpdate;
         }
         
         private void ButtonTextsUpdate()

@@ -1,11 +1,12 @@
 using UnityEngine;
+using Components.Ui.Pages;
+using Zenject;
 
 public class Hero : MonoBehaviour
 {
     static public Hero S; //         
 
     [Header("     ,                              ")]
-    //     ,                              
     public float            speed = 30f;
     public float            rollMult = -45f;
     public float            pitchMult = 30f;
@@ -20,46 +21,48 @@ public class Hero : MonoBehaviour
     //                                                                       
     private GameObject lastTriggerGo = null;
 
-    //                                 WeaponfireDelegate
-    public delegate void WeaponFireDelegate();
-    //                   WeaponFireDelegate c        fireDelegate.
-    public WeaponFireDelegate fireDelegate;
 
-    void Start()
+    public delegate void WeaponFireDelegate();
+
+    public WeaponFireDelegate fireDelegate;
+    
+    private PageSwitcher _pageSwitcher;
+
+    [Inject]
+    private void Construct(PageSwitcher pageSwitcher)
     {
-        S = this; //                             
+        _pageSwitcher = pageSwitcher;
+    }
+
+    private void Start()
+    {
+        S = this;                            
         //                 weapons                  1          
         ClearWeapons();
         weapons[0].SetType(WeaponType.blaster);
     }
 
 
-    void Update()
+    private void Update()
     {
-        //                              Input
+
         float xAxis = Input.GetAxis("Horizontal");
         float yAxis = Input.GetAxis("Vertical");
-
-        //          transform/position,                               
+        
         Vector3 pos = transform.position;
         pos.x += xAxis * speed * Time.deltaTime;
         pos.y += yAxis * speed * Time.deltaTime;
         transform.position = pos;
-
-        //                  ,                                 
+                               
         transform.rotation = Quaternion.Euler(yAxis * pitchMult, xAxis * rollMult, 0);
-
-
-        //                                                fireDelegate
-        //                                 : Axis("Jump")
-        //                ,              fireDelegate          null,                      
+                     
         if(Input.GetAxis("Jump") == 1 && fireDelegate != null)
         {
             fireDelegate();
         }
     }
 
-    void TempFire()
+    private void TempFire()
     {
         GameObject projGo = Instantiate<GameObject>(projectilePrefab);
         projGo.transform.position = transform.position;
@@ -70,24 +73,21 @@ public class Hero : MonoBehaviour
         float tSpeed = Main.GetWeaponDefinition(proj.type).velocity;
         rigidB.linearVelocity = Vector3.up * tSpeed;
     }
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
         Transform rootT = other.gameObject.transform.root;
         GameObject go = rootT.gameObject;
-        
-        //print("Triggered: " + go.name);
-
-        //                                                                      
+                                                                   
         if (go == lastTriggerGo)
         {
             return;
         }
         lastTriggerGo = go;
 
-        if (go.tag == "Enemy") //                                                     
+        if (go.tag == "Enemy")                                                     
         {
-            shieldLevel--; //                             1
-            Destroy(go); // ...                   
+            shieldLevel--; 
+            Destroy(go);            
         }
         else if (go.tag == "PowerUp")
         {
@@ -132,22 +132,25 @@ public class Hero : MonoBehaviour
     {
         get
         {
-            return (_shieldLevel);
+            return _shieldLevel;
         }
         set
         {
             _shieldLevel = Mathf.Min(value, 4);
-            //                                        
-            if (value < 0)
+
+            if (_shieldLevel < 0)
             {
-                Destroy(this.gameObject);
-                //                  Main.S                                    
-                Main.S.DelayedRestart(gameRestartDelay);
+                Destroy(gameObject);
+
+                if (_pageSwitcher != null)
+                {
+                    _pageSwitcher.Open(PageName.Failed).Forget();
+                }
             }
         }
     }
     
-    Weapon GetEmptyweaponSlot()
+    private Weapon GetEmptyweaponSlot()
     {
         for (int i = 0; i < weapons.Length; i++)
         {
@@ -159,7 +162,7 @@ public class Hero : MonoBehaviour
         return (null);
     }
 
-    void ClearWeapons()
+    private void ClearWeapons()
     {
         foreach(Weapon w in weapons)
         {

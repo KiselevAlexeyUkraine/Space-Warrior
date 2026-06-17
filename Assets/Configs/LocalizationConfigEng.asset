@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a195207787fe7024e8fbd891f16176d8, type: 3}
   m_Name: LocalizationConfigEng
   m_EditorClassIdentifier: 
-  gameTitle: Mechanical World
+  gameTitle: Space Warrior
   choseLevel: Select Level
   startGame: Start Game
   authors: Credits

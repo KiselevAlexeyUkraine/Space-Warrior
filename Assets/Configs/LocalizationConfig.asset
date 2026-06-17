@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e77cc1b9f168c494dbe2c60d01be32df, type: 3}
   m_Name: LocalizationConfig
   m_EditorClassIdentifier: 
-  gameTitle: "\u041C\u0435\u0445\u0430\u043D\u0438\u0447\u0435\u0441\u043A\u0438\u0439
-    \u041C\u0438\u0440"
+  gameTitle: "\u041A\u043E\u0441\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439
+    \u0412\u043E\u0438\u043D"
   choseLevel: "\u0412\u044B\u0431\u043E\u0440 \u0443\u0440\u043E\u0432\u043D\u044F"
   startGame: "\u041D\u0430\u0447\u0430\u0442\u044C \u0438\u0433\u0440\u0443"
   authors: "\u0410\u0432\u0442\u043E\u0440\u044B"

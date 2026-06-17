@@ -221,7 +221,7 @@ DefaultImporter:
             };
         }
 
-        internal const string version = "1.4.0";
+        internal const string version = "1.4.6";
     }
 
     internal static class FixedUpdateParameterMigration {

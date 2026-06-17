@@ -1,0 +1,2 @@
+D:\Game For Unity projects_Git\Mechanical World\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+D:\Game For Unity projects_Git\Mechanical World\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt

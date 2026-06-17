@@ -1,7 +1,7 @@
 using UnityEngine;
 using PrimeTween;
 
-namespace MechanicalWorld
+namespace Core
 {
     public sealed class AnimationEnvironmentService : MonoBehaviour
     {

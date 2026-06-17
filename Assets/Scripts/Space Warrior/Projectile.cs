@@ -11,7 +11,7 @@ public class Projectile : MonoBehaviour
     public Rigidbody rigid;
     [SerializeField] private WeaponType _type;
 
-    // Это общедоступное свойство маскирует поле _type и обрабатывает операции присваивания ему нового значения
+    // Р­С‚Рѕ РѕР±С‰РµРґРѕСЃС‚СѓРїРЅРѕРµ СЃРІРѕР№СЃС‚РІРѕ РјР°СЃРєРёСЂСѓРµС‚ РїРѕР»Рµ _type Рё РѕР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РѕРїРµСЂР°С†РёРё РїСЂРёСЃРІР°РёРІР°РЅРёСЏ РµРјСѓ РЅРѕРІРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ
     public WeaponType type
     {
         get
@@ -33,19 +33,19 @@ public class Projectile : MonoBehaviour
 
     void Update()
     {
-        if (bndCheck.offUp) // Если снаряд вышел за верхнюю границу экрана, уничтожить его
+        if (bndCheck.offUp) // Р•СЃР»Рё СЃРЅР°СЂСЏРґ РІС‹С€РµР» Р·Р° РІРµСЂС…РЅСЋСЋ РіСЂР°РЅРёС†Сѓ СЌРєСЂР°РЅР°, СѓРЅРёС‡С‚РѕР¶РёС‚СЊ РµРіРѕ
         {
             Destroy(gameObject);
         }
     }
 
     ///<summary>
-    ///Изменяет скрытое поле _Type и устанавливает цвет этого снаряда, как определено в WeaponDefinition.
+    ///РР·РјРµРЅСЏРµС‚ СЃРєСЂС‹С‚РѕРµ РїРѕР»Рµ _Type Рё СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ С†РІРµС‚ СЌС‚РѕРіРѕ СЃРЅР°СЂСЏРґР°, РєР°Рє РѕРїСЂРµРґРµР»РµРЅРѕ РІ WeaponDefinition.
     /// </summary>
-    /// <param name="eType"> Тип WeaponType используеммого оружия</param>
+    /// <param name="eType"> РўРёРї WeaponType РёСЃРїРѕР»СЊР·СѓРµРјРјРѕРіРѕ РѕСЂСѓР¶РёСЏ</param>
     public void SetType(WeaponType eType)
     {
-        // Установить _type
+        // РЈСЃС‚Р°РЅРѕРІРёС‚СЊ _type
         _type = eType;
         WeaponDefinition def = Main.GetWeaponDefinition(_type);
         rend.material.color = def.projectileColor;

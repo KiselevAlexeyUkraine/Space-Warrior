@@ -5,21 +5,21 @@ using UnityEngine;
 public class Parallax : MonoBehaviour
 {
     [Header("Set in Inspector")]
-    public GameObject poi; // Êîðàáëü èãðîêà
-    public GameObject[] panels; // ïðîêðó÷èâàåìûå ïàíåëè ïåðåäíåãî ïëàíà
+    public GameObject poi; // ÐšÐ¾Ñ€Ð°Ð±Ð»ÑŒ Ð¸Ð³Ñ€Ð¾ÐºÐ°
+    public GameObject[] panels; // Ð¿Ñ€Ð¾ÐºÑ€ÑƒÑ‡Ð¸Ð²Ð°ÐµÐ¼Ñ‹Ðµ Ð¿Ð°Ð½ÐµÐ»Ð¸ Ð¿ÐµÑ€ÐµÐ´Ð½ÐµÐ³Ð¾ Ð¿Ð»Ð°Ð½Ð°
     public float scrollSpeed = -30f;
-    // motionMult îïðåäåëÿåò ñòåïåíü ðåàêöèè ïàíåëåé íà ïåðåìåùåíèå êîðàáëÿ èãðîêà
+    // motionMult Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÑÐµÑ‚ ÑÑ‚ÐµÐ¿ÐµÐ½ÑŒ Ñ€ÐµÐ°ÐºÑ†Ð¸Ð¸ Ð¿Ð°Ð½ÐµÐ»ÐµÐ¹ Ð½Ð° Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ðµ ÐºÐ¾Ñ€Ð°Ð±Ð»Ñ Ð¸Ð³Ñ€Ð¾ÐºÐ°
     public float motionMult = 0.25f;
 
-    private float panelHt; // Âûñîòà êàæäîé ïàíåëè
-    private float depth; // Ãëóáèíà ïàíåëåé ( òî åñòü pos.z)
+    private float panelHt; // Ð’Ñ‹ÑÐ¾Ñ‚Ð° ÐºÐ°Ð¶Ð´Ð¾Ð¹ Ð¿Ð°Ð½ÐµÐ»Ð¸
+    private float depth; // Ð“Ð»ÑƒÐ±Ð¸Ð½Ð° Ð¿Ð°Ð½ÐµÐ»ÐµÐ¹ ( Ñ‚Ð¾ ÐµÑÑ‚ÑŒ pos.z)
 
     void Start()
     {
         panelHt = panels[0].transform.localScale.y;
         depth = panels[0].transform.position.z;
 
-        // Óñòàíîâèòü ïàíåëè â íà÷àëüíûå ïîçèöèè
+        // Ð£ÑÑ‚Ð°Ð½Ð¾Ð²Ð¸Ñ‚ÑŒ Ð¿Ð°Ð½ÐµÐ»Ð¸ Ð² Ð½Ð°Ñ‡Ð°Ð»ÑŒÐ½Ñ‹Ðµ Ð¿Ð¾Ð·Ð¸Ñ†Ð¸Ð¸
         panels[0].transform.position = new Vector3(0, 0, depth);
         panels[1].transform.position = new Vector3(0, panelHt, depth);
     }
@@ -34,9 +34,9 @@ public class Parallax : MonoBehaviour
             tX = -poi.transform.position.x * motionMult;
         }
 
-        // Ñìåñòèòü ïàíåëü pantls[0]
+        // Ð¡Ð¼ÐµÑÑ‚Ð¸Ñ‚ÑŒ Ð¿Ð°Ð½ÐµÐ»ÑŒ pantls[0]
         panels[0].transform.position = new Vector3(tX, tY, depth);
-        // Ñìñòèòü ïàíåëü panels[1], ÷òîáû ñîçäàòü ýôôåêò íåïðåðûâíîñòè çâåçäíîãî ïîëÿ
+        // Ð¡Ð¼ÑÑ‚Ð¸Ñ‚ÑŒ Ð¿Ð°Ð½ÐµÐ»ÑŒ panels[1], Ñ‡Ñ‚Ð¾Ð±Ñ‹ ÑÐ¾Ð·Ð´Ð°Ñ‚ÑŒ ÑÑ„Ñ„ÐµÐºÑ‚ Ð½ÐµÐ¿Ñ€ÐµÑ€Ñ‹Ð²Ð½Ð¾ÑÑ‚Ð¸ Ð·Ð²ÐµÐ·Ð´Ð½Ð¾Ð³Ð¾ Ð¿Ð¾Ð»Ñ
         if (tY >= 0)
         {
             panels[1].transform.position = new Vector3(tX, tY - panelHt, depth);

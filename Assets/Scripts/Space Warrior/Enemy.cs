@@ -1,30 +1,30 @@
-using System.Collections; // Необходимо для доступа к массивам и другим коллекциям
-using System.Collections.Generic; // Необходимо для доступа к спискам и словарям
-using UnityEngine; // Необходимо для доступа к Unity
+using System.Collections; // РќРµРѕР±С…РѕРґРёРјРѕ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє РјР°СЃСЃРёРІР°Рј Рё РґСЂСѓРіРёРј РєРѕР»Р»РµРєС†РёСЏРј
+using System.Collections.Generic; // РќРµРѕР±С…РѕРґРёРјРѕ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє СЃРїРёСЃРєР°Рј Рё СЃР»РѕРІР°СЂСЏРј
+using UnityEngine; // РќРµРѕР±С…РѕРґРёРјРѕ РґР»СЏ РґРѕСЃС‚СѓРїР° Рє Unity
 
 public class Enemy : MonoBehaviour
 {
-    [Header("Параметры врага")]
-    public float speed = 10f; // Скорость в м/с
-    public float fireRate = 0.3f; // Секунд между выстрелами (не используется)
+    [Header("РџР°СЂР°РјРµС‚СЂС‹ РІСЂР°РіР°")]
+    public float speed = 10f; // РЎРєРѕСЂРѕСЃС‚СЊ РІ Рј/СЃ
+    public float fireRate = 0.3f; // РЎРµРєСѓРЅРґ РјРµР¶РґСѓ РІС‹СЃС‚СЂРµР»Р°РјРё (РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ)
     public float health = 10f;
-    public int score = 100; // Очки за уничтожение этого корабля
-    public float showDamageDuration = 0.1f; // Длительность эффекта попадания в секундах
+    public int score = 100; // РћС‡РєРё Р·Р° СѓРЅРёС‡С‚РѕР¶РµРЅРёРµ СЌС‚РѕРіРѕ РєРѕСЂР°Р±Р»СЏ
+    public float showDamageDuration = 0.1f; // Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ СЌС„С„РµРєС‚Р° РїРѕРїР°РґР°РЅРёСЏ РІ СЃРµРєСѓРЅРґР°С…
     public float powerUpDropChance = 1f; // Dthjznyjcnm c,hjcbnm ,jyec
 
     [Header("Set Dynamically: Enemy")]
     public Color[] originalColors;
-    public Material[] materials; // Все материалы игрового объекта и его потомков
+    public Material[] materials; // Р’СЃРµ РјР°С‚РµСЂРёР°Р»С‹ РёРіСЂРѕРІРѕРіРѕ РѕР±СЉРµРєС‚Р° Рё РµРіРѕ РїРѕС‚РѕРјРєРѕРІ
     public bool showingDamage = false;
-    public float damageDoneTime; // Время прекращения отображения эффекта
-    public bool notifiedOfDestruction = false; // Будет использовано позже
+    public float damageDoneTime; // Р’СЂРµРјСЏ РїСЂРµРєСЂР°С‰РµРЅРёСЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ СЌС„С„РµРєС‚Р°
+    public bool notifiedOfDestruction = false; // Р‘СѓРґРµС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅРѕ РїРѕР·Р¶Рµ
 
     public BoundsCheck bndCheck;
 
     void Awake()
     {
         bndCheck = GetComponent<BoundsCheck>();
-        // Получить материалы и цвет этого игрового объекта и его потомков
+        // РџРѕР»СѓС‡РёС‚СЊ РјР°С‚РµСЂРёР°Р»С‹ Рё С†РІРµС‚ СЌС‚РѕРіРѕ РёРіСЂРѕРІРѕРіРѕ РѕР±СЉРµРєС‚Р° Рё РµРіРѕ РїРѕС‚РѕРјРєРѕРІ
         materials = Utiils.GetAllMaterials(gameObject);
         originalColors = new Color[materials.Length];
         for (int i = 0; i < materials.Length; i++)
@@ -33,7 +33,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    // Это свойство: метод, действующий как поле
+    // Р­С‚Рѕ СЃРІРѕР№СЃС‚РІРѕ: РјРµС‚РѕРґ, РґРµР№СЃС‚РІСѓСЋС‰РёР№ РєР°Рє РїРѕР»Рµ
     public Vector3 pos
     {
         get
@@ -57,7 +57,7 @@ public class Enemy : MonoBehaviour
         
         if (bndCheck != null && bndCheck.offDown)
         {
-            // Корабль за нижней границей, поэтому его нужно уничтожить
+            // РљРѕСЂР°Р±Р»СЊ Р·Р° РЅРёР¶РЅРµР№ РіСЂР°РЅРёС†РµР№, РїРѕСЌС‚РѕРјСѓ РµРіРѕ РЅСѓР¶РЅРѕ СѓРЅРёС‡С‚РѕР¶РёС‚СЊ
             Destroy(gameObject);
         }
     }
@@ -71,32 +71,32 @@ public class Enemy : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        GameObject otherGo = collision.gameObject; // Получить игровой объект которому принадлежит коллайдер, столкнувшийся с вражеским кораблем
+        GameObject otherGo = collision.gameObject; // РџРѕР»СѓС‡РёС‚СЊ РёРіСЂРѕРІРѕР№ РѕР±СЉРµРєС‚ РєРѕС‚РѕСЂРѕРјСѓ РїСЂРёРЅР°РґР»РµР¶РёС‚ РєРѕР»Р»Р°Р№РґРµСЂ, СЃС‚РѕР»РєРЅСѓРІС€РёР№СЃСЏ СЃ РІСЂР°Р¶РµСЃРєРёРј РєРѕСЂР°Р±Р»РµРј
         switch (otherGo.tag)
         {
             case "ProjectileHero":
                 Projectile p = otherGo.GetComponent<Projectile>();
 
-                // Если вражеский корабль за границами экрана, не наносить ему повреждений.
+                // Р•СЃР»Рё РІСЂР°Р¶РµСЃРєРёР№ РєРѕСЂР°Р±Р»СЊ Р·Р° РіСЂР°РЅРёС†Р°РјРё СЌРєСЂР°РЅР°, РЅРµ РЅР°РЅРѕСЃРёС‚СЊ РµРјСѓ РїРѕРІСЂРµР¶РґРµРЅРёР№.
                 if (!bndCheck.isOnScreen)
                 {
                     Destroy(otherGo);
                     break;
                 }
 
-                // Поразить вражеский корабль
+                // РџРѕСЂР°Р·РёС‚СЊ РІСЂР°Р¶РµСЃРєРёР№ РєРѕСЂР°Р±Р»СЊ
                 ShowDamage();
-                // Получить разрущающую силу из WEAP_DICT в клссе Main.
+                // РџРѕР»СѓС‡РёС‚СЊ СЂР°Р·СЂСѓС‰Р°СЋС‰СѓСЋ СЃРёР»Сѓ РёР· WEAP_DICT РІ РєР»СЃСЃРµ Main.
                 health -= Main.GetWeaponDefinition(p.type).damageOnHit;
                 if (health <= 0)
                 {
-                    // Сообщить объекту-одиночке Main об уничтожении
+                    // РЎРѕРѕР±С‰РёС‚СЊ РѕР±СЉРµРєС‚Сѓ-РѕРґРёРЅРѕС‡РєРµ Main РѕР± СѓРЅРёС‡С‚РѕР¶РµРЅРёРё
                     if (!notifiedOfDestruction)
                     {
                         Main.S.ShipDestroyed(this);
                     }
                     notifiedOfDestruction = true;
-                    // Уничтожить этот вражеский корабль
+                    // РЈРЅРёС‡С‚РѕР¶РёС‚СЊ СЌС‚РѕС‚ РІСЂР°Р¶РµСЃРєРёР№ РєРѕСЂР°Р±Р»СЊ
                     Destroy(this.gameObject);
                 }
                 Destroy(otherGo);

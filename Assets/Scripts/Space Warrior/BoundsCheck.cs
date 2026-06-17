@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Предотвращает выход игрового объекта за границы экрана.
-/// Важно: работает ТОЛЬКО с ортографической камерой Main Camera в [0, 0, 0]
+/// РџСЂРµРґРѕС‚РІСЂР°С‰Р°РµС‚ РІС‹С…РѕРґ РёРіСЂРѕРІРѕРіРѕ РѕР±СЉРµРєС‚Р° Р·Р° РіСЂР°РЅРёС†С‹ СЌРєСЂР°РЅР°.
+/// Р’Р°Р¶РЅРѕ: СЂР°Р±РѕС‚Р°РµС‚ РўРћР›Р¬РљРћ СЃ РѕСЂС‚РѕРіСЂР°С„РёС‡РµСЃРєРѕР№ РєР°РјРµСЂРѕР№ Main Camera РІ [0, 0, 0]
 /// </summary>
 
 public class BoundsCheck : MonoBehaviour
@@ -62,7 +62,7 @@ public class BoundsCheck : MonoBehaviour
         }
     }
 
-    // Рисует границы в панели Scene с помощью OnDrawGizmos()
+    // Р РёСЃСѓРµС‚ РіСЂР°РЅРёС†С‹ РІ РїР°РЅРµР»Рё Scene СЃ РїРѕРјРѕС‰СЊСЋ OnDrawGizmos()
     void OnDrawGizmos()
     {
         if (!Application.isPlaying) return;

@@ -3,38 +3,38 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ��� ������������ ���� ��������� ����� ������.
-/// ����� �������� ��� "shield", ����� ���� ����������� ���������������� ������.
-/// ������������� [HP] ���� �������� ��������, �� �������������� � ���� �����.
+///                                             .
+///                    "shield",                                               .
+///               [HP]                       ,                               .
 /// </summary>
 
 public enum WeaponType
 {
-    none,       // �� ��������� / ��� ������
-    blaster,    // ������� �������
-    spread,     // ������� �����, ���������� ������������ ��������
-    phaser,     // [HP] �������� �����
-    missile,    // [HP] ��������������� ������
-    laser,      // [HP] ������� ����������� ��� �������������� �����������
-    shield      // ����������� shieldLevel
+    none,       //              /           
+    blaster,    //                
+    spread,     //              ,                                 
+    phaser,     // [HP]               
+    missile,    // [HP]                       
+    laser,      // [HP]                                                   
+    shield      //             shieldLevel
 }
 
 /// <summary>
-/// ����� WeaponDefniitiion ��������� ����������� �������� ����������� ���� ������ � ����������. ��� ����� ����� Main
-/// ����� ������� ������ ��������� ���� WeaponDefinition.
+///       WeaponDefniitiion                                                                    .                 Main
+///                                     WeaponDefinition.
 /// </summary>
 [System.Serializable]
 public class WeaponDefinition
 {
     public WeaponType       type = WeaponType.none;
-    public string           letter;                       // ����� �� ������, ������������ �����
-    public Color            color = Color.white;          // ���� ������ ������ � ������ ������
-    public GameObject       projectilePrefab;             // ������ ��������
+    public string           letter;                       //                ,                   
+    public Color            color = Color.white;          //                                   
+    public GameObject       projectilePrefab;             //                
     public Color            projectileColor = Color.white;
-    public float            damageOnHit = 0;              // �������������� ��������
-    public float            continuousDamage = 0;         // ������� ���������� � ������� (��� Laser)
+    public float            damageOnHit = 0;              //                        
+    public float            continuousDamage = 0;         //                              (    Laser)
     public float            delayBetweenShots = 0;        
-    public float            velocity = 20f;               // �������� ������ ��������
+    public float            velocity = 20f;               //                         
 }
 
 public class Weapon : MonoBehaviour
@@ -46,22 +46,22 @@ public class Weapon : MonoBehaviour
     private WeaponType _type = WeaponType.none;
     public WeaponDefinition def;
     public GameObject collar;
-    public float lastShotTime; // ����� ���������� ��������
+    public float lastShotTime; //                          
     private Renderer collarRend;
     void Start()
     {
         collar = transform.Find("Collar").gameObject;
         collarRend = collar.GetComponent<Renderer>();
 
-        // ������� SetType(), ����� �������� ��� ������ �� ��������� WeaponType.none
+        //         SetType(),                                        WeaponType.none
         SetType(_type);
-        // ����������� ������� ����� �������� ��� ���� �������� 
+        //                                                      
         if (PROJECTILE_ANCHOR == null)
         {
-            GameObject go = new GameObject("_ProjectileAnchor"); // ��������� ��� ������ �����
+            GameObject go = new GameObject("_ProjectileAnchor"); //                           
             PROJECTILE_ANCHOR = go.transform;
         }
-        // ����� fireDelegate � �������� ������� �������
+        //       fireDelegate                           
         GameObject rootGo = transform.root.gameObject;
         if (rootGo.GetComponent<Hero>() != null)
         {
@@ -88,14 +88,14 @@ public class Weapon : MonoBehaviour
         }
         def = Main.GetWeaponDefinition(_type);
         collarRend.material.color = def.color;
-        lastShotTime = 0; // ����� ����� ��������� _type  ����� ����������
+        lastShotTime = 0; //                       _type                  
     }
 
     public void Fire()
     {
-        // ���� this.gameObject ���������, �����
+        //      this.gameObject          ,      
         if (!gameObject.activeInHierarchy) return;
-        // ���� ����� ���������� ������ ������������ ����� �������, �����
+        //                                                        ,      
         if (Time.time - lastShotTime < def.delayBetweenShots)
         {
             return;
@@ -114,12 +114,12 @@ public class Weapon : MonoBehaviour
                 break;
 
             case WeaponType.spread:
-                p = MakeProjectile(); // ������, ������� �����
+                p = MakeProjectile(); //       ,              
                 p.rigid.linearVelocity = vel;
-                p = MakeProjectile(); // ������, ������� ������
+                p = MakeProjectile(); //       ,               
                 p.transform.rotation = Quaternion.AngleAxis(10, Vector3.back);
                 p.rigid.linearVelocity = p.transform.rotation * vel;
-                p = MakeProjectile(); // ������, ������� �����
+                p = MakeProjectile(); //       ,              
                 p.transform.rotation = Quaternion.AngleAxis(-10, Vector3.back);
                 p.rigid.linearVelocity = p.transform.rotation * vel;
                 break;

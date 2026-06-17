@@ -3,26 +3,29 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Zenject;
 
-public class ButtonAudio : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
+namespace Components.Audio
 {
-	[SerializeField] private AudioClip _hover;
-	[SerializeField] private AudioClip _click;
-
-	private AudioService _audio;
-
-	[Inject]
-	private void Construct(AudioService audioService)
+	public class ButtonAudio : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
 	{
-		_audio = audioService;
-	}
+		[SerializeField] private AudioClip _hover;
+		[SerializeField] private AudioClip _click;
 
-	public void OnPointerClick(PointerEventData eventData)
-	{
-		_audio.PlayOneShot(_click);
-	}
+		private AudioService _audio;
 
-	public void OnPointerEnter(PointerEventData eventData)
-	{
-		_audio.PlayOneShot(_hover);
+		[Inject]
+		private void Construct(AudioService audioService)
+		{
+			_audio = audioService;
+		}
+
+		public void OnPointerClick(PointerEventData eventData)
+		{
+			_audio.PlayOneShot(_click);
+		}
+
+		public void OnPointerEnter(PointerEventData eventData)
+		{
+			_audio.PlayOneShot(_hover);
+		}
 	}
 }

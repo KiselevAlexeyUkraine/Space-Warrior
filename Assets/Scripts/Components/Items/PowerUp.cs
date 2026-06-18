@@ -1,6 +1,9 @@
 using UnityEngine;
+using Components.Weapon;
 
-public class PowerUp : MonoBehaviour
+namespace Components.Items
+{
+    public sealed class PowerUp : MonoBehaviour
 {
     [Header("Set in Inspector")]
     [Tooltip("Минимальная и максимальная скорость вращения по осям X, Y, Z.")]
@@ -19,7 +22,6 @@ public class PowerUp : MonoBehaviour
     [Tooltip("Текущий тип оружия, который дает этот бонус.")]
     [SerializeField] private WeaponType type;
     
-    // Современный синтаксис для свойства (Property)
     public WeaponType Type => type;
 
     [Tooltip("Ссылка на дочерний объект Cube.")]
@@ -110,4 +112,5 @@ public class PowerUp : MonoBehaviour
     {
         Destroy(gameObject);
     }
+}
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using Components.Ui.Pages;
+using Components.Items;
 using Zenject;
 using Configs;
 
@@ -11,7 +12,7 @@ namespace Components.Player
 
         [Header("Weapons")]
         [SerializeField]
-        private Weapon[] _weapons;
+        private Components.Weapon.Weapon[] _weapons;
 
         [Header("Runtime")]
         [SerializeField]
@@ -87,7 +88,7 @@ namespace Components.Player
 
                     if (powerUp.Type == _weapons[0].Type)
                     {
-                        Weapon emptyWeapon = GetEmptyWeaponSlot();
+                        Components.Weapon.Weapon emptyWeapon = GetEmptyWeaponSlot();
 
                         if (emptyWeapon != null)
                         {
@@ -124,9 +125,9 @@ namespace Components.Player
             }
         }
 
-        private Weapon GetEmptyWeaponSlot()
+        private Components.Weapon.Weapon GetEmptyWeaponSlot()
         {
-            foreach (Weapon weapon in _weapons)
+            foreach (Components.Weapon.Weapon weapon in _weapons)
             {
                 if (weapon.Type == WeaponType.none)
                 {
@@ -139,12 +140,12 @@ namespace Components.Player
 
         private void ClearWeapons()
         {
-            foreach (Weapon weapon in _weapons)
+            foreach (Components.Weapon.Weapon weapon in _weapons)
             {
                 weapon.SetType(WeaponType.none);
             }
         }
 
-        public Weapon[] Weapons => _weapons;
+        public Components.Weapon.Weapon[] Weapons => _weapons;
     }
 }

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using Components.Items;
+using Components.Weapon;
 using UnityEngine;
 
 public class Main : MonoBehaviour

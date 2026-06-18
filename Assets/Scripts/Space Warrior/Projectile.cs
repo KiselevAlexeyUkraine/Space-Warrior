@@ -1,4 +1,5 @@
 using UnityEngine;
+using Components.Weapon;
 
 public sealed class Projectile : MonoBehaviour 
 {

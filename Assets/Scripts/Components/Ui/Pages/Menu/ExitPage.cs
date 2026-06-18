@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Services.Localization;
+using Components.Player.Localization;
 using Zenject;
 
 namespace Components.Ui.Pages.Menu

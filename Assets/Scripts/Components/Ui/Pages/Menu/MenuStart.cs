@@ -1,7 +1,7 @@
 using UnityEngine;
 using Components.Effects;
 using Zenject;
-using Services;
+using Components.Player;
 
 namespace Components.Ui.Pages.Menu
 {

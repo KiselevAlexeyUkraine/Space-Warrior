@@ -1,4 +1,4 @@
-namespace Services
+namespace Components.Player
 {
     public interface IInput
     {

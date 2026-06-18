@@ -2,7 +2,7 @@ using UnityEngine;
 using Configs;
 using Zenject;
 
-namespace Services
+namespace Components.Player
 {
     public class DesktopInput
     {

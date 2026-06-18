@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using Services;
+using Components.Player;
 using Zenject;
 
 namespace Components.Effects

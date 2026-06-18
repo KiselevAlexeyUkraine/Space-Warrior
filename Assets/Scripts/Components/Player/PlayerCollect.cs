@@ -10,6 +10,7 @@ namespace Components.Player
     public sealed class PlayerCollect : MonoBehaviour
     {
         private PlayerConfig _playerConfig;
+        private AudioService _audioService;
 
         [Header("Weapons")]
         [SerializeField]
@@ -27,16 +28,17 @@ namespace Components.Player
         private LayerMask powerUpLayer;
 
         private GameObject _lastTriggerGo;
-
         private PageSwitcher _pageSwitcher;
 
         [Inject]
         private void Construct(
             PageSwitcher pageSwitcher,
-            PlayerConfig playerConfig)
+            PlayerConfig playerConfig,
+            AudioService audioService) 
         {
             _pageSwitcher = pageSwitcher;
             _playerConfig = playerConfig;
+            _audioService = audioService;
         }
 
         private void Start()
@@ -65,8 +67,10 @@ namespace Components.Player
 
             if ((enemyLayer.value & (1 << objectLayer)) != 0)
             {
-                ShieldLevel--;
+                // Игрок врезался во врага: воспроизводим звук урона
+                _audioService?.PlayTakeDamage();
 
+                ShieldLevel--;
                 Destroy(triggerObject);
             }
             else if ((powerUpLayer.value & (1 << objectLayer)) != 0)
@@ -79,6 +83,9 @@ namespace Components.Player
         {
             PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
 
+            // Игрок подобрал бонус: воспроизводим звук подбора
+            _audioService?.PlayItemPickup();
+
             switch (powerUp.Type)
             {
                 case WeaponType.shield:
@@ -86,7 +93,6 @@ namespace Components.Player
                     break;
 
                 default:
-
                     if (powerUp.Type == _weapons[0].Type)
                     {
                         Components.Weapon.Weapon emptyWeapon = GetEmptyWeaponSlot();
@@ -101,7 +107,6 @@ namespace Components.Player
                         ClearWeapons();
                         _weapons[0].SetType(powerUp.Type);
                     }
-
                     break;
             }
 

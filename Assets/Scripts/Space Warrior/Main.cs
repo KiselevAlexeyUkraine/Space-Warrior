@@ -3,6 +3,7 @@ using Components.Items;
 using Components.Weapon;
 using Components.Enemy;
 using UnityEngine;
+using Zenject;
 
 public class Main : MonoBehaviour
 {
@@ -15,6 +16,7 @@ public class Main : MonoBehaviour
     [SerializeField] private float enemyDefaultPadding = 1.5f;
     [SerializeField] private WeaponDefinition[] weaponDefinitions;
     [SerializeField] private GameObject prefabPowerUp;
+    [Inject] private DiContainer _container;
 
     [SerializeField] private WeaponType[] powerUpFrequency =
     {
@@ -61,7 +63,7 @@ public class Main : MonoBehaviour
     {
         int ndx = Random.Range(0, prefabEnemies.Length);
 
-        GameObject go = Instantiate(prefabEnemies[ndx]);
+        GameObject go = _container.InstantiatePrefab(prefabEnemies[ndx]);
 
         float enemyPadding = enemyDefaultPadding;
 

@@ -2,7 +2,7 @@ using UnityEngine;
 using Zenject;
 using Configs.Localization;
 
-namespace Services.Localization
+namespace Components.Player.Localization
 {
     public class LocalizationManager  : MonoBehaviour
     {

@@ -1,4 +1,4 @@
-using Services;
+using Components.Player;
 using TMPro;
 using UnityEngine;
 using Zenject;

@@ -300,19 +300,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 10
-  fireRate: 0.3
   health: 10
   score: 100
   showDamageDuration: 0.1
   powerUpDropChance: 0.5
+  _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
   originalColors: []
   materials: []
   showingDamage: 0
   damageDoneTime: 0
-  notifiedOfDestruction: 0
-  bndCheck: {fileID: 0}
   waveFrequency: 2
-  waveWiidth: 4
+  waveWidth: 4
   waveRotY: 45
 --- !u!114 &-5052606205465761312
 MonoBehaviour:

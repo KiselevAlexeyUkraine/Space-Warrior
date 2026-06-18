@@ -1,9 +1,9 @@
-using Services;
+using Components.Player;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Zenject;
 using Components.Effects;
-using Services.Localization;
+using Components.Player.Localization;
 
 
 namespace Installers

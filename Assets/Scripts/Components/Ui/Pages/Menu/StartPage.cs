@@ -1,4 +1,4 @@
-using Services;
+using Components.Player;
 using Zenject;
 
 namespace Components.Ui.Pages.Menu

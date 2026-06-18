@@ -1,10 +1,10 @@
-using Services;
+using Components.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 using Components.Effects;
-using Services.Localization;
+using Components.Player.Localization;
 
 namespace Components.Ui.Pages.Game
 {

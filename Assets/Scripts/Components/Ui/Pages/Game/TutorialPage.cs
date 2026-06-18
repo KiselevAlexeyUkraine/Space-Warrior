@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using Zenject;
 using System.Collections.Generic;
-using Services;
+using Components.Player;
 
 namespace Components.Ui.Pages.Game
 {

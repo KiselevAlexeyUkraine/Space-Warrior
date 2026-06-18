@@ -1,5 +1,8 @@
 using UnityEngine;
 using Components.Weapon;
+using Components.Player.Helpers;
+using Components.Player; // Подключаем пространство имен аудио-сервиса
+using Zenject;
 
 namespace Components.Enemy
 {
@@ -14,6 +17,10 @@ namespace Components.Enemy
         public float showDamageDuration = 0.1f; 
         public float powerUpDropChance = 1f; 
 
+        [Header("Audio Settings")]
+        [Tooltip("Звук взрыва (смерти) этого конкретного врага")]
+        [SerializeField] private AudioClip _explosionClip; 
+
         [Header("Set Dynamically: Enemy")]
         [SerializeField] private Color[] originalColors;
         [SerializeField] private Material[] materials; 
@@ -22,6 +29,9 @@ namespace Components.Enemy
         [HideInInspector] public float damageDoneTime; 
         
         private bool notifiedOfDestruction = false; 
+        private Utils _utils;
+        private AudioService _audioService; // Поле для хранения ссылки на аудио-сервис
+        private PlayerScore _playerScore;
 
         protected BoundsCheck bndCheck;
 
@@ -30,13 +40,20 @@ namespace Components.Enemy
             get => transform.position;
             set => transform.position = value;
         }
+        
+        [Inject]
+        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore)
+        {
+            _utils = utils;
+            _audioService = audioService;
+            _playerScore = playerScore;
+        }
 
         protected virtual void Awake()
         {
             bndCheck = GetComponent<BoundsCheck>();
             
-            // Защита от опечатки. Если класс называется Utiils, исправьте обратно на Utiils
-            materials = Utiils.GetAllMaterials(gameObject); 
+            materials = _utils.GetAllMaterials(gameObject); 
             originalColors = new Color[materials.Length];
             
             for (int i = 0; i < materials.Length; i++)
@@ -85,7 +102,7 @@ namespace Components.Enemy
         protected void ProcessDamage(WeaponType weaponType)
         {
             ShowDamage();
-            
+    
             var weaponDef = Main.GetWeaponDefinition(weaponType);
             if (weaponDef != null)
             {
@@ -96,6 +113,14 @@ namespace Components.Enemy
             {
                 if (!notifiedOfDestruction)
                 {
+                    if (_audioService != null && _explosionClip != null)
+                    {
+                        _audioService.PlayOneShot(_explosionClip);
+                    }
+
+                    // НАЧИСЛЯЕМ ОЧКИ ПЕРЕД СМЕРТЬЮ
+                    _playerScore?.AddScore(score);
+
                     Main.S.ShipDestroyed(this);
                     notifiedOfDestruction = true;
                 }

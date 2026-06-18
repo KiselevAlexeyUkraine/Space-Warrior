@@ -1,6 +1,6 @@
 using UnityEngine.SceneManagement;
 
-namespace Services
+namespace Components.Player
 {
     public class SceneService
     {

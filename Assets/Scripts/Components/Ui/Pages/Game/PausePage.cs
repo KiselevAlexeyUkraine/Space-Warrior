@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using Services.Localization;
+using Components.Player.Localization;
 using Zenject;
 using TMPro;
 

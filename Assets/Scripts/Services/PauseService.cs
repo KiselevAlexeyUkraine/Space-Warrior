@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Services
+namespace Components.Player
 {
     public class PauseService : MonoBehaviour
     {

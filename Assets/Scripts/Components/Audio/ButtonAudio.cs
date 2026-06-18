@@ -1,4 +1,4 @@
-using Services;
+using Components.Player;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Zenject;

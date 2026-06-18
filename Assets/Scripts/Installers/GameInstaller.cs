@@ -1,6 +1,6 @@
 using Components.Ui.Pages;
 using Components.Player;
-using Services;
+using Components.Player.Helpers;
 using UnityEngine;
 using Zenject;
 
@@ -17,9 +17,11 @@ namespace Installers
 
         public override void InstallBindings()
         {
-
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
-
+            Container.Bind<PlayerScore>().FromNew().AsSingle().NonLazy();
+            
+            Container.Bind<Utils>().AsSingle().NonLazy();
+            
             Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();
             Container.Bind<PauseSwitcher>().FromComponentInNewPrefab(_pauseSwitcher).AsSingle().NonLazy();

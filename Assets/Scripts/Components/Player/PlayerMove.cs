@@ -1,6 +1,6 @@
 using UnityEngine;
 using Zenject;
-using Services;
+using Components.Player;
 using Configs;
 
 namespace Components.Player

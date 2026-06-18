@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Zenject;
-using Services.Localization;
+using Components.Player.Localization;
 
 
 namespace Components.Ui.Pages.Menu

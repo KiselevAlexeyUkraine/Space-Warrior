@@ -1,5 +1,5 @@
 using Components.Ui.Pages;
-using Services;
+using Components.Player;
 using UnityEngine;
 using Zenject;
 

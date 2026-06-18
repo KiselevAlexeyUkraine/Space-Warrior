@@ -1,6 +1,7 @@
 using UnityEngine;
 using Components.Ui.Pages;
 using Components.Items;
+using Components.Weapon;
 using Zenject;
 using Configs;
 

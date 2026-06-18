@@ -1,4 +1,5 @@
 using UnityEngine;
+using Components.Weapon;
 using SO;
 
 namespace Configs

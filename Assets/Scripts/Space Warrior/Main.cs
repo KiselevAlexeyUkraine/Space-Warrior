@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Components.Items;
 using Components.Weapon;
+using Components.Enemy;
 using UnityEngine;
 
 public class Main : MonoBehaviour
@@ -25,7 +26,7 @@ public class Main : MonoBehaviour
 
     private BoundsCheck bndCheck;
 
-    public void ShipDestroyed(Enemy e)
+    public void ShipDestroyed(EnemyBase e)
     {
         if (Random.value <= e.powerUpDropChance)
         {

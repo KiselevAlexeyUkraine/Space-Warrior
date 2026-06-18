@@ -1,10 +1,13 @@
-public enum WeaponType
+namespace Components.Weapon
 {
-    none,
-    blaster,
-    spread,
-    phaser,
-    missile,
-    laser,
-    shield
+    public enum WeaponType
+    {
+        none,
+        blaster,
+        spread,
+        phaser,
+        missile,
+        laser,
+        shield
+    }
 }

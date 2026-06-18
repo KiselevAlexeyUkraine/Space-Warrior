@@ -1,9 +1,10 @@
 using UnityEngine;
+using System;
 
 namespace Components.Weapon
 {
-    [System.Serializable]
-    public class WeaponDefinition
+    [Serializable]
+    public sealed class WeaponDefinition
     {
         [Tooltip("Тип оружия.")]
         public WeaponType type = WeaponType.none;

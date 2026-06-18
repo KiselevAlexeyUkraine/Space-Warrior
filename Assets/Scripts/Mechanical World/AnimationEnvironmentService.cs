@@ -1,7 +1,7 @@
 using UnityEngine;
 using PrimeTween;
 
-namespace Core
+namespace Servise
 {
     public sealed class AnimationEnvironmentService : MonoBehaviour
     {

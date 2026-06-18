@@ -3,7 +3,6 @@ using Components.Player;
 using Services;
 using UnityEngine;
 using Zenject;
-using MechanicalWorld;
 
 namespace Installers
 {
@@ -15,8 +14,6 @@ namespace Installers
         [SerializeField] private PlayerComponent _player;
         [SerializeField] private PlayerSpawn _playerSpawn;
         [SerializeField] private PauseSwitcher _pauseSwitcher;
-        [SerializeField] private AnimatorService _animatorService;
-        [SerializeField] private QuestManager questManager;
 
         public override void InstallBindings()
         {
@@ -26,8 +23,6 @@ namespace Installers
             Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();
             Container.Bind<PauseSwitcher>().FromComponentInNewPrefab(_pauseSwitcher).AsSingle().NonLazy();
-            Container.Bind<AnimatorService>().FromComponentInNewPrefab(_animatorService).AsSingle().NonLazy();
-            Container.Bind<QuestManager>().FromComponentInNewPrefab(questManager).AsSingle().NonLazy();
             
             BindPlayer();
         }

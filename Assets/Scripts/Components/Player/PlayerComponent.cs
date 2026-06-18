@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Components.Player
 {
-    public class PlayerComponent : MonoBehaviour
+    public sealed class PlayerComponent : MonoBehaviour
     {
         [SerializeField] private Camera _camera;
 	}

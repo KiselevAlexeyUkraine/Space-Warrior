@@ -1,112 +1,113 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PowerUp : MonoBehaviour
 {
     [Header("Set in Inspector")]
-    //          ,                       Vector2. x                             ,   ..y.. -                                  Random.Range(),
-    //                               
-    public Vector2 rotMinMax = new Vector2(15, 90);
-    public Vector2 driftMinMax = new Vector2(.25f, 2);
-    public float lifeTime = 6f; //                                PowerUp
-    public float fadeTime = 4f; // Seconds it will then fade
+    [Tooltip("Минимальная и максимальная скорость вращения по осям X, Y, Z.")]
+    [SerializeField] private Vector2 rotMinMax = new Vector2(15, 90);
+
+    [Tooltip("Минимальная и максимальная скорость линейного движения (дрейфа).")]
+    [SerializeField] private Vector2 driftMinMax = new Vector2(0.25f, 2f);
+
+    [Tooltip("Время жизни бонуса до начала исчезновения (в секундах).")]
+    [SerializeField] private float lifeTime = 6f;
+
+    [Tooltip("Продолжительность эффекта исчезновения (в секундах).")]
+    [SerializeField] private float fadeTime = 4f;
 
     [Header("Set Dynamically")]
-    public WeaponType type; //           
-    public GameObject cube; //                        
-    public TextMesh letter; //           TextMesh
-    public Vector3 rotPerSecond; //                  
-    public float birthTime;
+    [Tooltip("Текущий тип оружия, который дает этот бонус.")]
+    [SerializeField] private WeaponType type;
+    
+    // Современный синтаксис для свойства (Property)
+    public WeaponType Type => type;
 
-    private Rigidbody rigid;
-    private BoundsCheck bndCheck;
+    [Tooltip("Ссылка на дочерний объект Cube.")]
+    [SerializeField] private GameObject cube;
+
+    [Tooltip("Ссылка на компонент TextMesh для отображения буквы бонуса.")]
+    [SerializeField] private TextMesh letter;
+
+    [Tooltip("Скорость вращения куба в секунду по трем осям.")]
+    [SerializeField] private Vector3 rotPerSecond;
+
+    [Tooltip("Время появления (рождения) бонуса.")]
+    [SerializeField] private float birthTime;
+
     private Renderer cubeRend;
+    private Vector3 movementVelocity; 
 
-    void Awake()
+    private void Awake()
     {
-        //                       
+        // Инициализация компонентов
         cube = transform.Find("Cube").gameObject;
-        //                    TextMesh                    
         letter = GetComponent<TextMesh>();
-        rigid = GetComponent<Rigidbody>();
-        bndCheck = GetComponent<BoundsCheck>();
         cubeRend = cube.GetComponent<Renderer>();
 
-        //                           
-        Vector3 vel = Random.onUnitSphere; //                             XYZ
-        // Random.onUnitShere                  ,                               ,                                 
-        //            1                                 
-        vel.z = 0;      //            vel              XY
-        vel.Normalize();//                                  Vector3        1  
+        // Направление движения на плоскости XY
+        Vector3 vel = Random.onUnitSphere; 
+        vel.z = 0;      
+        vel.Normalize();
+        
+        // Скорость дрейфа
         vel *= Random.Range(driftMinMax.x, driftMinMax.y);
-        rigid.linearVelocity = vel;
+        movementVelocity = vel;
 
-        //                                                        R:[0, 0, 0]
+        // Сброс глобального поворота
         transform.rotation = Quaternion.identity;
-        // Quaternion.identity                               .
 
-        //                                                                          rotMinMax.x   rotMinMax.y
-        rotPerSecond = new Vector3(Random.Range(rotMinMax.x, rotMinMax.y),
-                                   Random.Range(rotMinMax.x, rotMinMax.y),
-                                   Random.Range(rotMinMax.x, rotMinMax.y));
+        // Рандомное вращение для визуального куба
+        rotPerSecond = new Vector3(
+            Random.Range(rotMinMax.x, rotMinMax.y),
+            Random.Range(rotMinMax.x, rotMinMax.y),
+            Random.Range(rotMinMax.x, rotMinMax.y)
+        );
 
         birthTime = Time.time;
     }
 
-    void Update()
+    private void Update()
     {
+        // Движение без Rigidbody
+        transform.Translate(movementVelocity * Time.deltaTime, Space.World);
+
+        // Вращение куба
         cube.transform.rotation = Quaternion.Euler(rotPerSecond * Time.time);
 
-        //                         PowerUp                   
-        //                                             10       ,                                4       .
+        // Логика плавного исчезновения
         float u = (Time.time - (birthTime + lifeTime)) / fadeTime;
-        //           lifeTime                 "u"       <= 0.
-        //                                        fadeTime                      1.
 
-        //      "u" >= 1,                 
         if (u >= 1)
         {
-            Destroy(this.gameObject);
+            Destroy(gameObject);
             return;
         }
 
-        //              "u"                      -                     
         if (u > 0)
         {
+            // Прозрачность куба
             Color c = cubeRend.material.color;
             c.a = 1f - u;
             cubeRend.material.color = c;
-            //                               ,             
+
+            // Прозрачность текста
             c = letter.color;
             c.a = 1f - (u * 0.5f);
             letter.color = c;
-        }
-
-        if (!bndCheck.isOnScreen)
-        {
-            //                                             ,                
-            Destroy(gameObject);
         }
     }
 
     public void SetType(WeaponType wt)
     {
-        //          WeaponDefinition    Main
         WeaponDefinition def = Main.GetWeaponDefinition(wt);
-        //                               
+        
         cubeRend.material.color = def.color;
-        letter.text = def.letter;  //                                        
-        letter.text = def.letter;     //                              
-        type = wt; //                                        
+        letter.text = def.letter;
+        type = wt;
     }
 
     public void AbsorbedBy(GameObject target)
     {
-        //                                Hero,                            
-        //                                                   ,             
-        //                                    ,                         
-        // this.gameObject
-        Destroy(this.gameObject);
+        Destroy(gameObject);
     }
 }

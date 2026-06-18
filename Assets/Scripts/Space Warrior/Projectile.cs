@@ -1,8 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class Projectile : MonoBehaviour 
+public sealed class Projectile : MonoBehaviour 
 {
     private BoundsCheck bndCheck;
     private Renderer rend;

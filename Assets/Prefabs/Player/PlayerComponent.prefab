@@ -423,6 +423,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotationsPerSecond: 0.5
   levelShown: 0
+  playerCollect: {fileID: 6191128476812823992}
 --- !u!1 &6522626132134639733
 GameObject:
   m_ObjectHideFlags: 0

@@ -6,7 +6,7 @@ using Zenject;
 
 namespace Installers
 {
-    public class GameInstaller : MonoInstaller
+    public sealed class GameInstaller : MonoInstaller
     {
         [Header("Prefabs")]
         [SerializeField] private PageSwitcher _gameCanvas;

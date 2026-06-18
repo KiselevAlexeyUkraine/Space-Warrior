@@ -5,7 +5,7 @@ using Zenject;
 
 namespace Components.Ui.Pages.Game
 {
-    public class StatsPage : BasePage
+    public sealed class StatsPage : BasePage
     {
         [Header("Status UI Elements")]
         [SerializeField] private Button pauseButton;

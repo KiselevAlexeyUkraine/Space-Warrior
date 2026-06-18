@@ -231,11 +231,10 @@ MonoBehaviour:
     type: 0
     letter: 
     color: {r: 1, g: 1, b: 1, a: 1}
-    projectilePrefab: {fileID: 0}
+    projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
     projectileColor: {r: 1, g: 1, b: 1, a: 1}
     damageOnHit: 0
     continuousDamage: 0
     delayBetweenShots: 0
     velocity: 20
-  collar: {fileID: 0}
-  lastShotTime: 0
+  collar: {fileID: 2316697337857720389}

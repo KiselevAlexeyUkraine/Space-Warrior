@@ -202,15 +202,7 @@ public class Weapon : MonoBehaviour
                 LayerMask.NameToLayer(
                     "ProjectileHero");
         }
-        else
-        {
-            projectileObject.tag =
-                "ProjectileEnemy";
 
-            projectileObject.layer =
-                LayerMask.NameToLayer(
-                    "ProjectileEnemy");
-        }
 
         projectileObject.transform.position =
             collar.transform.position;

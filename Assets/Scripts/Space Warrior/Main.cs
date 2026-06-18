@@ -7,13 +7,13 @@ public class Main : MonoBehaviour
     static Dictionary<WeaponType, WeaponDefinition> WEAP_DICT;
 
     [Header("Set in Inspector")]
-    public GameObject[] prefabEnemies;
-    public float enemySpawnPerSecond = 0.5f;
-    public float enemyDefaultPadding = 1.5f;
-    public WeaponDefinition[] weaponDefinitions;
-    public GameObject prefabPowerUp;
+    [SerializeField] private GameObject[] prefabEnemies;
+    [SerializeField] private float enemySpawnPerSecond = 0.5f;
+    [SerializeField] private float enemyDefaultPadding = 1.5f;
+    [SerializeField] private WeaponDefinition[] weaponDefinitions;
+    [SerializeField] private GameObject prefabPowerUp;
 
-    public WeaponType[] powerUpFrequency =
+    [SerializeField] private WeaponType[] powerUpFrequency =
     {
         WeaponType.blaster,
         WeaponType.blaster,

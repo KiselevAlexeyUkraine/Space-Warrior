@@ -1,27 +1,25 @@
-using System.Collections; // Необходимо для доступа к массивам и другим коллекциям
-using System.Collections.Generic; // Необходимо для доступа к спискам и словарям
-using UnityEngine; // Необходимо для доступа к Unity
+using UnityEngine; 
 
 public class Enemy : MonoBehaviour
 {
     [Header("Параметры врага")]
-    public float speed = 10f; // Скорость в м/с
-    public float fireRate = 0.3f; // Секунд между выстрелами (не используется)
-    public float health = 10f;
-    public int score = 100; // Очки за уничтожение этого корабля
+    [SerializeField] private float speed = 10f; // Скорость в м/с
+    [SerializeField] private float fireRate = 0.3f; // Секунд между выстрелами (не используется)
+    [SerializeField] private float health = 10f;
+    [SerializeField] private int score = 100; // Очки за уничтожение этого корабля
     public float showDamageDuration = 0.1f; // Длительность эффекта попадания в секундах
-    public float powerUpDropChance = 1f; // Dthjznyjcnm c,hjcbnm ,jyec
+    public float powerUpDropChance = 1f; 
 
     [Header("Set Dynamically: Enemy")]
-    public Color[] originalColors;
-    public Material[] materials; // Все материалы игрового объекта и его потомков
+    [SerializeField] private Color[] originalColors;
+    [SerializeField] private Material[] materials; // Все материалы игрового объекта и его потомков
     public bool showingDamage = false;
     public float damageDoneTime; // Время прекращения отображения эффекта
-    public bool notifiedOfDestruction = false; // Будет использовано позже
+    [SerializeField] private bool notifiedOfDestruction = false; // Будет использовано позже
 
     public BoundsCheck bndCheck;
 
-    void Awake()
+    private void Awake()
     {
         bndCheck = GetComponent<BoundsCheck>();
         // Получить материалы и цвет этого игрового объекта и его потомков
@@ -46,7 +44,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         Move();
 
@@ -69,7 +67,7 @@ public class Enemy : MonoBehaviour
         pos = tempPos;
     }
 
-    void OnCollisionEnter(Collision collision)
+    private void OnCollisionEnter(Collision collision)
     {
         GameObject otherGo = collision.gameObject; // Получить игровой объект которому принадлежит коллайдер, столкнувшийся с вражеским кораблем
         switch (otherGo.tag)
@@ -108,7 +106,7 @@ public class Enemy : MonoBehaviour
         }
         
     }
-    void ShowDamage()
+    private void ShowDamage()
     {
         foreach (Material m in materials)
         {
@@ -118,7 +116,7 @@ public class Enemy : MonoBehaviour
         damageDoneTime = Time.time + showDamageDuration;
     }
 
-    void UnShowDamage()
+    private void UnShowDamage()
     {
         for (int i = 0; i < materials.Length; i++)
         {

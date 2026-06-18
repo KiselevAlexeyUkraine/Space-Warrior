@@ -7,29 +7,67 @@ namespace Configs
     public class PlayerConfig : ScriptableConfig
     {
         [Header("Movement")]
-        public float WalkSpeed = 3f;
-        public float RunSpeed = 5f;
-        public float SprintSpeed = 8f;
-        public float AccelerationTime = 0.15f;
-        public float RotationSpeed = 12f;
 
-        [Header("Jump")]
-        public float JumpForce = 8f;
-        public float Gravity = -20f;
+        [SerializeField]
+        [Tooltip("Скорость перемещения игрока")]
+        private float _speed = 30f;
 
-        [Header("Idle")]
-        public float IdleGreetingDelay = 5f;
-        
-        [Header("Stamina Balance")]
-        public int MaxStamina = 100;
-        public int SprintConsumePerSecond = 10;
-        public int RegenPerSecond = 8;
-        public float RegenDelay = 1.5f;
-        public float KnockdownDuration = 3f;
+        [SerializeField]
+        [Tooltip("Множитель крена корабля по оси Z")]
+        private float _rollMult = -45f;
 
-        [Header("Health")]
-        public int MaxHealth = 3;
-        
-        public float SprintThreshold = 0.9f;
+        [SerializeField]
+        [Tooltip("Множитель наклона корабля по оси X")]
+        private float _pitchMult = 30f;
+
+        [Header("Gameplay")]
+
+        [SerializeField]
+        [Tooltip("Задержка перед перезапуском уровня")]
+        private float _gameRestartDelay = 2f;
+
+        [Header("Projectile")]
+
+        [SerializeField]
+        [Tooltip("Префаб стандартного снаряда")]
+        private GameObject _projectilePrefab;
+
+        [SerializeField]
+        [Tooltip("Скорость полёта снаряда")]
+        private float _projectileSpeed = 40f;
+
+        [Header("Shield")]
+
+        [SerializeField]
+        [Tooltip("Начальное количество щита")]
+        private float _startShieldLevel = 1f;
+
+        [SerializeField]
+        [Tooltip("Максимальное количество щита")]
+        private float _maxShieldLevel = 4f;
+
+        [Header("Weapon")]
+
+        [SerializeField]
+        [Tooltip("Оружие, которое игрок получает при старте")]
+        private WeaponType _startWeapon = WeaponType.blaster;
+
+        public float Speed => _speed;
+
+        public float RollMult => _rollMult;
+
+        public float PitchMult => _pitchMult;
+
+        public float GameRestartDelay => _gameRestartDelay;
+
+        public GameObject ProjectilePrefab => _projectilePrefab;
+
+        public float ProjectileSpeed => _projectileSpeed;
+
+        public float StartShieldLevel => _startShieldLevel;
+
+        public float MaxShieldLevel => _maxShieldLevel;
+
+        public WeaponType StartWeapon => _startWeapon;
     }
 }

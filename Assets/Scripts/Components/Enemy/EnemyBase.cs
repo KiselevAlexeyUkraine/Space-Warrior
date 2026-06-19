@@ -187,10 +187,11 @@ namespace Components.Enemy
             }
         }
 
-        private void ShowDamage()
+        // Найди эти методы в самом низу EnemyBase.cs и замени private на protected:
+
+        protected void ShowDamage()
         {
             if (materials == null) return;
-
             foreach (Material m in materials)
             {
                 if (m != null) m.color = Color.red;
@@ -199,10 +200,9 @@ namespace Components.Enemy
             damageDoneTime = Time.time + showDamageDuration;
         }
 
-        private void UnShowDamage()
+        protected void UnShowDamage()
         {
             if (materials == null) return;
-
             for (int i = 0; i < materials.Length; i++)
             {
                 if (materials[i] != null && i < originalColors.Length)

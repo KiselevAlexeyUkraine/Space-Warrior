@@ -8,9 +8,13 @@ using Lean.Pool;
 
 public class Main : MonoBehaviour
 {
+    // ВОЗВРАЩЕНО: Статический словарь для быстрого доступа из любой точки кода
     private static Dictionary<WeaponType, WeaponDefinition> _weapDict;
 
     [Header("Set in Inspector")]
+    [Tooltip("Если выключено, обычные враги спавниться не будут.")]
+    [SerializeField] private bool spawnEnemies = true; // Переменная контроля спавна
+
     [SerializeField] private GameObject[] prefabEnemies;
     [SerializeField] private float enemySpawnPerSecond = 0.5f;
     [SerializeField] private float enemyDefaultPadding = 1.5f;
@@ -27,6 +31,7 @@ public class Main : MonoBehaviour
 
     private BoundsCheck bndCheck;
     private DiContainer _container;
+    
 
     [Inject]
     private void Construct(DiContainer container)
@@ -41,7 +46,6 @@ public class Main : MonoBehaviour
             int ndx = Random.Range(0, powerUpFrequency.Length);
             WeaponType puType = powerUpFrequency[ndx];
 
-            // На будущее: бонусы (PowerUp) тоже можно перевести на LeanPool.Spawn аналогично врагам
             GameObject go = Instantiate(prefabPowerUp);
             PowerUp pu = go.GetComponent<PowerUp>();
 
@@ -49,8 +53,6 @@ public class Main : MonoBehaviour
             pu.transform.position = e.transform.position;
         }
 
-        // ЗАМЕНЕНО: вместо Destroy(gameObject) внутри EnemyBase/Enemy_4, 
-        // теперь деспавним уничтоженного врага через пул
         if (LeanPool.Links.ContainsKey(e.gameObject))
         {
             LeanPool.Despawn(e.gameObject);
@@ -65,8 +67,6 @@ public class Main : MonoBehaviour
     {
         bndCheck = GetComponent<BoundsCheck>();
 
-        Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
-
         _weapDict = new Dictionary<WeaponType, WeaponDefinition>();
 
         foreach (WeaponDefinition def in weaponDefinitions)
@@ -75,14 +75,23 @@ public class Main : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        // Проверяем булевую переменную перед запуском спавна
+        if (spawnEnemies)
+        {
+            Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
+        }
+    }
+
     public void SpawnEnemy()
     {
+        // Дополнительный предохранитель на случай изменения галочки во время игры
+        if (!spawnEnemies) return;
+
         int ndx = Random.Range(0, prefabEnemies.Length);
 
-        // ЗАМЕНЕНО: Спавним врага через LeanPool вместо Container.InstantiatePrefab
         GameObject go = LeanPool.Spawn(prefabEnemies[ndx]);
-
-        // ВАЖНО: Накатываем инжекцию Zenject на заспавненный из пула объект
         _container.InjectGameObject(go);
 
         float enemyPadding = enemyDefaultPadding;
@@ -106,9 +115,10 @@ public class Main : MonoBehaviour
         Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
     }
 
+    // ВОЗВРАЩЕНО: Статический метод снова доступен через Main.GetWeaponDefinition(...)
     public static WeaponDefinition GetWeaponDefinition(WeaponType wt)
     {
-        if (_weapDict.ContainsKey(wt))
+        if (_weapDict != null && _weapDict.ContainsKey(wt))
         {
             return _weapDict[wt];
         }

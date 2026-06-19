@@ -515,7 +515,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 1
+  m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 120
   m_CollisionDetection: 0
@@ -544,12 +544,14 @@ MonoBehaviour:
   parts:
   - name: Cockpit
     health: 10
+    startHealth: 0
     protectedBy:
     - Fuselage
     go: {fileID: 0}
     mat: {fileID: 0}
   - name: Fuselage
     health: 10
+    startHealth: 0
     protectedBy:
     - WingL
     - WingR
@@ -557,11 +559,13 @@ MonoBehaviour:
     mat: {fileID: 0}
   - name: WingL
     health: 10
+    startHealth: 0
     protectedBy: []
     go: {fileID: 0}
     mat: {fileID: 0}
   - name: WingR
     health: 10
+    startHealth: 0
     protectedBy: []
     go: {fileID: 0}
     mat: {fileID: 0}

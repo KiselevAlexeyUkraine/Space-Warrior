@@ -6,7 +6,9 @@ using UnityEngine;
 using Zenject;
 using Lean.Pool;
 
-public class Main : MonoBehaviour
+namespace Level
+{
+    public class Main : MonoBehaviour
 {
     // ВОЗВРАЩЕНО: Статический словарь для быстрого доступа из любой точки кода
     private static Dictionary<WeaponType, WeaponDefinition> _weapDict;
@@ -125,4 +127,5 @@ public class Main : MonoBehaviour
 
         return new WeaponDefinition();
     }
+}
 }

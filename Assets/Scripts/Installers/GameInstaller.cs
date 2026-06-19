@@ -4,6 +4,7 @@ using Components.Player.Helpers;
 using Servise;
 using UnityEngine;
 using Zenject;
+using Level;
 
 namespace Installers
 {

@@ -1,6 +1,6 @@
 using UnityEngine;
 using Lean.Pool;
-using UnityEngine.Serialization;
+using Level;
 
 namespace Components.Weapon
 {

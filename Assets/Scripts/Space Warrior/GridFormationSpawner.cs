@@ -6,8 +6,10 @@ using Servise;
 using System.Collections.Generic;
 using Components.Ui.Pages;
 
-public class GridFormationSpawner : MonoBehaviour
+namespace Level
 {
+    public sealed class GridFormationSpawner : MonoBehaviour
+    {
     [System.Serializable]
     public class RowSettings
     {
@@ -57,6 +59,11 @@ public class GridFormationSpawner : MonoBehaviour
     [Tooltip("Скорость генерации сетки (врагов в секунду).")]
     [SerializeField] private float spawnPerSecond = 2f;
 
+    // ДОБАВЛЕНО: Предел по оси Y, при котором волна досрочно завершается
+    [Header("Bypass Settings")]
+    [Tooltip("Критическая позиция по Y. Если сетка опускается до этого значения или ниже, волна завершается, а выжившие враги возвращаются в пул.")]
+    [SerializeField] private float criticalYPosition = -70f;
+
     private BoundsCheck _bndCheck;
     private DiContainer _container;
     private PageSwitcher _pageSwitcher; 
@@ -68,6 +75,7 @@ public class GridFormationSpawner : MonoBehaviour
     private bool _spawningWaveActive = false;
     private int _totalSpawnedInWave = 0;
     private HashSet<GameObject> _activeEnemies = new HashSet<GameObject>();
+    private bool _isTransitioningBetweenWaves = false; // Предохранитель от двойного вызова смены волны
 
     [Inject]
     private void Construct(DiContainer container, AnimatorService animatorService, PageSwitcher pageSwitcher)
@@ -98,12 +106,9 @@ public class GridFormationSpawner : MonoBehaviour
 
     private void StartNextWave()
     {
-        // ИСПРАВЛЕНО: Если индекс дошел до конца списка волн, значит, последняя волна была успешно зачищена
         if (_currentWaveIndex >= waves.Count)
         {
             Debug.Log("🎉 ВСЕ ВОЛНЫ ПРОЙДЕНЫ! ПОБЕДА!");
-            
-            // Открываем экран победы
             _pageSwitcher?.Open(PageName.Complete).Forget();
             return;
         }
@@ -115,8 +120,8 @@ public class GridFormationSpawner : MonoBehaviour
         _totalSpawnedInWave = 0;
         _activeEnemies.Clear();
         _spawningWaveActive = true;
+        _isTransitioningBetweenWaves = false; 
 
-        // Запускаем движение через сервис анимации
         if (_animatorService != null)
         {
             _animatorService.StartAnimation(formationRoot);
@@ -157,7 +162,6 @@ public class GridFormationSpawner : MonoBehaviour
             enemyScript.SetTargetLocalPosition(localTargetPos);
         }
 
-        // Регистрируем врага, чтобы знать, когда волна опустеет
         _activeEnemies.Add(go);
         _totalSpawnedInWave++;
 
@@ -182,8 +186,7 @@ public class GridFormationSpawner : MonoBehaviour
             _spawningWaveActive = false;
             Debug.Log($"Спавн волны {_currentWaveIndex + 1} завершен. Ожидаем зачистки. Всего заспавнено: {_totalSpawnedInWave}");
             
-            // Если вдруг условия шагов отсеяли вообще всех врагов и никто не заспавнился:
-            if (_activeEnemies.Count == 0)
+            if (_activeEnemies.Count == 0 && !_isTransitioningBetweenWaves)
             {
                 OnWaveCleared();
             }
@@ -195,7 +198,18 @@ public class GridFormationSpawner : MonoBehaviour
 
     private void Update()
     {
-        // Очищаем уничтоженные/деспавненные объекты из нашего списка живых врагов
+        if (_isTransitioningBetweenWaves) return;
+
+        // ИСПРАВЛЕНО: Проверяем, опустилась ли сетка ниже критического уровня по Y
+        if (formationRoot != null && formationRoot.position.y <= criticalYPosition)
+        {
+            Debug.LogWarning($"⚠️ Сетка врагов опустилась до {formationRoot.position.y} (Критический Y: {criticalYPosition}). Принудительно завершаем волну!");
+            ForceClearRemainingEnemies();
+            OnWaveCleared();
+            return;
+        }
+
+        // Стандартная очистка списка живых врагов
         if (!_spawningWaveActive && _activeEnemies.Count > 0)
         {
             _activeEnemies.RemoveWhere(item => item == null || !item.activeInHierarchy);
@@ -207,19 +221,41 @@ public class GridFormationSpawner : MonoBehaviour
         }
     }
 
+    // ДОБАВЛЕНО: Метод досрочной очистки оставшихся врагов текущей волны и возврата их в LeanPool
+    private void ForceClearRemainingEnemies()
+    {
+        _spawningWaveActive = false;
+        CancelInvoke(nameof(SpawnNextGridEnemy));
+
+        foreach (GameObject enemy in _activeEnemies)
+        {
+            if (enemy != null && enemy.activeInHierarchy)
+            {
+                if (LeanPool.Links.ContainsKey(enemy))
+                {
+                    LeanPool.Despawn(enemy);
+                }
+                else
+                {
+                    Destroy(enemy);
+                }
+            }
+        }
+        _activeEnemies.Clear();
+    }
+
     private void OnWaveCleared()
     {
+        _isTransitioningBetweenWaves = true;
         CancelInvoke(nameof(SpawnNextGridEnemy));
-        Debug.Log($"👍 Волна {_currentWaveIndex + 1} полностью уничтожена!");
+        Debug.Log($"👍 Волна {_currentWaveIndex + 1} завершена!");
         
         _currentWaveIndex++;
 
         if (_animatorService != null)
         {
-            // Сбрасываем корень анимации в дефолтную позицию
             _animatorService.ResetFormationAndCall(() =>
             {
-                // По завершении движения возврата — запускаем следующую волну
                 StartNextWave();
             });
         }
@@ -266,3 +302,5 @@ public class GridFormationSpawner : MonoBehaviour
         }
     }
 }
+}
+

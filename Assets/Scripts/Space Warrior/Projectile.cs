@@ -3,7 +3,7 @@ using Components.Weapon;
 
 public sealed class Projectile : MonoBehaviour 
 {
-    private BoundsCheck bndCheck;
+
     private Renderer rend;
 
     [Header("Set Dynamically")]
@@ -25,18 +25,10 @@ public sealed class Projectile : MonoBehaviour
 
     void Awake()
     {
-        bndCheck = GetComponent<BoundsCheck>();
         rend = GetComponent<Renderer>();
         rigid = GetComponent<Rigidbody>();
     }
-
-    void Update()
-    {
-        if (bndCheck.offUp) // Если снаряд вышел за верхнюю границу экрана, уничтожить его
-        {
-            Destroy(gameObject);
-        }
-    }
+    
 
     ///<summary>
     ///Изменяет скрытое поле _Type и устанавливает цвет этого снаряда, как определено в WeaponDefinition.

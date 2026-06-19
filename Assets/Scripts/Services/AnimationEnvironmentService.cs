@@ -15,7 +15,13 @@ namespace Servise
         [Tooltip("Градиент изменения цвета скайбокса по времени (0–1 = 0–360 градусов).")]
         [SerializeField] private Gradient colorGradient;
 
+        [Header("Optimization")]
+        [Tooltip("Минимальный шаг изменения угла (в градусах), при котором обновится скайбокс и освещение. Чем больше число, тем выше FPS.")]
+        [SerializeField, Range(0.1f, 5f)] private float angleUpdateStep = 1.0f;
+
         private Tween _skyboxTween;
+        private float _currentAngle;
+        private float _lastUpdatedAngle = -100f; // Заведомо пройденное значение для первого кадра
 
         // Кэшируем ID свойств шейдера для оптимизации
         private static readonly int RotationProperty = Shader.PropertyToID("_Rotation");
@@ -29,39 +35,47 @@ namespace Servise
 
         private void OnDisable()
         {
-            // В PrimeTween важно останавливать твины при выключении объекта
             _skyboxTween.Stop();
         }
 
         private void StartSkyboxAnimation()
         {
-            // Останавливаем старый твин перед запуском нового
             _skyboxTween.Stop();
 
+            // Твин теперь просто меняет приватную переменную _currentAngle в фоне без коллбеков
             _skyboxTween = Tween.Custom(
                 startValue: 0f, 
                 endValue: 360f, 
                 duration: rotationDuration, 
-                onValueChange: ApplyEnvironment,
-                ease: Ease.Linear, // Передаем сглаживание как аргумент
+                onValueChange: angle => _currentAngle = angle,
+                ease: Ease.Linear, 
                 cycles: -1, 
                 cycleMode: CycleMode.Restart
             );
         }
 
+        private void Update()
+        {
+            if (skyboxMaterial == null) return;
+
+            // Проверяем, изменился ли угол достаточно сильно с момента последнего обновления
+            if (Mathf.Abs(_currentAngle - _lastUpdatedAngle) >= angleUpdateStep)
+            {
+                ApplyEnvironment(_currentAngle);
+                _lastUpdatedAngle = _currentAngle;
+            }
+        }
+
         private void ApplyEnvironment(float angle)
         {
-            // Рассчитываем положение в градиенте (от 0 до 1)
             float t = angle / 360f;
             Color color = colorGradient.Evaluate(t);
 
-            // Обновляем параметры материала
+            // Обновляем параметры материала (теперь редко, а не каждый кадр!)
             skyboxMaterial.SetFloat(RotationProperty, angle);
             skyboxMaterial.SetColor(TintProperty, color);
 
-            // Обновляем освещение сцены (чтобы скайбокс влиял на объекты)
-            // Внимание: вызов DynamicGI.UpdateEnvironment() каждый кадр может быть тяжелым.
-            // Если FPS падает, лучше вызывать его реже (например, через Coroutine или интервал).
+            // Обновляем освещение сцены
             DynamicGI.UpdateEnvironment();
         }
     }

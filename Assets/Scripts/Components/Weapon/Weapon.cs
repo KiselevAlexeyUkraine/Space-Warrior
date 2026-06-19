@@ -1,14 +1,19 @@
 using UnityEngine;
+using Lean.Pool;
+using UnityEngine.Serialization;
 
 namespace Components.Weapon
 {
     public class Weapon : MonoBehaviour
     {
-        public static Transform PROJECTILE_ANCHOR;
+        [SerializeField] private Transform projectileAnchor;
 
         [Header("Weapon Settings")]
         [SerializeField] private WeaponType _type = WeaponType.none;
         [SerializeField] private WeaponDefinition def;
+        
+        [Tooltip("Время жизни пули в секундах до возврата в пул")]
+        [SerializeField] private float projectileLifeTime = 3f; 
 
         [Header("References")]
         [SerializeField] private GameObject collar;
@@ -21,7 +26,6 @@ namespace Components.Weapon
 
         private void Awake()
         {
-            // Автоматический поиск Collar, если не задан вручную
             if (collar == null)
             {
                 Transform collarTransform = transform.Find("Collar");
@@ -36,11 +40,10 @@ namespace Components.Weapon
                 collarRenderer = collar.GetComponent<Renderer>();
             }
 
-            // Создание якоря для снарядов на сцене
-            if (PROJECTILE_ANCHOR == null)
+            if (projectileAnchor == null)
             {
                 GameObject anchor = new GameObject("_ProjectileAnchor");
-                PROJECTILE_ANCHOR = anchor.transform;
+                projectileAnchor = anchor.transform;
             }
         }
 
@@ -85,7 +88,6 @@ namespace Components.Weapon
 
             Vector3 velocity = Vector3.up * def.velocity;
 
-            // Инверсия направления для врагов (если пушка смотрит вниз)
             if (transform.up.y < 0)
             {
                 velocity.y *= -1f;
@@ -114,12 +116,10 @@ namespace Components.Weapon
 
         private void FireSpread(Vector3 baseVelocity)
         {
-            // Центральный снаряд
             Projectile projCenter = MakeProjectile();
             if (projCenter != null && projCenter.rigid != null) 
                 projCenter.rigid.linearVelocity = baseVelocity;
 
-            // Левый снаряд (+10 градусов)
             Projectile projLeft = MakeProjectile();
             if (projLeft != null && projLeft.rigid != null)
             {
@@ -127,7 +127,6 @@ namespace Components.Weapon
                 projLeft.rigid.linearVelocity = projLeft.transform.rotation * baseVelocity;
             }
 
-            // Правый снаряд (-10 градусов)
             Projectile projRight = MakeProjectile();
             if (projRight != null && projRight.rigid != null)
             {
@@ -141,7 +140,13 @@ namespace Components.Weapon
             if (def == null || def.projectilePrefab == null) 
                 return null;
 
-            GameObject projGO = Instantiate(def.projectilePrefab);
+            // Спавним пулю через LeanPool
+            GameObject projGO = LeanPool.Spawn(
+                def.projectilePrefab, 
+                collar.transform.position, 
+                Quaternion.identity, 
+                projectileAnchor
+            );
 
             if (transform.root.CompareTag("Hero"))
             {
@@ -149,14 +154,15 @@ namespace Components.Weapon
                 projGO.layer = LayerMask.NameToLayer("ProjectileHero");
             }
 
-            projGO.transform.position = collar.transform.position;
-            projGO.transform.SetParent(PROJECTILE_ANCHOR, true);
-
             Projectile projectile = projGO.GetComponent<Projectile>();
             if (projectile != null)
             {
                 projectile.type = _type;
             }
+
+            // МАГИЯ ОДНОЙ СТРОКИ: Говорим пулу автоматически вернуть этот объект 
+            // обратно в пул через указанное количество секунд (projectileLifeTime)
+            LeanPool.Despawn(projGO, projectileLifeTime);
 
             return projectile;
         }

@@ -1,8 +1,9 @@
 using UnityEngine;
 using Components.Weapon;
 using Components.Player.Helpers;
-using Components.Player; // Подключаем пространство имен аудио-сервиса
+using Components.Player; 
 using Zenject;
+using Lean.Pool;
 
 namespace Components.Enemy
 {
@@ -12,7 +13,7 @@ namespace Components.Enemy
         [Header("Параметры врага")]
         [SerializeField] protected float speed = 10f; 
         [SerializeField] protected float health = 10f;
-        [SerializeField] private int score = 100; // Очки за уничтожение (для будущего использования)
+        [SerializeField] private int score = 100; 
         
         public float showDamageDuration = 0.1f; 
         public float powerUpDropChance = 1f; 
@@ -30,10 +31,13 @@ namespace Components.Enemy
         
         private bool notifiedOfDestruction = false; 
         private Utils _utils;
-        private AudioService _audioService; // Поле для хранения ссылки на аудио-сервис
+        private AudioService _audioService; 
         private PlayerScore _playerScore;
+        private bool _isInitialized = false;
 
         protected BoundsCheck bndCheck;
+        
+        protected Main main;
 
         public Vector3 pos
         {
@@ -42,24 +46,62 @@ namespace Components.Enemy
         }
         
         [Inject]
-        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore)
+        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main)
         {
             _utils = utils;
             _audioService = audioService;
             _playerScore = playerScore;
+            this.main = main;
         }
 
         protected virtual void Awake()
         {
             bndCheck = GetComponent<BoundsCheck>();
-            
-            materials = _utils.GetAllMaterials(gameObject); 
+        }
+
+        protected virtual void Start()
+        {
+            // Инициализируем материалы один раз; допускаем падение Zenject для объектов из пула
+            EnsureMaterialsInitialized();
+        }
+
+        protected virtual void OnEnable()
+        {
+            notifiedOfDestruction = false;
+            showingDamage = false;
+
+            // Если враг достается из пула повторно, сбрасываем цвета к исходным
+            // Попробуем инициализировать материалы, если это не было сделано в Start (например при пуллинге)
+            EnsureMaterialsInitialized();
+
+            if (_isInitialized && materials != null)
+            {
+                UnShowDamage();
+            }
+        }
+
+        // Инициализация материалов и запоминание исходных цветов.
+        // Делаем локальный fallback на new Utils(), т.к. объекты, создаваемые через пуллинги,
+        // могут не получить Zenject-инъекции.
+        private void EnsureMaterialsInitialized()
+        {
+            if (_isInitialized) return;
+
+            if (_utils == null)
+            {
+                // Utils не зависит от Unity/Zenject, можно создать локально как fallback
+                _utils = new Utils();
+            }
+
+            materials = _utils.GetAllMaterials(gameObject) ?? new Material[0];
             originalColors = new Color[materials.Length];
-            
+
             for (int i = 0; i < materials.Length; i++)
             {
-                originalColors[i] = materials[i].color;
+                originalColors[i] = materials[i] != null ? materials[i].color : Color.white;
             }
+
+            _isInitialized = true;
         }
 
         protected virtual void Update()
@@ -73,11 +115,17 @@ namespace Components.Enemy
             
             if (bndCheck != null && bndCheck.offDown)
             {
-                Destroy(gameObject);
+                if (LeanPool.Links.ContainsKey(gameObject))
+                {
+                    LeanPool.Despawn(gameObject);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
             }
         }
 
-        // Абстрактный метод: каждый тип врага ОБЯЗАН реализовать свой алгоритм перемещения
         public abstract void Move();
 
         protected virtual void OnCollisionEnter(Collision collision)
@@ -88,15 +136,14 @@ namespace Components.Enemy
 
             Projectile p = otherGo.GetComponent<Projectile>();
 
-            // Если враг еще не на экране, игнорируем урон
             if (bndCheck != null && !bndCheck.isOnScreen)
             {
-                Destroy(otherGo);
+                SafeDespawn(otherGo);
                 return;
             }
 
             ProcessDamage(p.type);
-            Destroy(otherGo);
+            SafeDespawn(otherGo);
         }
 
         protected void ProcessDamage(WeaponType weaponType)
@@ -118,21 +165,35 @@ namespace Components.Enemy
                         _audioService.PlayOneShot(_explosionClip);
                     }
 
-                    // НАЧИСЛЯЕМ ОЧКИ ПЕРЕД СМЕРТЬЮ
                     _playerScore?.AddScore(score);
-
-                    Main.S.ShipDestroyed(this);
                     notifiedOfDestruction = true;
+                    
+                    main.ShipDestroyed(this);
                 }
-                Destroy(gameObject);
+            }
+        }
+
+        private void SafeDespawn(GameObject go)
+        {
+            if (go == null) return;
+
+            if (LeanPool.Links.ContainsKey(go))
+            {
+                LeanPool.Despawn(go);
+            }
+            else
+            {
+                Destroy(go);
             }
         }
 
         private void ShowDamage()
         {
+            if (materials == null) return;
+
             foreach (Material m in materials)
             {
-                m.color = Color.red;
+                if (m != null) m.color = Color.red;
             }
             showingDamage = true;
             damageDoneTime = Time.time + showDamageDuration;
@@ -140,9 +201,11 @@ namespace Components.Enemy
 
         private void UnShowDamage()
         {
+            if (materials == null) return;
+
             for (int i = 0; i < materials.Length; i++)
             {
-                if (materials[i] != null)
+                if (materials[i] != null && i < originalColors.Length)
                     materials[i].color = originalColors[i];
             }
             showingDamage = false;

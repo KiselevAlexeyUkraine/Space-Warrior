@@ -9,10 +9,16 @@ namespace Components.Player.Helpers
         {
             Renderer[] rends = go.GetComponentsInChildren<Renderer>();
             List<Material> mats = new List<Material>();
-            
+
             foreach (Renderer rend in rends)
             {
-                mats.Add(rend.material);
+                // Add all materials from the renderer (handles multi-material renderers)
+                if (rend == null) continue;
+                var rendMats = rend.materials; // returns all instance materials
+                if (rendMats != null && rendMats.Length > 0)
+                {
+                    mats.AddRange(rendMats);
+                }
             }
 
             return mats.ToArray();

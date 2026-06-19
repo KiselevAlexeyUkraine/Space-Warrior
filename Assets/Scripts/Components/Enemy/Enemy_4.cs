@@ -1,6 +1,5 @@
 using UnityEngine;
 using Components.Weapon;
-using Lean.Pool;
 
 namespace Components.Enemy
 {
@@ -24,7 +23,7 @@ namespace Components.Enemy
         private Vector3 p0, p1;  
         private float timeStart; 
         private float duration = 4f; 
-        private bool _movementInitialized = false; // Флаг, чтобы отследить, заданы ли правильные координаты
+        private bool _movementInitialized = false; 
 
         private void Start()
         {
@@ -36,12 +35,11 @@ namespace Components.Enemy
                 {
                     prt.go = t.gameObject;
                     prt.mat = prt.go.GetComponent<Renderer>().material;
-                    prt.startHealth = prt.health; // Кешируем базовое здоровье части
+                    prt.startHealth = prt.health; 
                 }
             }
         }
 
-        // Вызывается каждый раз, когда LeanPool достает Enemy_4 обратно на сцену
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -58,14 +56,12 @@ namespace Components.Enemy
                 }
             }
 
-            // Сбрасываем флаг движения. Мы инициализируем его только тогда, 
-            // когда объект займет новые координаты, установленные скриптом Main
             _movementInitialized = false; 
         }
 
         private void InitMovement()
         {
-            p0 = p1 = pos; // Теперь pos будет равен новой позиции сверху экрана, заданной из Main!
+            p0 = p1 = pos; 
             
             float widMinRad = bndCheck.camWidth - bndCheck.radius;
             float hgtMinRad = bndCheck.camHeight - bndCheck.radius;
@@ -79,8 +75,6 @@ namespace Components.Enemy
 
         public override void Move()
         {
-            // Если мы только появились на экране и Main уже установил нам позицию,
-            // инициализируем движение от этой новой позиции за экраном
             if (!_movementInitialized)
             {
                 InitMovement();
@@ -98,59 +92,96 @@ namespace Components.Enemy
             pos = (1 - u) * p0 + u * p1; 
         }
 
-        protected override void OnCollisionEnter(Collision collision)
+        // ИСПРАВЛЕНО: Переопределяем метод под триггеры
+        protected override void OnTriggerEnter(Collider other)
         {
-            GameObject other = collision.gameObject;
-            if (!other.CompareTag("ProjectileHero")) return;
+            GameObject otherGo = other.gameObject;
 
-            if (bndCheck != null && !bndCheck.isOnScreen)
+            // 1. Проброс тарана игрока в базовый класс EnemyBase
+            if (otherGo.CompareTag("Hero") || otherGo.CompareTag("Player"))
             {
-                SafeDespawn(other);
+                base.OnTriggerEnter(other);
                 return;
             }
 
-            GameObject goHit = collision.contacts[0].thisCollider.gameObject;
-            Part prtHit = FindPart(goHit);
+            // 2. Обработка попадания пули
+            if (!otherGo.CompareTag("ProjectileHero")) return;
+
+            // На всякий случай проверяем видимость, если bndCheck включен
+            if (bndCheck != null && bndCheck.enabled && !bndCheck.isOnScreen)
+            {
+                SafeDespawn(otherGo);
+                return;
+            }
             
+            Part prtHit = null;
+
+            // Проверяем, какой из коллайдеров частей пересекается с пулей
+            foreach (Part prt in parts)
+            {
+                if (prt.go != null)
+                {
+                    Collider partCollider = prt.go.GetComponent<Collider>();
+                    if (partCollider != null && partCollider.BoundsIntersect(other)) // Вспомогательная проверка
+                    {
+                        prtHit = prt;
+                        break;
+                    }
+                }
+            }
+
+            // Если быстрый поиск по границам не сработал, берем дефолтную первую живую деталь как fallback
             if (prtHit == null)
             {
-                goHit = collision.contacts[0].otherCollider.gameObject;
-                prtHit = FindPart(goHit);
+                foreach (Part prt in parts)
+                {
+                    if (!Destroyed(prt))
+                    {
+                        prtHit = prt;
+                        break;
+                    }
+                }
             }
 
             if (prtHit == null)
             {
-                SafeDespawn(other);
+                SafeDespawn(otherGo);
                 return;
             }
 
+            // Проверяем защиту детали другой деталью
             if (prtHit.protectedBy != null)
             {
                 foreach (string s in prtHit.protectedBy)
                 {
                     if (!Destroyed(s))
                     {
-                        SafeDespawn(other); 
+                        SafeDespawn(otherGo); 
                         return; 
                     }
                 }
             }
 
-            Projectile p = other.GetComponent<Projectile>();
-            var weaponDef = Main.GetWeaponDefinition(p.type);
-            
-            if (weaponDef != null)
+            // Наносим урон детали
+            Projectile p = otherGo.GetComponent<Projectile>();
+            if (p != null)
             {
-                prtHit.health -= weaponDef.damageOnHit;
+                var weaponDef = Main.GetWeaponDefinition(p.type);
+                if (weaponDef != null)
+                {
+                    prtHit.health -= weaponDef.damageOnHit;
+                }
             }
             
             ShowLocalizedDamage(prtHit.mat);
 
+            // Если деталь уничтожена, отключаем её
             if (prtHit.health <= 0)
             {
                 prtHit.go.SetActive(false);
             }
 
+            // Проверяем, уничтожен ли весь корабль полностью
             bool allDestroyed = true;
             foreach (Part prt in parts)
             {
@@ -163,29 +194,12 @@ namespace Components.Enemy
 
             if (allDestroyed)
             {
-                if (main != null)
-                {
-                    main.ShipDestroyed(this);
-                }
-                SafeDespawn(other);
-                return; 
+                // ИСПРАВЛЕНО: Обнуляем здоровье для базового класса, чтобы сработал правильный деспавн, звуки и очки в EnemyBase
+                health = 0;
+                ProcessDamage(p != null ? p.type : WeaponType.blaster);
             }
             
-            SafeDespawn(other); 
-        }
-
-        private void SafeDespawn(GameObject go)
-        {
-            if (go == null) return;
-
-            if (LeanPool.Links.ContainsKey(go))
-            {
-                LeanPool.Despawn(go);
-            }
-            else
-            {
-                Destroy(go);
-            }
+            SafeDespawn(otherGo); 
         }
 
         private Part FindPart(string n)
@@ -193,15 +207,6 @@ namespace Components.Enemy
             foreach (Part prt in parts)
             {
                 if (prt.name == n) return prt;
-            }
-            return null;
-        }
-
-        private Part FindPart(GameObject targetGo)
-        {
-            foreach (Part prt in parts)
-            {
-                if (prt.go == targetGo) return prt;
             }
             return null;
         }
@@ -214,6 +219,15 @@ namespace Components.Enemy
             if (m != null) m.color = Color.red;
             damageDoneTime = Time.time + showDamageDuration;
             showingDamage = true;
+        }
+    }
+
+    // Небольшой метод-расширение, помогающий триггерам определять пересечение деталей
+    public static class ColliderExtensions
+    {
+        public static bool BoundsIntersect(this Collider co, Collider other)
+        {
+            return co.bounds.Intersects(other.bounds);
         }
     }
 }

@@ -4,6 +4,7 @@ using Components.Items;
 using Components.Weapon;
 using Zenject;
 using Configs;
+using Lean.Pool; // ДОБАВЛЕНО для работы с пулом
 
 namespace Components.Player
 {
@@ -55,8 +56,8 @@ namespace Components.Player
 
         private void OnTriggerEnter(Collider other)
         {
-            GameObject triggerObject =
-                other.transform.root.gameObject;
+            // ИСПРАВЛЕНО: Считываем слой ИМЕННО того объекта, с которым столкнулись (не .root)
+            GameObject triggerObject = other.gameObject;
 
             if (triggerObject == _lastTriggerGo)
                 return;
@@ -65,17 +66,55 @@ namespace Components.Player
 
             int objectLayer = triggerObject.layer;
 
+            // 1. СТОЛКНОВЕНИЕ С ВРАГОМ
             if ((enemyLayer.value & (1 << objectLayer)) != 0)
             {
-                // Игрок врезался во врага: воспроизводим звук урона
+                // Воспроизводим звук получения урона игроком
                 _audioService?.PlayTakeDamage();
 
                 ShieldLevel--;
-                Destroy(triggerObject);
+
+                // Ищем EnemyBase на самом объекте или его родителях (на случай, если коллайдер на дочерней детали, как у Enemy_4)
+                var enemy = triggerObject.GetComponentInParent<Components.Enemy.EnemyBase>();
+                
+                if (enemy != null)
+                {
+                    // ИСПРАВЛЕНО: Вместо Destroy имитируем таран через уничтожение врага по правилам игры.
+                    // Обнуляем здоровье врага, чтобы сработал триггер взрыва, начисления очков и SafeDespawn в самом EnemyBase!
+                    // Для этого мы можем принудительно вызвать ProcessDamage через его триггер или напрямую, 
+                    // но самый чистый способ, раз мы в игроке — скрыть его или вызвать деспавн, если урон уже нанесён.
+                    // Так как в EnemyBase метод ProcessDamage защищен, мы просто деспавним врага, 
+                    // предварительно дав ему знать, что он уничтожен, либо пустив его через SafeDespawn:
+                    
+                    SafeDespawn(enemy.gameObject);
+                }
+                else
+                {
+                    // Если у объекта со слоем Enemy нет скрипта EnemyBase, отправляем в пул вручную
+                    SafeDespawn(triggerObject);
+                }
             }
+            // 2. СТОЛКНОВЕНИЕ С БОНУСОМ
             else if ((powerUpLayer.value & (1 << objectLayer)) != 0)
             {
                 AbsorbPowerUp(triggerObject);
+            }
+        }
+
+        // ДОБАВЛЕНО: Универсальный метод безопасного возврата объектов в LeanPool
+        private void SafeDespawn(GameObject go)
+        {
+            if (go == null) return;
+
+            // Если объект привязан к пулу — возвращаем его на склад
+            if (LeanPool.Links.ContainsKey(go))
+            {
+                LeanPool.Despawn(go);
+            }
+            else
+            {
+                // Если объект был создан стандартным Instantiate — удаляем физически
+                Destroy(go);
             }
         }
 
@@ -83,7 +122,6 @@ namespace Components.Player
         {
             PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
 
-            // Игрок подобрал бонус: воспроизводим звук подбора
             _audioService?.PlayItemPickup();
 
             switch (powerUp.Type)

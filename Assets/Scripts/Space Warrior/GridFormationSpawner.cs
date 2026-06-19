@@ -2,6 +2,7 @@ using Components.Enemy;
 using UnityEngine;
 using Zenject;
 using Lean.Pool;
+using Servise;
 
 public class GridFormationSpawner : MonoBehaviour
 {
@@ -22,7 +23,7 @@ public class GridFormationSpawner : MonoBehaviour
     [SerializeField] private float spacingY = 1.0f;
 
     [Header("Spawn Settings")]
-    [Tooltip("Префаб врага Enemy_DontMove.")]
+    [Tooltip("Префаб врага (должен наследоваться от EnemyBase и иметь галочку Use Grid Formation).")]
     [SerializeField] private GameObject enemyPrefab;
 
     [Tooltip("Скорость спавна (врагов в секунду).")]
@@ -30,15 +31,18 @@ public class GridFormationSpawner : MonoBehaviour
 
     private BoundsCheck _bndCheck;
     private DiContainer _container;
+    private AnimatorService _animatorService; 
     
     private int _currentColumn = 0;
     private int _currentRow = 0;
     private bool _formationComplete = false;
+    private int _prefabLayer; // Кэшируем слой префаба
 
     [Inject]
-    private void Construct(DiContainer container)
+    private void Construct(DiContainer container, AnimatorService animatorService)
     {
         _container = container;
+        _animatorService = animatorService;
     }
 
     private void Awake()
@@ -52,10 +56,27 @@ public class GridFormationSpawner : MonoBehaviour
         if (formationRoot == null)
         {
             formationRoot = this.transform;
-            Debug.LogWarning("Formation Root не задан! Испольуется позиция самого спавнера.", this);
+            Debug.LogWarning("Formation Root не задан! Используется позиция самого спавнера.", this);
         }
 
-        // Запуск спавна по интервалу
+        // Запоминаем оригинальный слой префаба, чтобы не читать его каждый раз
+        if (enemyPrefab != null)
+        {
+            _prefabLayer = enemyPrefab.layer;
+        }
+    }
+
+    private void Start()
+    {
+        if (_animatorService != null)
+        {
+            _animatorService.StartAnimation(formationRoot);
+        }
+        else
+        {
+            Debug.LogError("AnimatorService не был внедрен в GridFormationSpawner!");
+        }
+
         Invoke(nameof(SpawnNextGridEnemy), 1f / spawnPerSecond);
     }
 
@@ -63,37 +84,40 @@ public class GridFormationSpawner : MonoBehaviour
     {
         if (_formationComplete) return;
 
-        // 1. Спавним врага через LeanPool
         GameObject go = LeanPool.Spawn(enemyPrefab);
-
-        // 2. Внедряем Zenject зависимости (Utils, Main, etc.)
         _container.InjectGameObject(go);
 
-        // 3. Задаем начальную позицию появления (сверху за границей экрана)
         float spawnY = _bndCheck.camHeight + 2f;
         float spawnX = Random.Range(-_bndCheck.camWidth + 1f, _bndCheck.camWidth - 1f);
-        go.transform.position = new Vector3(spawnX, spawnY, 0);
+        go.transform.position = new Vector3(spawnX, spawnY, 0f);
 
-        // 4. Рассчитываем целевую позицию внутри сетки относительно formationRoot
+        // Назначаем родителя
+        go.transform.SetParent(formationRoot, true); 
+
+        // ИСПРАВЛЕНО: Принудительно возвращаем объекту и всем его дочерним элементам (если есть) слой префаба
+        SetLayerRecursively(go, _prefabLayer);
+
         Vector3 localTargetPos = new Vector3(
             _currentColumn * spacingX,
-            _currentRow * spacingY, // Если нужно, чтобы ряды строились вниз, замени на: -_currentRow * spacingY
-            0
+            _currentRow * spacingY,
+            0f 
         );
-        Vector3 globalTargetGridPos = formationRoot.position + localTargetPos;
 
-        // 5. Передаем точку компоненту врага
-        Enemy_DontMove enemyScript = go.GetComponent<Enemy_DontMove>();
+        EnemyBase enemyScript = go.GetComponent<EnemyBase>();
         if (enemyScript != null)
         {
-            enemyScript.SetTargetPosition(globalTargetGridPos);
+            enemyScript.SetTargetLocalPosition(localTargetPos);
+
+            if (!enemyScript.UseGridFormation)
+            {
+                Debug.LogWarning($"[Внимание] Вы заспавнили врага {go.name} через GridSpawner, но на его префабе не стоит галочка 'Use Grid Formation'!", go);
+            }
         }
         else
         {
-            Debug.LogError("На префабе отсутствует скрипт Enemy_DontMove!", go);
+            Debug.LogError($"На префабе {go.name} отсутствует скрипт, наследуемый от EnemyBase!", go);
         }
 
-        // 6. Считаем индексы для следующего врага
         _currentColumn++;
         if (_currentColumn >= maxColumns)
         {
@@ -104,11 +128,26 @@ public class GridFormationSpawner : MonoBehaviour
             {
                 _formationComplete = true;
                 Debug.Log("Сетка врагов полностью заполнена!");
-                return; // Прекращаем вызовы Invoke
+                return;
             }
         }
 
-        // Повторяем вызов для следующего элемента
         Invoke(nameof(SpawnNextGridEnemy), 1f / spawnPerSecond);
+    }
+
+    // Вспомогательный метод для изменения слоя объекта и всех его подобъектов (моделей, крыльев, деталей)
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null) return;
+        
+        obj.layer = newLayer;
+        
+        foreach (Transform child in obj.transform)
+        {
+            if (child != null)
+            {
+                SetLayerRecursively(child.gameObject, newLayer);
+            }
+        }
     }
 }

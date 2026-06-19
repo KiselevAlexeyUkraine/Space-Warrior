@@ -18,6 +18,10 @@ namespace Components.Enemy
         public float showDamageDuration = 0.1f; 
         public float powerUpDropChance = 1f; 
 
+        [Header("Grid Formation (Новое)")]
+        [Tooltip("Если галочка стоит, враг летит на локальную позицию сетки formationRoot и отключает BoundsCheck.")]
+        [SerializeField] private bool useGridFormation = false;
+
         [Header("Audio Settings")]
         [Tooltip("Звук взрыва (смерти) этого конкретного врага")]
         [SerializeField] private AudioClip _explosionClip; 
@@ -35,8 +39,13 @@ namespace Components.Enemy
         private PlayerScore _playerScore;
         private bool _isInitialized = false;
 
+        // Переменные для логики движения по сетке
+        private Vector3 _targetLocalPosition;
+        private bool _hasGridTarget = false;
+        private bool _reachedGridTarget = false;
+        private float _maxHealthCached;
+
         protected BoundsCheck bndCheck;
-        
         protected Main main;
 
         public Vector3 pos
@@ -44,6 +53,8 @@ namespace Components.Enemy
             get => transform.position;
             set => transform.position = value;
         }
+
+        public bool UseGridFormation => useGridFormation;
         
         [Inject]
         private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main)
@@ -57,11 +68,11 @@ namespace Components.Enemy
         protected virtual void Awake()
         {
             bndCheck = GetComponent<BoundsCheck>();
+            _maxHealthCached = health;
         }
 
         protected virtual void Start()
         {
-            // Инициализируем материалы один раз; допускаем падение Zenject для объектов из пула
             EnsureMaterialsInitialized();
         }
 
@@ -69,27 +80,31 @@ namespace Components.Enemy
         {
             notifiedOfDestruction = false;
             showingDamage = false;
+            health = _maxHealthCached;
 
-            // Если враг достается из пула повторно, сбрасываем цвета к исходным
-            // Попробуем инициализировать материалы, если это не было сделано в Start (например при пуллинге)
+            _hasGridTarget = false;
+            _reachedGridTarget = false;
+
             EnsureMaterialsInitialized();
 
             if (_isInitialized && materials != null)
             {
                 UnShowDamage();
             }
+
+            // Автоматически настраиваем BoundsCheck в зависимости от типа движения
+            if (bndCheck != null)
+            {
+                bndCheck.enabled = !useGridFormation;
+            }
         }
 
-        // Инициализация материалов и запоминание исходных цветов.
-        // Делаем локальный fallback на new Utils(), т.к. объекты, создаваемые через пуллинги,
-        // могут не получить Zenject-инъекции.
         private void EnsureMaterialsInitialized()
         {
             if (_isInitialized) return;
 
             if (_utils == null)
             {
-                // Utils не зависит от Unity/Zenject, можно создать локально как fallback
                 _utils = new Utils();
             }
 
@@ -106,44 +121,73 @@ namespace Components.Enemy
 
         protected virtual void Update()
         {
-            Move();
+            // Главное разделение логики перемещения
+            if (useGridFormation)
+            {
+                HandleGridMovement();
+            }
+            else
+            {
+                Move();
+            }
 
             if (showingDamage && Time.time > damageDoneTime)
             {
                 UnShowDamage();
             }
             
-            if (bndCheck != null && bndCheck.offDown)
+            if (bndCheck != null && bndCheck.enabled && bndCheck.offDown)
             {
-                if (LeanPool.Links.ContainsKey(gameObject))
-                {
-                    LeanPool.Despawn(gameObject);
-                }
-                else
-                {
-                    Destroy(gameObject);
-                }
+                SafeDespawn(gameObject);
             }
         }
 
         public abstract void Move();
 
-        protected virtual void OnCollisionEnter(Collision collision)
+        // Логика полета в точку построения сетки
+        private void HandleGridMovement()
         {
-            GameObject otherGo = collision.gameObject;
-            
-            if (!otherGo.CompareTag("ProjectileHero")) return;
+            if (!_hasGridTarget || _reachedGridTarget) return;
 
-            Projectile p = otherGo.GetComponent<Projectile>();
-
-            if (bndCheck != null && !bndCheck.isOnScreen)
+            if (Vector3.Distance(transform.localPosition, _targetLocalPosition) > 0.05f)
             {
-                SafeDespawn(otherGo);
-                return;
+                Vector3 nextLocalPos = Vector3.MoveTowards(transform.localPosition, _targetLocalPosition, speed * Time.deltaTime);
+                nextLocalPos.z = 0f; 
+                transform.localPosition = nextLocalPos;
             }
+            else
+            {
+                transform.localPosition = _targetLocalPosition;
+                _reachedGridTarget = true;
+            }
+        }
 
-            ProcessDamage(p.type);
-            SafeDespawn(otherGo);
+        // Публичный метод, вызываемый из спавнера вместо удаления старого скрипта
+        public void SetTargetLocalPosition(Vector3 localTargetPos)
+        {
+            _targetLocalPosition = new Vector3(localTargetPos.x, localTargetPos.y, 0f);
+            _hasGridTarget = true;
+            _reachedGridTarget = false;
+        }
+
+        protected virtual void OnTriggerEnter(Collider other)
+        {
+            GameObject otherGo = other.gameObject;
+
+            Debug.Log($"[ОБЩИЙ ТРИГГЕР] Враг {gameObject.name} пересёкся с объектом: {otherGo.name} (Тег: {otherGo.tag})");
+            
+            if (otherGo.CompareTag("ProjectileHero"))
+            {
+                Debug.Log($"[ПОПАДАНИЕ СРАБОТАЛО] В {gameObject.name} прилетела триггерная пуля {otherGo.name}");
+                
+                Projectile p = otherGo.GetComponent<Projectile>();
+                if (p != null)
+                {
+                    ProcessDamage(p.type);
+                }
+                
+                SafeDespawn(otherGo);
+            }
         }
 
         protected void ProcessDamage(WeaponType weaponType)
@@ -173,7 +217,7 @@ namespace Components.Enemy
             }
         }
 
-        private void SafeDespawn(GameObject go)
+        protected void SafeDespawn(GameObject go)
         {
             if (go == null) return;
 
@@ -186,8 +230,6 @@ namespace Components.Enemy
                 Destroy(go);
             }
         }
-
-        // Найди эти методы в самом низу EnemyBase.cs и замени private на protected:
 
         protected void ShowDamage()
         {

@@ -134,13 +134,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24416d50ac014861a2a3e2e48eb12276, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _gameCanvas: {fileID: 0}
+  _main: {fileID: 0}
+  _gameCanvas: {fileID: 6226594891086173712, guid: c0ab2cf69005b704c9f56b6ec58471e0, type: 3}
   _pauseService: {fileID: 3005042478081503269, guid: 5f424492f9a0ab745a38f56c77952695, type: 3}
   _player: {fileID: 5113954445097791138, guid: bca9147073e322c468bd8af87297ddbc, type: 3}
   _playerSpawn: {fileID: 0}
   _pauseSwitcher: {fileID: 3289420616801860072, guid: e9148f9d29c3489499cf36870a3e1355, type: 3}
-  _animatorService: {fileID: 4495154221041446092, guid: def86242b3c5028438127a8bf6c4182a, type: 3}
-  questManager: {fileID: 6591443514123417208, guid: d641f9ffb14e94c4abc00e8d06013abd, type: 3}
+  _animatorService: {fileID: 32746105465805495, guid: def86242b3c5028438127a8bf6c4182a, type: 3}
 --- !u!1 &3789004722582447576
 GameObject:
   m_ObjectHideFlags: 0
@@ -215,28 +215,28 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4397818267770809192}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31ca4e55df26a594385e70618b86715d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skyboxMaterial: {fileID: 2100000, guid: 427eddb83437c504f8b8fc119303758b, type: 2}
-  rotationDuration: 400
+  skyboxMaterial: {fileID: 2100000, guid: 528151d023d6b4041a05f751069e15b6, type: 2}
+  rotationDuration: 500
   colorGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 0.43137255}
-    key1: {r: 1, g: 1, b: 1, a: 0.5019608}
-    key2: {r: 0, g: 0, b: 0, a: 0}
-    key3: {r: 0, g: 0, b: 0, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
+    key1: {r: 0.23760104, g: 1, b: 0, a: 0.5019608}
+    key2: {r: 1, g: 0.92156863, b: 0.015686275, a: 0}
+    key3: {r: 1, g: 0, b: 0.05809641, a: 0}
+    key4: {r: 0, g: 0.19833922, b: 1, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
     ctime0: 0
-    ctime1: 65535
-    ctime2: 0
-    ctime3: 0
-    ctime4: 0
+    ctime1: 15806
+    ctime2: 33539
+    ctime3: 52235
+    ctime4: 65535
     ctime5: 0
     ctime6: 0
     ctime7: 0
@@ -250,8 +250,9 @@ MonoBehaviour:
     atime7: 0
     m_Mode: 0
     m_ColorSpace: -1
-    m_NumColorKeys: 2
+    m_NumColorKeys: 5
     m_NumAlphaKeys: 2
+  angleUpdateStep: 0.1
 --- !u!1 &5810070333311292263
 GameObject:
   m_ObjectHideFlags: 0

@@ -483,105 +483,9 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 963194229}
     - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: _gameCanvas
-      value: 
-      objectReference: {fileID: 6226594891086173712, guid: c0ab2cf69005b704c9f56b6ec58471e0, type: 3}
-    - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
       propertyPath: _playerSpawn
       value: 
       objectReference: {fileID: 887688787}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: skyboxMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: 528151d023d6b4041a05f751069e15b6, type: 2}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: angleUpdateStep
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: rotationDuration
-      value: 200
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.ctime1
-      value: 15806
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.ctime2
-      value: 33539
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.ctime3
-      value: 52235
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.ctime4
-      value: 65535
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key0.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key0.g
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key0.r
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key1.b
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key1.g
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key1.r
-      value: 0.23760104
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key2.b
-      value: 0.015686275
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key2.g
-      value: 0.92156863
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key2.r
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key3.b
-      value: 0.05809641
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key3.g
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key3.r
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key4.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.key4.g
-      value: 0.19833922
-      objectReference: {fileID: 0}
-    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
-      propertyPath: colorGradient.m_NumColorKeys
-      value: 5
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -884,12 +788,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b62cdbb70a0e9f4e8245c33c6132ab6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridFormationSpawner
-  formationRoot: {fileID: 963194228}
+  formationRoot: {fileID: 7215469652385854143}
   maxColumns: 5
   maxRows: 4
   spacingX: 8
   spacingY: 8
-  enemyPrefab: {fileID: 7654880680303113404, guid: 4bf85699f0a58964ab3d532f08b7c208, type: 3}
+  enemyPrefab: {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
   spawnPerSecond: 2
 --- !u!1 &1241598046
 GameObject:
@@ -1009,7 +913,7 @@ Transform:
   m_GameObject: {fileID: 7772110012771388587}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.2, y: -3.6, z: 0}
+  m_LocalPosition: {x: 0, y: -4, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

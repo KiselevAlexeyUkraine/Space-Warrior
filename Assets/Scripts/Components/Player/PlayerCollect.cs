@@ -4,7 +4,7 @@ using Components.Items;
 using Components.Weapon;
 using Zenject;
 using Configs;
-using Lean.Pool; // ДОБАВЛЕНО для работы с пулом
+using Lean.Pool;
 
 namespace Components.Player
 {

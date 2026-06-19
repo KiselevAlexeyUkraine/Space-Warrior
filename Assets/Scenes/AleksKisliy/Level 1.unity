@@ -790,10 +790,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridFormationSpawner
   formationRoot: {fileID: 7215469652385854143}
   maxColumns: 5
-  maxRows: 4
+  maxRows: 5
   spacingX: 8
   spacingY: 8
-  enemyPrefab: {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
+  waves:
+  - waveName: 1
+    firstEnemySettings:
+      enemyPrefab: {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+      startRow: 1
+      endRow: 3
+      rowStep: 2
+      columnStep: 2
+      prefabLayer: 0
+    secondEnemySettings:
+      enemyPrefab: {fileID: 5240148939293931298, guid: 9a14aaf8c1107aa499255a6224e86190, type: 3}
+      startRow: 3
+      endRow: 5
+      rowStep: 2
+      columnStep: 2
+      prefabLayer: 0
+  - waveName: 2
+    firstEnemySettings:
+      enemyPrefab: {fileID: 5240148939293931298, guid: 9a14aaf8c1107aa499255a6224e86190, type: 3}
+      startRow: 1
+      endRow: 2
+      rowStep: 2
+      columnStep: 2
+      prefabLayer: 0
+    secondEnemySettings:
+      enemyPrefab: {fileID: 6238323985394983492, guid: a47cfb8f656379f48a77a422a4e3f2b0, type: 3}
+      startRow: 2
+      endRow: 5
+      rowStep: 2
+      columnStep: 2
+      prefabLayer: 0
   spawnPerSecond: 2
 --- !u!1 &1241598046
 GameObject:

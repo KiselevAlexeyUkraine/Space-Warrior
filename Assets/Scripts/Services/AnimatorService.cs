@@ -1,6 +1,7 @@
 using UnityEngine;
 using PrimeTween;
 using System.Collections;
+using System;
 
 namespace Servise
 {
@@ -23,26 +24,15 @@ namespace Servise
         private Vector3 _startPosition;
         private Coroutine _animationCoroutine;
         private bool _isMovingRight = false;
-        private bool _spawningActive = true; // Флаг, указывающий, что идет старт уровня / спавн
 
-        /// <summary>
-        /// Метод инициализации анимации. Вызывается из Spawner-а через Zenject
-        /// </summary>
         public void StartAnimation(Transform root)
         {
-            if (_animationCoroutine != null)
-            {
-                StopCoroutine(_animationCoroutine);
-            }
-            if (_formationRoot != null)
-            {
-                Tween.StopAll(_formationRoot);
-            }
+            if (_animationCoroutine != null) StopCoroutine(_animationCoroutine);
+            if (_formationRoot != null) Tween.StopAll(_formationRoot);
 
             _formationRoot = root;
             _startPosition = _formationRoot.position;
             _isMovingRight = false;
-            _spawningActive = true; // В начале игры разрешаем движение без проверки количества детей
 
             _animationCoroutine = StartCoroutine(FormationMovementLoop());
         }
@@ -51,25 +41,10 @@ namespace Servise
         {
             if (_formationRoot == null) yield break;
 
-            // Небольшая задержка перед стартом (по желанию), чтобы первый враг успел заспавниться
             yield return new WaitForSeconds(0.2f);
 
             while (true)
             {
-                // ИСПРАВЛЕНО: Если спавн завершен и детей не осталось — только тогда сбрасываем сетку
-                if (!_spawningActive && _formationRoot.childCount == 0)
-                {
-                    ResetFormation();
-                    yield break;
-                }
-
-                // Переключаем флаг спавна, как только появился хотя бы один враг 
-                // (или если спавнер заполнил сетку полностью)
-                if (_spawningActive && _formationRoot.childCount > 0)
-                {
-                    _spawningActive = false;
-                }
-
                 // 1. Рассчитываем движение по оси X
                 float targetX = _isMovingRight ? maxX : minX;
                 Vector3 targetPositionX = new Vector3(targetX, _formationRoot.position.y, _formationRoot.position.z);
@@ -77,15 +52,8 @@ namespace Servise
                 float distanceX = Mathf.Abs(_formationRoot.position.x - targetX);
                 float durationX = distanceX / speed;
 
-                // Используем Linear, чтобы движение не замедлялось у краев экрана
                 Tween moveXTween = Tween.Position(_formationRoot, targetPositionX, durationX, Ease.Linear);
                 yield return moveXTween.ToYieldInstruction();
-
-                if (!_spawningActive && _formationRoot.childCount == 0)
-                {
-                    ResetFormation();
-                    yield break;
-                }
 
                 // 2. Шаг по оси Y вниз
                 Vector3 targetPositionY = _formationRoot.position + new Vector3(0, stepY, 0);
@@ -99,25 +67,35 @@ namespace Servise
             }
         }
 
-        private void ResetFormation()
+        /// <summary>
+        /// Сбрасывает сетку на стартовую позицию и выполняет действие по завершению возврата.
+        /// </summary>
+        public void ResetFormationAndCall(Action onResetComplete)
         {
-            if (_formationRoot == null) return;
+            if (_animationCoroutine != null) StopCoroutine(_animationCoroutine);
 
-            Debug.Log("Все враги уничтожены! Возвращаем переданный трансформ в исходную позицию.");
+            if (_formationRoot == null)
+            {
+                onResetComplete?.Invoke();
+                return;
+            }
+
+            Debug.Log("Сбрасываем сетку на стартовую позицию перед новой волной...");
             Tween.StopAll(_formationRoot);
-            Tween.Position(_formationRoot, _startPosition, 1f, Ease.InOutQuad);
+            
+            // Плавно возвращаем в начальную точку за 1.2 секунды
+            Tween.Position(_formationRoot, _startPosition, 1.2f, Ease.InOutQuad)
+                .OnComplete(() =>
+                {
+                    // Когда трансформ вернулся в центр — запускаем колбэк (спавн следующей волны)
+                    onResetComplete?.Invoke();
+                });
         }
 
         private void OnDestroy()
         {
-            if (_animationCoroutine != null)
-            {
-                StopCoroutine(_animationCoroutine);
-            }
-            if (_formationRoot != null)
-            {
-                Tween.StopAll(_formationRoot);
-            }
+            if (_animationCoroutine != null) StopCoroutine(_animationCoroutine);
+            if (_formationRoot != null) Tween.StopAll(_formationRoot);
         }
     }
 }

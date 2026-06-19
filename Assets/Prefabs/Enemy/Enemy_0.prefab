@@ -303,7 +303,7 @@ MonoBehaviour:
   score: 100
   showDamageDuration: 0.1
   powerUpDropChance: 1
-  useGridFormation: 1
+  useGridFormation: 0
   _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
   originalColors: []
   materials: []

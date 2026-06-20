@@ -796,14 +796,14 @@ MonoBehaviour:
   waves:
   - waveName: 1
     firstEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: b9993d5f3e7b9e940bd012fdd94d7b15, type: 3}
       startRow: 1
       endRow: 3
       rowStep: 2
       columnStep: 2
       prefabLayer: 0
     secondEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
       startRow: 3
       endRow: 5
       rowStep: 2

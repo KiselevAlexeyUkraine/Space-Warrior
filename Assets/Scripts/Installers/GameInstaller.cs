@@ -23,7 +23,6 @@ namespace Installers
 
         public override void InstallBindings()
         {
-
             Container.Bind<Main>().FromInstance(_main).AsSingle().NonLazy();
 
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
@@ -45,7 +44,19 @@ namespace Installers
                 _player, _playerSpawn.transform.position, _playerSpawn.transform.rotation, null
             );
           
+            // Оставляем привязку основного компонента
             Container.Bind<PlayerComponent>().FromComponentOn(player).AsSingle().NonLazy();
+
+            // ИСПРАВЛЕНО: Находим дочерний скрипт PlayerMove и биндим его отдельно
+            var playerMove = player.GetComponentInChildren<PlayerMove>();
+            if (playerMove != null)
+            {
+                Container.Bind<PlayerMove>().FromInstance(playerMove).AsSingle().NonLazy();
+            }
+            else
+            {
+                Debug.LogError("[GameInstaller] Компонент PlayerMove не найден в дочерних объектах префаба игрока!", this);
+            }
         }
     }
 }

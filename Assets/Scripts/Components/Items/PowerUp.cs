@@ -1,117 +1,125 @@
 using UnityEngine;
 using Components.Weapon;
 using Level;
+using Lean.Pool;
+using Zenject;
 
 namespace Components.Items
 {
     public sealed class PowerUp : MonoBehaviour
-{
-    [Header("Set in Inspector")]
-    [Tooltip("Минимальная и максимальная скорость вращения по осям X, Y, Z.")]
-    [SerializeField] private Vector2 rotMinMax = new Vector2(15, 90);
-
-    [Tooltip("Минимальная и максимальная скорость линейного движения (дрейфа).")]
-    [SerializeField] private Vector2 driftMinMax = new Vector2(0.25f, 2f);
-
-    [Tooltip("Время жизни бонуса до начала исчезновения (в секундах).")]
-    [SerializeField] private float lifeTime = 6f;
-
-    [Tooltip("Продолжительность эффекта исчезновения (в секундах).")]
-    [SerializeField] private float fadeTime = 4f;
-
-    [Header("Set Dynamically")]
-    [Tooltip("Текущий тип оружия, который дает этот бонус.")]
-    [SerializeField] private WeaponType type;
-    
-    public WeaponType Type => type;
-
-    [Tooltip("Ссылка на дочерний объект Cube.")]
-    [SerializeField] private GameObject cube;
-
-    [Tooltip("Ссылка на компонент TextMesh для отображения буквы бонуса.")]
-    [SerializeField] private TextMesh letter;
-
-    [Tooltip("Скорость вращения куба в секунду по трем осям.")]
-    [SerializeField] private Vector3 rotPerSecond;
-
-    [Tooltip("Время появления (рождения) бонуса.")]
-    [SerializeField] private float birthTime;
-
-    private Renderer cubeRend;
-    private Vector3 movementVelocity; 
-
-    private void Awake()
     {
-        // Инициализация компонентов
-        cube = transform.Find("Cube").gameObject;
-        letter = GetComponent<TextMesh>();
-        cubeRend = cube.GetComponent<Renderer>();
+        [Header("Set Inspector")]
+        [SerializeField] private Vector2 rotMinMax = new Vector2(15, 90);
+        [SerializeField] private Vector2 driftMinMax = new Vector2(0.25f, 2f);
+        [SerializeField] private float lifeTime = 6f;
+        [SerializeField] private float fadeTime = 4f;
 
-        // Направление движения на плоскости XY
-        Vector3 vel = Random.onUnitSphere; 
-        vel.z = 0;      
-        vel.Normalize();
+        [Header("Set Dynamically")]
+        [SerializeField] private WeaponType type;
         
-        // Скорость дрейфа
-        vel *= Random.Range(driftMinMax.x, driftMinMax.y);
-        movementVelocity = vel;
+        public WeaponType Type => type;
 
-        // Сброс глобального поворота
-        transform.rotation = Quaternion.identity;
+        [SerializeField] private GameObject cube;
+        [SerializeField] private TextMesh letter;
+        [SerializeField] private Vector3 rotPerSecond;
+        [SerializeField] private float birthTime;
 
-        // Рандомное вращение для визуального куба
-        rotPerSecond = new Vector3(
-            Random.Range(rotMinMax.x, rotMinMax.y),
-            Random.Range(rotMinMax.x, rotMinMax.y),
-            Random.Range(rotMinMax.x, rotMinMax.y)
-        );
+        private Renderer cubeRend;
+        private Vector3 movementVelocity; 
+        private Main _main;
 
-        birthTime = Time.time;
-    }
-
-    private void Update()
-    {
-        // Движение без Rigidbody
-        transform.Translate(movementVelocity * Time.deltaTime, Space.World);
-
-        // Вращение куба
-        cube.transform.rotation = Quaternion.Euler(rotPerSecond * Time.time);
-
-        // Логика плавного исчезновения
-        float u = (Time.time - (birthTime + lifeTime)) / fadeTime;
-
-        if (u >= 1)
+        // Внедряем Main через Zenject
+        [Inject]
+        private void Construct(Main main)
         {
-            Destroy(gameObject);
-            return;
+            _main = main;
         }
 
-        if (u > 0)
+        private void Awake()
         {
-            // Прозрачность куба
-            Color c = cubeRend.material.color;
-            c.a = 1f - u;
-            cubeRend.material.color = c;
+            cube = transform.Find("Cube").gameObject;
+            letter = GetComponent<TextMesh>();
+            cubeRend = cube.GetComponent<Renderer>();
 
-            // Прозрачность текста
-            c = letter.color;
-            c.a = 1f - (u * 0.5f);
-            letter.color = c;
+            Vector3 vel = Random.onUnitSphere; 
+            vel.z = 0;      
+            vel.Normalize();
+            
+            vel *= Random.Range(driftMinMax.x, driftMinMax.y);
+            movementVelocity = vel;
+
+            transform.rotation = Quaternion.identity;
+
+            rotPerSecond = new Vector3(
+                Random.Range(rotMinMax.x, rotMinMax.y),
+                Random.Range(rotMinMax.x, rotMinMax.y),
+                Random.Range(rotMinMax.x, rotMinMax.y)
+            );
+
+            birthTime = Time.time;
+        }
+
+        private void Update()
+        {
+            transform.Translate(movementVelocity * Time.deltaTime, Space.World);
+            cube.transform.rotation = Quaternion.Euler(rotPerSecond * Time.time);
+
+            float u = (Time.time - (birthTime + lifeTime)) / fadeTime;
+
+            if (u >= 1)
+            {
+                SafeDespawn(gameObject);
+                return;
+            }
+
+            if (u > 0)
+            {
+                Color c = cubeRend.material.color;
+                c.a = 1f - u;
+                cubeRend.material.color = c;
+
+                c = letter.color;
+                c.a = 1f - (u * 0.5f);
+                letter.color = c;
+            }
+        }
+
+        public void SetType(WeaponType wt)
+        {
+            if (_main == null)
+            {
+                _main = FindFirstObjectByType<Main>();
+            }
+
+            if (_main == null) return;
+
+            // Исправлено: вызываем экземплярный метод у _main
+            WeaponConfig config = _main.GetWeaponConfig(wt);
+
+            if (config == null) return;
+
+            cubeRend.material.color = config.weaponColor;
+            letter.text = config.letter;
+            type = wt;
+        }
+
+        public void AbsorbedBy(GameObject target)
+        {
+            SafeDespawn(gameObject);
+        }
+
+        private void SafeDespawn(GameObject go)
+        {
+            if (go == null) return;
+
+            if (LeanPool.Links.ContainsKey(go))
+            {
+                LeanPool.Despawn(go);
+            }
+            else
+            {
+                Destroy(go);
+            }
         }
     }
-
-    public void SetType(WeaponType wt)
-    {
-        WeaponDefinition def = Main.GetWeaponDefinition(wt);
-        
-        cubeRend.material.color = def.color;
-        letter.text = def.letter;
-        type = wt;
-    }
-
-    public void AbsorbedBy(GameObject target)
-    {
-        Destroy(gameObject);
-    }
-}
 }

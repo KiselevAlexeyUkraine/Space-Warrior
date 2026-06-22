@@ -8,124 +8,145 @@ using Lean.Pool;
 
 namespace Level
 {
-    public class Main : MonoBehaviour
-{
-    // ВОЗВРАЩЕНО: Статический словарь для быстрого доступа из любой точки кода
-    private static Dictionary<WeaponType, WeaponDefinition> _weapDict;
-
-    [Header("Set in Inspector")]
-    [Tooltip("Если выключено, обычные враги спавниться не будут.")]
-    [SerializeField] private bool spawnEnemies = true; // Переменная контроля спавна
-
-    [SerializeField] private GameObject[] prefabEnemies;
-    [SerializeField] private float enemySpawnPerSecond = 0.5f;
-    [SerializeField] private float enemyDefaultPadding = 1.5f;
-    [SerializeField] private WeaponDefinition[] weaponDefinitions;
-    [SerializeField] private GameObject prefabPowerUp;
-
-    [SerializeField] private WeaponType[] powerUpFrequency =
+    public sealed class Main : MonoBehaviour
     {
-        WeaponType.blaster,
-        WeaponType.blaster,
-        WeaponType.spread,
-        WeaponType.shield
-    };
+        // Изменено: словарь больше не статический. Зависимости хранятся в экземпляре класса.
+        private Dictionary<WeaponType, WeaponConfig> _weaponConfigs;
 
-    private BoundsCheck bndCheck;
-    private DiContainer _container;
-    
+        [Header("Enemy Spawn")]
+        [Tooltip("Если выключено, враги не будут спавниться.")]
+        [SerializeField] private bool spawnEnemies = true;
+        [Tooltip("Префабы врагов.")]
+        [SerializeField] private GameObject[] prefabEnemies;
+        [Tooltip("Количество врагов в секунду.")]
+        [SerializeField] private float enemySpawnPerSecond = 0.5f;
+        [Tooltip("Отступ врага от границы экрана.")]
+        [SerializeField] private float enemyDefaultPadding = 1.5f;
 
-    [Inject]
-    private void Construct(DiContainer container)
-    {
-        _container = container;
-    }
-
-    public void ShipDestroyed(EnemyBase e)
-    {
-        if (Random.value <= e.powerUpDropChance)
+        [Header("PowerUps")]
+        [SerializeField] private GameObject prefabPowerUp;
+        [SerializeField] private WeaponType[] powerUpFrequency =
         {
-            int ndx = Random.Range(0, powerUpFrequency.Length);
-            WeaponType puType = powerUpFrequency[ndx];
+            WeaponType.blaster,
+            WeaponType.blaster,
+            WeaponType.spread,
+            WeaponType.shield
+        };
 
-            GameObject go = Instantiate(prefabPowerUp);
-            PowerUp pu = go.GetComponent<PowerUp>();
+        private BoundsCheck _boundsCheck;
+        private DiContainer _container;
 
-            pu.SetType(puType);
-            pu.transform.position = e.transform.position;
+        // Внедряем DiContainer и список всех конфигураций оружия из Zenject
+        [Inject]
+        private void Construct(DiContainer container, List<WeaponConfig> injectedConfigs)
+        {
+            _container = container;
+            BuildWeaponDictionary(injectedConfigs);
         }
 
-        if (LeanPool.Links.ContainsKey(e.gameObject))
+        private void Awake()
         {
-            LeanPool.Despawn(e.gameObject);
+            _boundsCheck = GetComponent<BoundsCheck>();
         }
-        else
+
+        private void Start()
         {
-            Destroy(e.gameObject);
+            if (spawnEnemies)
+            {
+                Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
+            }
         }
-    }
 
-    private void Awake()
-    {
-        bndCheck = GetComponent<BoundsCheck>();
-
-        _weapDict = new Dictionary<WeaponType, WeaponDefinition>();
-
-        foreach (WeaponDefinition def in weaponDefinitions)
+        // Изменено: метод принимает коллекцию из Zenject и строит локальный словарь
+        private void BuildWeaponDictionary(List<WeaponConfig> configs)
         {
-            _weapDict[def.type] = def;
+            _weaponConfigs = new Dictionary<WeaponType, WeaponConfig>();
+
+            if (configs == null) return;
+
+            foreach (WeaponConfig config in configs)
+            {
+                if (config == null) continue;
+                
+                _weaponConfigs[config.weaponType] = config;
+            }
         }
-    }
 
-    private void Start()
-    {
-        // Проверяем булевую переменную перед запуском спавна
-        if (spawnEnemies)
+        // Изменено: метод стал экземплярным (не static). 
+        // ВНИМАНИЕ: В классах EnemyBase и Enemy_4 вам нужно убрать "Main." перед вызовом этого метода!
+        // Так как у врагов уже есть ссылка 'main' (внедренная через Zenject), вызывайте: main.GetWeaponConfig(...)
+        public WeaponConfig GetWeaponConfig(WeaponType weaponType)
         {
+            if (_weaponConfigs == null) return null;
+
+            return _weaponConfigs.TryGetValue(weaponType, out WeaponConfig config) ? config : null;
+        }
+
+        public void ShipDestroyed(EnemyBase enemy)
+        {
+            if (enemy == null) return;
+
+            if (Random.value <= enemy.powerUpDropChance)
+            {
+                int index = Random.Range(0, powerUpFrequency.Length);
+                WeaponType powerUpType = powerUpFrequency[index];
+
+                GameObject powerUpObject = LeanPool.Spawn(
+                    prefabPowerUp,
+                    enemy.transform.position,
+                    Quaternion.identity);
+
+                PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
+
+                if (powerUp != null)
+                {
+                    powerUp.SetType(powerUpType);
+                }
+            }
+
+            SafeDespawn(enemy.gameObject);
+        }
+
+        public void SpawnEnemy()
+        {
+            if (!spawnEnemies) return;
+
+            int index = Random.Range(0, prefabEnemies.Length);
+            GameObject enemyObject = LeanPool.Spawn(prefabEnemies[index]);
+
+            _container?.InjectGameObject(enemyObject);
+
+            float enemyPadding = enemyDefaultPadding;
+            BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
+
+            if (enemyBounds != null)
+            {
+                enemyPadding = Mathf.Abs(enemyBounds.radius);
+            }
+
+            Vector3 position = Vector3.zero;
+            float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
+            float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
+
+            position.x = Random.Range(xMin, xMax);
+            position.y = _boundsCheck.camHeight + enemyPadding;
+            enemyObject.transform.position = position;
+
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
         }
-    }
 
-    public void SpawnEnemy()
-    {
-        // Дополнительный предохранитель на случай изменения галочки во время игры
-        if (!spawnEnemies) return;
-
-        int ndx = Random.Range(0, prefabEnemies.Length);
-
-        GameObject go = LeanPool.Spawn(prefabEnemies[ndx]);
-        _container.InjectGameObject(go);
-
-        float enemyPadding = enemyDefaultPadding;
-        BoundsCheck enemyBounds = go.GetComponent<BoundsCheck>();
-
-        if (enemyBounds != null)
+        private void SafeDespawn(GameObject go)
         {
-            enemyPadding = Mathf.Abs(enemyBounds.radius);
+            if (go == null) return;
+
+            if (LeanPool.Links.ContainsKey(go))
+            {
+                LeanPool.Despawn(go);
+            }
+            else
+            {
+                Destroy(go);
+            }
         }
-
-        Vector3 pos = Vector3.zero;
-
-        float xMin = -bndCheck.camWidth - enemyPadding + 2f;
-        float xMax = bndCheck.camWidth - enemyPadding - 2f;
-
-        pos.x = Random.Range(xMin, xMax);
-        pos.y = bndCheck.camHeight + enemyPadding;
-
-        go.transform.position = pos;
-
-        Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
     }
-
-    // ВОЗВРАЩЕНО: Статический метод снова доступен через Main.GetWeaponDefinition(...)
-    public static WeaponDefinition GetWeaponDefinition(WeaponType wt)
-    {
-        if (_weapDict != null && _weapDict.ContainsKey(wt))
-        {
-            return _weapDict[wt];
-        }
-
-        return new WeaponDefinition();
-    }
-}
 }

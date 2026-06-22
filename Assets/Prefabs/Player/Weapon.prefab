@@ -227,14 +227,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _type: 0
-  def:
-    type: 0
-    letter: 
-    color: {r: 1, g: 1, b: 1, a: 1}
-    projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
-    projectileColor: {r: 1, g: 1, b: 1, a: 1}
-    damageOnHit: 0
-    continuousDamage: 0
-    delayBetweenShots: 0
-    velocity: 20
+  _config: {fileID: 11400000, guid: cb454286eba450246ad3cdf011e4aa07, type: 2}
+  projectileAnchor: {fileID: 0}
   collar: {fileID: 2316697337857720389}

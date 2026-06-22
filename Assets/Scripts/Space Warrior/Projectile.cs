@@ -2,30 +2,31 @@ using UnityEngine;
 using Components.Weapon;
 using Level;
 using Lean.Pool;
+using Zenject;
 
 public sealed class Projectile : MonoBehaviour 
 {
     private Renderer rend;
+    private Main _main; 
 
     [Header("Collision Settings")]
-    [Tooltip("Слой (или слои), при столкновении с которыми пуля уничтожит цель и деспавнится сама.")]
+    [Tooltip("Слой (или слои), при столкновении с которыми пуля деспавнит цель и себя.")]
     [SerializeField] private LayerMask targetLayerMask;
 
     [Header("Set Dynamically")]
     public Rigidbody rigid;
     [SerializeField] private WeaponType _type;
 
-    // Это общедоступное свойство маскирует поле _type и обрабатывает операции присваивания ему нового значения
     public WeaponType type
     {
-        get
-        {
-            return (_type);
-        }
-        set
-        {
-            SetType(value);
-        }
+        get => _type;
+        set => SetType(value);
+    }
+
+    [Inject]
+    private void Construct(Main main)
+    {
+        _main = main;
     }
 
     void Awake()
@@ -34,29 +35,22 @@ public sealed class Projectile : MonoBehaviour
         rigid = GetComponent<Rigidbody>();
     }
 
-    /// <summary>
-    /// Метод обработки физического триггера.
-    /// </summary>
     private void OnTriggerEnter(Collider other)
     {
         GameObject otherGo = other.gameObject;
 
-        // Проверяем, входит ли слой столкнувшегося объекта в маску targetLayerMask
         if (((1 << otherGo.layer) & targetLayerMask) != 0)
         {
-            Debug.Log($"[Пуля] Попадание во враждебный слой: {otherGo.name}");
+            Debug.Log($"[Пуля] Столкновение с: {otherGo.name} на слое {LayerMask.LayerToName(otherGo.layer)}");
 
-            // Отправляем объект, в который попали, в пул (или уничтожаем)
+            // ИСПРАВЛЕНО: Просто деспавним объект, с которым столкнулись, без проверок на скрипты
             SafeDespawn(otherGo);
-
-            // Отправляем саму пулю обратно в пул
+            
+            // Деспавним саму пулю
             SafeDespawn(gameObject);
         }
     }
 
-    /// <summary>
-    /// Безопасный возврат объекта в пул LeanPool или обычное уничтожение, если объекта нет в пуле.
-    /// </summary>
     private void SafeDespawn(GameObject go)
     {
         if (go == null) return;
@@ -71,18 +65,24 @@ public sealed class Projectile : MonoBehaviour
         }
     }
 
-    ///<summary>
-    ///Изменяет скрытое поле _Type и устанавливает цвет этого снаряда, как определено в WeaponDefinition.
-    /// </summary>
-    /// <param name="eType"> Тип WeaponType используеммого оружия</param>
     public void SetType(WeaponType eType)
     {
         _type = eType;
-        WeaponDefinition def = Main.GetWeaponDefinition(_type);
-        
-        if (rend != null && def != null)
+
+        if (_main == null)
         {
-            rend.material.color = def.projectileColor;
+            _main = FindFirstObjectByType<Main>();
+        }
+
+        if (_main == null) return;
+
+        WeaponConfig config = _main.GetWeaponConfig(_type);
+
+        if (config == null) return;
+
+        if (rend != null)
+        {
+            rend.material.color = config.projectileColor;
         }
     }
 }

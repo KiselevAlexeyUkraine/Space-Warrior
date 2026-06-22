@@ -5,6 +5,7 @@ using Components.Player;
 using Zenject;
 using Lean.Pool;
 using Level;
+using System.Collections.Generic;
 
 namespace Components.Enemy
 {
@@ -20,16 +21,22 @@ namespace Components.Enemy
         public float powerUpDropChance = 1f; 
 
         [Header("Grid Formation (Новое)")]
-        [Tooltip("Если галочка стоит, враг летит на локальную позицию сетки formationRoot и отключает BoundsCheck.")]
         [SerializeField] private bool useGridFormation = false;
 
         [Header("Audio Settings")]
-        [Tooltip("Звук взрыва (смерти) этого конкретного врага")]
         [SerializeField] private AudioClip _explosionClip; 
 
+        [Header("Visual Effects")]
+        [Tooltip("Префаб частиц при уничтожении всего корабля")]
+        [SerializeField] private ParticleSystem _explosionParticlePrefab;
+
+        [Header("Настройка рендереров (Вручную)")]
+        [Tooltip("Перетащи сюда объекты с MeshRenderer, которые должны краснеть при уроне")]
+        [SerializeField] private Renderer[] renderersToFlash; 
+
         [Header("Set Dynamically: Enemy")]
-        [SerializeField] private Color[] originalColors;
         [SerializeField] private Material[] materials; 
+        [SerializeField] private Color[] originalColors;
         
         [HideInInspector] public bool showingDamage = false;
         [HideInInspector] public float damageDoneTime; 
@@ -40,7 +47,6 @@ namespace Components.Enemy
         private PlayerScore _playerScore;
         private bool _isInitialized = false;
 
-        // Переменные для логики движения по сетке
         private Vector3 _targetLocalPosition;
         private bool _hasGridTarget = false;
         private bool _reachedGridTarget = false;
@@ -82,7 +88,6 @@ namespace Components.Enemy
             notifiedOfDestruction = false;
             showingDamage = false;
             health = _maxHealthCached;
-
             _hasGridTarget = false;
             _reachedGridTarget = false;
 
@@ -93,7 +98,6 @@ namespace Components.Enemy
                 UnShowDamage();
             }
 
-            // Автоматически настраиваем BoundsCheck в зависимости от типа движения
             if (bndCheck != null)
             {
                 bndCheck.enabled = !useGridFormation;
@@ -104,17 +108,42 @@ namespace Components.Enemy
         {
             if (_isInitialized) return;
 
-            if (_utils == null)
+            if (renderersToFlash == null || renderersToFlash.Length == 0)
             {
-                _utils = new Utils();
+                materials = new Material[0];
+                originalColors = new Color[0];
+                _isInitialized = true;
+                return;
             }
 
-            materials = _utils.GetAllMaterials(gameObject) ?? new Material[0];
+            List<Material> extractedMaterials = new List<Material>();
+            foreach (Renderer rend in renderersToFlash)
+            {
+                if (rend != null && rend.materials != null)
+                {
+                    foreach (Material mat in rend.materials)
+                    {
+                        if (mat != null)
+                        {
+                            extractedMaterials.Add(mat);
+                        }
+                    }
+                }
+            }
+
+            materials = extractedMaterials.ToArray();
             originalColors = new Color[materials.Length];
 
             for (int i = 0; i < materials.Length; i++)
             {
-                originalColors[i] = materials[i] != null ? materials[i].color : Color.white;
+                if (materials[i] != null && materials[i].HasProperty("_Color"))
+                {
+                    originalColors[i] = materials[i].color;
+                }
+                else
+                {
+                    originalColors[i] = Color.white;
+                }
             }
 
             _isInitialized = true;
@@ -122,15 +151,10 @@ namespace Components.Enemy
 
         protected virtual void Update()
         {
-            // Главное разделение логики перемещения
-            if (useGridFormation)
-            {
-                HandleGridMovement();
-            }
-            else
-            {
-                Move();
-            }
+            if (notifiedOfDestruction) return;
+
+            if (useGridFormation) HandleGridMovement();
+            else Move();
 
             if (showingDamage && Time.time > damageDoneTime)
             {
@@ -145,7 +169,6 @@ namespace Components.Enemy
 
         public abstract void Move();
 
-        // Логика полета в точку построения сетки
         private void HandleGridMovement()
         {
             if (!_hasGridTarget || _reachedGridTarget) return;
@@ -163,7 +186,6 @@ namespace Components.Enemy
             }
         }
 
-        // Публичный метод, вызываемый из спавнера вместо удаления старого скрипта
         public void SetTargetLocalPosition(Vector3 localTargetPos)
         {
             _targetLocalPosition = new Vector3(localTargetPos.x, localTargetPos.y, 0f);
@@ -173,14 +195,12 @@ namespace Components.Enemy
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            GameObject otherGo = other.gameObject;
+            if (notifiedOfDestruction) return;
 
-            Debug.Log($"[ОБЩИЙ ТРИГГЕР] Враг {gameObject.name} пересёкся с объектом: {otherGo.name} (Тег: {otherGo.tag})");
+            GameObject otherGo = other.gameObject;
             
             if (otherGo.CompareTag("ProjectileHero"))
             {
-                Debug.Log($"[ПОПАДАНИЕ СРАБОТАЛО] В {gameObject.name} прилетела триггерная пуля {otherGo.name}");
-                
                 Projectile p = otherGo.GetComponent<Projectile>();
                 if (p != null)
                 {
@@ -193,26 +213,37 @@ namespace Components.Enemy
 
         protected void ProcessDamage(WeaponType weaponType)
         {
+            if (notifiedOfDestruction) return;
+
             ShowDamage();
-    
-            var weaponDef = Main.GetWeaponDefinition(weaponType);
-            if (weaponDef != null)
+
+            WeaponConfig config = main.GetWeaponConfig(weaponType);
+
+            if (config != null)
             {
-                health -= weaponDef.damageOnHit;
+                health -= config.damageOnHit;
             }
 
             if (health <= 0)
             {
                 if (!notifiedOfDestruction)
                 {
+                    notifiedOfDestruction = true;
+
+                    // ИСПРАВЛЕНО: Спавним партиклы строго в мировой позиции корабля (transform.position)
+                    if (_explosionParticlePrefab != null)
+                    {
+                        LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
+                    }
+
                     if (_audioService != null && _explosionClip != null)
                     {
                         _audioService.PlayOneShot(_explosionClip);
                     }
 
                     _playerScore?.AddScore(score);
-                    notifiedOfDestruction = true;
-                    
+            
+                    // Этот метод мгновенно прячет или деспавнит врага, но ошибки больше не будет!
                     main.ShipDestroyed(this);
                 }
             }
@@ -234,10 +265,13 @@ namespace Components.Enemy
 
         protected void ShowDamage()
         {
-            if (materials == null) return;
+            if (materials == null || notifiedOfDestruction) return;
             foreach (Material m in materials)
             {
-                if (m != null) m.color = Color.red;
+                if (m != null && m.HasProperty("_Color")) 
+                {
+                    m.color = Color.red;
+                }
             }
             showingDamage = true;
             damageDoneTime = Time.time + showDamageDuration;
@@ -245,11 +279,13 @@ namespace Components.Enemy
 
         protected void UnShowDamage()
         {
-            if (materials == null) return;
+            if (materials == null || notifiedOfDestruction) return;
             for (int i = 0; i < materials.Length; i++)
             {
-                if (materials[i] != null && i < originalColors.Length)
+                if (materials[i] != null && i < originalColors.Length && materials[i].HasProperty("_Color"))
+                {
                     materials[i].color = originalColors[i];
+                }
             }
             showingDamage = false;
         }

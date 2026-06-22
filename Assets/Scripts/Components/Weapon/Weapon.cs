@@ -1,34 +1,37 @@
 using UnityEngine;
 using Lean.Pool;
-using Level;
+using Zenject;
 
 namespace Components.Weapon
 {
-    public class Weapon : MonoBehaviour
+    public sealed class Weapon : MonoBehaviour
     {
-        [SerializeField] private Transform projectileAnchor;
-
         [Header("Weapon Settings")]
-        [SerializeField] private WeaponType _type = WeaponType.none;
-        [SerializeField] private WeaponDefinition def;
-        
-        [Tooltip("Время жизни пули в секундах до возврата в пул")]
-        [SerializeField] private float projectileLifeTime = 3f; 
+        [SerializeField]
+        private WeaponType _type = WeaponType.none;
+
+        [Inject]
+        private WeaponConfig _config;
 
         [Header("References")]
-        [SerializeField] private GameObject collar;
+        [SerializeField]
+        private Transform projectileAnchor;
 
-        private Renderer collarRenderer;
-        private float lastShotTime;
+        [SerializeField]
+        private GameObject collar;
+
+        private Renderer _collarRenderer;
+        private float _lastShotTime;
 
         public WeaponType Type => _type;
-        public WeaponDefinition Definition => def;
+        public WeaponConfig Config => _config;
 
         private void Awake()
         {
             if (collar == null)
             {
                 Transform collarTransform = transform.Find("Collar");
+
                 if (collarTransform != null)
                 {
                     collar = collarTransform.gameObject;
@@ -37,7 +40,7 @@ namespace Components.Weapon
 
             if (collar != null)
             {
-                collarRenderer = collar.GetComponent<Renderer>();
+                _collarRenderer = collar.GetComponent<Renderer>();
             }
 
             if (projectileAnchor == null)
@@ -68,25 +71,35 @@ namespace Components.Weapon
             }
 
             gameObject.SetActive(true);
-            def = Main.GetWeaponDefinition(_type);
 
-            if (collarRenderer != null && def != null)
+            if (_config == null)
             {
-                collarRenderer.material.color = def.color;
+                Debug.LogError($"{name}: WeaponConfig не назначен.");
+                return;
             }
 
-            lastShotTime = 0f;
+            if (_collarRenderer != null)
+            {
+                _collarRenderer.material.color =
+                    _config.weaponColor;
+            }
+
+            _lastShotTime = 0f;
         }
 
         private void Fire()
         {
-            if (!gameObject.activeInHierarchy || def == null) 
+            if (!gameObject.activeInHierarchy)
                 return;
 
-            if (Time.time - lastShotTime < def.delayBetweenShots) 
+            if (_config == null)
                 return;
 
-            Vector3 velocity = Vector3.up * def.velocity;
+            if (Time.time - _lastShotTime < _config.fireRate)
+                return;
+
+            Vector3 velocity =
+                Vector3.up * _config.projectileSpeed;
 
             if (transform.up.y < 0)
             {
@@ -102,67 +115,101 @@ namespace Components.Weapon
                 case WeaponType.spread:
                     FireSpread(velocity);
                     break;
+
+                default:
+                    FireBlaster(velocity);
+                    break;
             }
 
-            lastShotTime = Time.time;
+            _lastShotTime = Time.time;
         }
 
         private void FireBlaster(Vector3 baseVelocity)
         {
-            Projectile proj = MakeProjectile();
-            if (proj != null && proj.rigid != null) 
-                proj.rigid.linearVelocity = baseVelocity;
+            Projectile projectile = MakeProjectile();
+
+            if (projectile != null &&
+                projectile.rigid != null)
+            {
+                projectile.rigid.linearVelocity =
+                    baseVelocity;
+            }
         }
 
         private void FireSpread(Vector3 baseVelocity)
         {
-            Projectile projCenter = MakeProjectile();
-            if (projCenter != null && projCenter.rigid != null) 
-                projCenter.rigid.linearVelocity = baseVelocity;
+            int count =
+                Mathf.Max(1, _config.projectileCount);
 
-            Projectile projLeft = MakeProjectile();
-            if (projLeft != null && projLeft.rigid != null)
+            float spread =
+                _config.spreadAngle;
+
+            if (count == 1)
             {
-                projLeft.transform.rotation = Quaternion.AngleAxis(10f, Vector3.back);
-                projLeft.rigid.linearVelocity = projLeft.transform.rotation * baseVelocity;
+                FireBlaster(baseVelocity);
+                return;
             }
 
-            Projectile projRight = MakeProjectile();
-            if (projRight != null && projRight.rigid != null)
+            float startAngle = -(spread * 0.5f);
+            float step = spread / (count - 1);
+
+            for (int i = 0; i < count; i++)
             {
-                projRight.transform.rotation = Quaternion.AngleAxis(-10f, Vector3.back);
-                projRight.rigid.linearVelocity = projRight.transform.rotation * baseVelocity;
+                float angle = startAngle + step * i;
+
+                Projectile projectile =
+                    MakeProjectile();
+
+                if (projectile == null ||
+                    projectile.rigid == null)
+                    continue;
+
+                Quaternion rotation =
+                    Quaternion.AngleAxis(
+                        angle,
+                        Vector3.back);
+
+                projectile.transform.rotation =
+                    rotation;
+
+                projectile.rigid.linearVelocity =
+                    rotation * baseVelocity;
             }
         }
 
         private Projectile MakeProjectile()
         {
-            if (def == null || def.projectilePrefab == null) 
+            if (_config == null)
                 return null;
 
-            // Спавним пулю через LeanPool
-            GameObject projGO = LeanPool.Spawn(
-                def.projectilePrefab, 
-                collar.transform.position, 
-                Quaternion.identity, 
-                projectileAnchor
-            );
+            if (_config.projectilePrefab == null)
+                return null;
+
+            GameObject projectileGo =
+                LeanPool.Spawn(
+                    _config.projectilePrefab,
+                    collar.transform.position,
+                    Quaternion.identity,
+                    projectileAnchor);
 
             if (transform.root.CompareTag("Hero"))
             {
-                projGO.tag = "ProjectileHero";
-                projGO.layer = LayerMask.NameToLayer("ProjectileHero");
+                projectileGo.tag = "ProjectileHero";
+                projectileGo.layer =
+                    LayerMask.NameToLayer("ProjectileHero");
             }
 
-            Projectile projectile = projGO.GetComponent<Projectile>();
+            Projectile projectile =
+                projectileGo.GetComponent<Projectile>();
+
             if (projectile != null)
             {
                 projectile.type = _type;
             }
 
-            // МАГИЯ ОДНОЙ СТРОКИ: Говорим пулу автоматически вернуть этот объект 
-            // обратно в пул через указанное количество секунд (projectileLifeTime)
-            LeanPool.Despawn(projGO, projectileLifeTime);
+            LeanPool.Despawn(
+                projectileGo,
+                _config.projectileLifeTime);
 
             return projectile;
         }

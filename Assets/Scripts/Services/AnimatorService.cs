@@ -24,8 +24,8 @@ namespace Servise
         {
             public Transform transform;
             public float speed;
-            public Vector3 direction; // Vector3.down для обычных пуль, или кастомный вектор для ракет
-            public bool isHomingDirection; // Флаг, что летит по вектору, а не просто вниз
+            public Vector3 direction; 
+            public bool isHomingDirection; 
         }
 
         private Transform _formationRoot;
@@ -34,9 +34,6 @@ namespace Servise
         private bool _isMovingRight = false;
         private readonly List<TrackedProjectile> _activeProjectiles = new List<TrackedProjectile>();
 
-        /// <summary>
-        /// Существующий метод для обычных пуль (летящих строго вниз)
-        /// </summary>
         public void RegisterProjectile(GameObject projectileGo, float projectileSpeed)
         {
             if (projectileGo == null) return;
@@ -50,9 +47,6 @@ namespace Servise
             });
         }
 
-        /// <summary>
-        /// ДОБАВЛЕНО: Регистрирует ракету, летящую по определенному вектору направления
-        /// </summary>
         public void RegisterDirectedProjectile(GameObject projectileGo, float projectileSpeed, Vector3 moveDirection)
         {
             if (projectileGo == null) return;
@@ -61,7 +55,7 @@ namespace Servise
             {
                 transform = projectileGo.transform,
                 speed = projectileSpeed,
-                direction = moveDirection.normalized, // Нормализуем, чтобы скорость была равномерной
+                direction = moveDirection.normalized, 
                 isHomingDirection = true
             });
         }
@@ -78,21 +72,17 @@ namespace Servise
                     continue;
                 }
 
-                // Двигаем снаряд по его индивидуальному направлению
                 projectile.transform.position += projectile.direction * projectile.speed * Time.deltaTime;
 
-                // Условия деспавна
                 bool shouldDestroy = false;
 
                 if (projectile.isHomingDirection)
                 {
-                    // Для ракет: удаляем, если улетели слишком далеко от центра сцены
                     if (projectile.transform.position.magnitude > screenBoundaryRadius || projectile.transform.position.y < bulletDestroyY)
                         shouldDestroy = true;
                 }
                 else
                 {
-                    // Для обычных пуль: старая проверка по Y
                     if (projectile.transform.position.y <= bulletDestroyY)
                         shouldDestroy = true;
                 }
@@ -112,9 +102,77 @@ namespace Servise
             else Destroy(go);
         }
 
-        // --- Остальная часть класса AnimatorService остается без изменений ---
-        public void StartAnimation(Transform root) { /* ... */ }
-        private IEnumerator FormationMovementLoop() { yield break; }
-        public void ResetFormationAndCall(Action onResetComplete) { }
+        public void StartAnimation(Transform root)
+        {
+            if (_animationCoroutine != null)
+                StopCoroutine(_animationCoroutine);
+            if (_formationRoot != null)
+                Tween.StopAll(_formationRoot);
+
+            _formationRoot = root;
+            _startPosition = _formationRoot.position;
+            _isMovingRight = false;
+            _animationCoroutine = StartCoroutine(FormationMovementLoop());
+        }
+
+        private IEnumerator FormationMovementLoop()
+        {
+            if (_formationRoot == null) yield break;
+
+            yield return new WaitForSeconds(0.2f);
+
+            while (true)
+            {
+                if (_formationRoot == null) yield break;
+
+                float targetX = _isMovingRight ? maxX : minX;
+                Vector3 targetPositionX = new Vector3(targetX, _formationRoot.position.y, _formationRoot.position.z);
+                float distanceX = Mathf.Abs(_formationRoot.position.x - targetX);
+                float durationX = distanceX / speed;
+
+                // ИСПРАВЛЕНО: Убран неверный параметр из метода Position
+                Tween moveXTween = Tween.Position(_formationRoot, targetPositionX, durationX, Ease.Linear);
+                yield return moveXTween.ToYieldInstruction();
+
+                if (_formationRoot == null) yield break;
+
+                Vector3 targetPositionY = _formationRoot.position + new Vector3(0, stepY, 0);
+                float durationY = Mathf.Abs(stepY) / speed;
+
+                // ИСПРАВЛЕНО: Убран неверный параметр из метода Position
+                Tween moveYTween = Tween.Position(_formationRoot, targetPositionY, durationY, Ease.Linear);
+                yield return moveYTween.ToYieldInstruction();
+
+                _isMovingRight = !_isMovingRight;
+            }
+        }
+
+        public void ResetFormationAndCall(Action onResetComplete)
+        {
+            if (_animationCoroutine != null)
+                StopCoroutine(_animationCoroutine);
+
+            if (_formationRoot == null)
+            {
+                onResetComplete?.Invoke();
+                return;
+            }
+
+            Debug.Log("Сбрасываем сетку на стартовую позицию перед новой волной...");
+            Tween.StopAll(_formationRoot);
+            
+            // ИСПРАВЛЕНО: Теперь параметр warnIfTargetDestroyed передается строго туда, где PrimeTween его ждет — в метод OnComplete!
+            Tween.Position(_formationRoot, _startPosition, 1.2f, Ease.InOutQuad)
+                .OnComplete(onResetComplete, warnIfTargetDestroyed: false);
+        }
+
+        private void OnDestroy()
+        {
+            if (_animationCoroutine != null)
+                StopCoroutine(_animationCoroutine);
+            if (_formationRoot != null)
+                Tween.StopAll(_formationRoot);
+            _activeProjectiles.Clear();
+        }
     }
 }

@@ -80,7 +80,6 @@ MonoBehaviour:
   _settingsService: {fileID: 6959748640553383444, guid: a4126ae02be657f4ca9b433dfb3f233d, type: 3}
   _musicService: {fileID: 7269957172593114279, guid: f7e6308888cb78a47926bea88a17d9c2, type: 3}
   _audioService: {fileID: 8792944466112511475, guid: f8f59d3a7d37cbe4cbdbb8f65d73aa02, type: 3}
-  _reputationService: {fileID: 3294001453931419771, guid: dc33f5af454fef448827c1aafa373873, type: 3}
   _postProcessingController: {fileID: 3400497386409528362, guid: c5b167c3cbcabe149b7d9408c65610ff, type: 3}
   _localizationManager: {fileID: 8031055815664093772, guid: 9f8f43e3e72c5024988e38b5b1e42ecf, type: 3}
 --- !u!1 &5933651418547886775
@@ -132,3 +131,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a5cc2aa1a31e504498e7e2e67b13cbba, type: 2}
   - {fileID: 11400000, guid: b48f9402094fbdb438aa64d4da693bea, type: 2}
   - {fileID: 11400000, guid: 19f62707a76b5c84fb4765c397e1deea, type: 2}
+  - {fileID: 11400000, guid: cb454286eba450246ad3cdf011e4aa07, type: 2}

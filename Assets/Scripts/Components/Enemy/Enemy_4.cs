@@ -28,7 +28,6 @@ namespace Components.Enemy
 
         private void Start()
         {
-            // Кешируем компоненты деталей один раз при самом первом старте
             foreach (Part prt in parts)
             {
                 Transform t = transform.Find(prt.name);
@@ -47,7 +46,6 @@ namespace Components.Enemy
 
             if (parts == null) return;
 
-            // Восстанавливаем все части корабля обратно для нового спавна из пула
             foreach (Part prt in parts)
             {
                 if (prt.go != null)
@@ -93,22 +91,18 @@ namespace Components.Enemy
             pos = (1 - u) * p0 + u * p1; 
         }
 
-        // ИСПРАВЛЕНО: Переопределяем метод под триггеры
         protected override void OnTriggerEnter(Collider other)
         {
             GameObject otherGo = other.gameObject;
 
-            // 1. Проброс тарана игрока в базовый класс EnemyBase
             if (otherGo.CompareTag("Hero") || otherGo.CompareTag("Player"))
             {
                 base.OnTriggerEnter(other);
                 return;
             }
 
-            // 2. Обработка попадания пули
             if (!otherGo.CompareTag("ProjectileHero")) return;
 
-            // На всякий случай проверяем видимость, если bndCheck включен
             if (bndCheck != null && bndCheck.enabled && !bndCheck.isOnScreen)
             {
                 SafeDespawn(otherGo);
@@ -117,13 +111,14 @@ namespace Components.Enemy
             
             Part prtHit = null;
 
-            // Проверяем, какой из коллайдеров частей пересекается с пулей
             foreach (Part prt in parts)
             {
                 if (prt.go != null)
                 {
                     Collider partCollider = prt.go.GetComponent<Collider>();
-                    if (partCollider != null && partCollider.BoundsIntersect(other)) // Вспомогательная проверка
+                    
+                    // Теперь компилятор успешно найдет этот метод расширения из класса ниже
+                    if (partCollider != null && partCollider.BoundsIntersect(other)) 
                     {
                         prtHit = prt;
                         break;
@@ -131,7 +126,6 @@ namespace Components.Enemy
                 }
             }
 
-            // Если быстрый поиск по границам не сработал, берем дефолтную первую живую деталь как fallback
             if (prtHit == null)
             {
                 foreach (Part prt in parts)
@@ -150,7 +144,6 @@ namespace Components.Enemy
                 return;
             }
 
-            // Проверяем защиту детали другой деталью
             if (prtHit.protectedBy != null)
             {
                 foreach (string s in prtHit.protectedBy)
@@ -163,26 +156,24 @@ namespace Components.Enemy
                 }
             }
 
-            // Наносим урон детали
             Projectile p = otherGo.GetComponent<Projectile>();
             if (p != null)
             {
-                var weaponDef = Main.GetWeaponDefinition(p.type);
-                if (weaponDef != null)
+                WeaponConfig config = main.GetWeaponConfig(p.type);
+
+                if (config != null)
                 {
-                    prtHit.health -= weaponDef.damageOnHit;
+                    prtHit.health -= config.damageOnHit;
                 }
             }
             
             ShowLocalizedDamage(prtHit.mat);
 
-            // Если деталь уничтожена, отключаем её
             if (prtHit.health <= 0)
             {
                 prtHit.go.SetActive(false);
             }
 
-            // Проверяем, уничтожен ли весь корабль полностью
             bool allDestroyed = true;
             foreach (Part prt in parts)
             {
@@ -195,7 +186,6 @@ namespace Components.Enemy
 
             if (allDestroyed)
             {
-                // ИСПРАВЛЕНО: Обнуляем здоровье для базового класса, чтобы сработал правильный деспавн, звуки и очки в EnemyBase
                 health = 0;
                 ProcessDamage(p != null ? p.type : WeaponType.blaster);
             }
@@ -223,7 +213,7 @@ namespace Components.Enemy
         }
     }
 
-    // Небольшой метод-расширение, помогающий триггерам определять пересечение деталей
+    // ВЕРНУЛИ НА МЕСТО: Метод-расширение для проверки пересечения коллайдеров деталей
     public static class ColliderExtensions
     {
         public static bool BoundsIntersect(this Collider co, Collider other)

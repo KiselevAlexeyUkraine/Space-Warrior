@@ -538,8 +538,10 @@ MonoBehaviour:
   powerUpDropChance: 1
   useGridFormation: 1
   _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
-  originalColors: []
+  _explosionParticlePrefab: {fileID: 19800000, guid: 77ec3c4e07a36814fb3169ecef41b50a, type: 3}
+  renderersToFlash: []
   materials: []
+  originalColors: []
   showingDamage: 0
   damageDoneTime: 0
   parts:

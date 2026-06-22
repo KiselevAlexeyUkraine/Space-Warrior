@@ -156,5 +156,5 @@ MonoBehaviour:
   targetLayerMask:
     serializedVersion: 2
     m_Bits: 2048
-  rigid: {fileID: 0}
+  rigid: {fileID: 6997558440577309661}
   _type: 1

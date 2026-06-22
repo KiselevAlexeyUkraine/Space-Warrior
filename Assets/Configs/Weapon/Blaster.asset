@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fef7cc4c94358cc44ad17feabd5a069e, type: 3}
+  m_Name: Blaster
+  m_EditorClassIdentifier: Assembly-CSharp::Components.Weapon.WeaponConfig
+  weaponType: 1
+  letter: B
+  weaponColor: {r: 1, g: 1, b: 1, a: 1}
+  projectileColor: {r: 1, g: 1, b: 1, a: 1}
+  projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
+  projectileSpeed: 20
+  projectileLifeTime: 4
+  damageOnHit: 1
+  continuousDamage: 0
+  fireRate: 0.25
+  projectileCount: 1
+  spreadAngle: 10
+  usePhysicsProjectile: 1
+  canPierceTargets: 0
+  maxPierceTargets: 1
+  useExplosion: 0
+  explosionRadius: 0
+  explosionDamage: 0
+  useHoming: 0
+  homingTurnSpeed: 5

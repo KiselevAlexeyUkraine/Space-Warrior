@@ -426,10 +426,13 @@ MonoBehaviour:
   showingDamage: 0
   damageDoneTime: 0
   _laserObject: {fileID: 2207434274876095833}
+  _prepareColor: {r: 1, g: 1, b: 1, a: 1}
+  _activeColor: {r: 0, g: 0, b: 1, a: 1}
   _minFireInterval: 3
   _maxFireInterval: 6
   _initialDelay: 5
+  _prepareDuration: 2
   _growDuration: 0.3
   _activeDuration: 2
   _shrinkDuration: 0.2
-  _targetScaleX: 1
+  _targetScaleX: 2

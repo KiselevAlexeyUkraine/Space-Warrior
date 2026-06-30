@@ -27,6 +27,9 @@ namespace Components.Player
 
         [SerializeField]
         private LayerMask powerUpLayer;
+        
+        [SerializeField]
+        private LayerMask laserLayer;
 
         private GameObject _lastTriggerGo;
         private PageSwitcher _pageSwitcher;
@@ -56,7 +59,6 @@ namespace Components.Player
 
         private void OnTriggerEnter(Collider other)
         {
-            // ИСПРАВЛЕНО: Считываем слой ИМЕННО того объекта, с которым столкнулись (не .root)
             GameObject triggerObject = other.gameObject;
 
             if (triggerObject == _lastTriggerGo)
@@ -66,54 +68,64 @@ namespace Components.Player
 
             int objectLayer = triggerObject.layer;
 
-            // 1. СТОЛКНОВЕНИЕ С ВРАГОМ
-            if ((enemyLayer.value & (1 << objectLayer)) != 0)
-            {
-                // Воспроизводим звук получения урона игроком
-                _audioService?.PlayTakeDamage();
+            // 1. ПРИОРИТЕТНАЯ ПРОВЕРКА: СТОЛКНОВЕНИЕ С ЛАЗЕРОМ (По слою ИЛИ по тегу)
+            bool isLaser = (laserLayer.value & (1 << objectLayer)) != 0;
 
+            // Безопасная проверка тега (если тег "Laser" не создан в Unity, ошибка в консоль НЕ вылетит)
+            try
+            {
+                if (triggerObject.CompareTag("Laser"))
+                {
+                    isLaser = true;
+                }
+            }
+            catch { /* Игнорируем ошибку, если тег "Laser" отсутствует в настройках проекта */ }
+
+            if (isLaser)
+            {
+                _audioService?.PlayTakeDamage();
                 ShieldLevel--;
 
-                // Ищем EnemyBase на самом объекте или его родителях (на случай, если коллайдер на дочерней детали, как у Enemy_4)
+                // Полностью блокируем выполнение кода ниже, враг останется жив!
+                return; 
+            }
+
+            // 2. СТОЛКНОВЕНИЕ С САМИМ ВРАГОМ (КОРПУСОМ)
+            if ((enemyLayer.value & (1 << objectLayer)) != 0)
+            {
+                _audioService?.PlayTakeDamage();
+                ShieldLevel--;
+
                 var enemy = triggerObject.GetComponentInParent<Components.Enemy.EnemyBase>();
-                
+        
                 if (enemy != null)
                 {
-                    // ИСПРАВЛЕНО: Вместо Destroy имитируем таран через уничтожение врага по правилам игры.
-                    // Обнуляем здоровье врага, чтобы сработал триггер взрыва, начисления очков и SafeDespawn в самом EnemyBase!
-                    // Для этого мы можем принудительно вызвать ProcessDamage через его триггер или напрямую, 
-                    // но самый чистый способ, раз мы в игроке — скрыть его или вызвать деспавн, если урон уже нанесён.
-                    // Так как в EnemyBase метод ProcessDamage защищен, мы просто деспавним врага, 
-                    // предварительно дав ему знать, что он уничтожен, либо пустив его через SafeDespawn:
-                    
                     SafeDespawn(enemy.gameObject);
                 }
                 else
                 {
-                    // Если у объекта со слоем Enemy нет скрипта EnemyBase, отправляем в пул вручную
                     SafeDespawn(triggerObject);
                 }
+                return;
             }
-            // 2. СТОЛКНОВЕНИЕ С БОНУСОМ
-            else if ((powerUpLayer.value & (1 << objectLayer)) != 0)
+
+            // 3. СТОЛКНОВЕНИЕ С БОНУСОМ
+            if ((powerUpLayer.value & (1 << objectLayer)) != 0)
             {
                 AbsorbPowerUp(triggerObject);
             }
         }
 
-        // ДОБАВЛЕНО: Универсальный метод безопасного возврата объектов в LeanPool
         private void SafeDespawn(GameObject go)
         {
             if (go == null) return;
 
-            // Если объект привязан к пулу — возвращаем его на склад
             if (LeanPool.Links.ContainsKey(go))
             {
                 LeanPool.Despawn(go);
             }
             else
             {
-                // Если объект был создан стандартным Instantiate — удаляем физически
                 Destroy(go);
             }
         }

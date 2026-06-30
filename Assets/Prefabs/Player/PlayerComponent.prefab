@@ -207,6 +207,9 @@ MonoBehaviour:
   powerUpLayer:
     serializedVersion: 2
     m_Bits: 4096
+  laserLayer:
+    serializedVersion: 2
+    m_Bits: 8192
 --- !u!135 &7450351700318859786
 SphereCollider:
   m_ObjectHideFlags: 0

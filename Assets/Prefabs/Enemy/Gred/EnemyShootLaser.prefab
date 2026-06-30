@@ -326,6 +326,7 @@ GameObject:
   - component: {fileID: 5569253225124952332}
   - component: {fileID: 5025930691822157024}
   - component: {fileID: 9058360496067064928}
+  - component: {fileID: 6051585627912477265}
   m_Layer: 9
   m_Name: EnemyShootLaser
   m_TagString: Enemy
@@ -436,3 +437,15 @@ MonoBehaviour:
   _activeDuration: 2
   _shrinkDuration: 0.2
   _targetScaleX: 2
+--- !u!114 &6051585627912477265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7654880680303113404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 017aa1068636b7e4f834f30ac42be9b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyOfficer

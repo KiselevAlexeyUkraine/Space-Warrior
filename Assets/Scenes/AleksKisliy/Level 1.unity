@@ -761,14 +761,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridFormationSpawner
   formationRoot: {fileID: 7215469652385854143}
-  maxColumns: 5
-  maxRows: 5
+  defaultColumns: 5
+  defaultRows: 4
   spacingX: 8
   spacingY: 8
   waves:
   - waveName: 1
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 3
+    maxRows: 3
     firstEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: 49b611bd254e62048a6734fc30d0f9f7, type: 3}
       startRow: 1
       endRow: 2
       rowStep: 1
@@ -776,6 +780,25 @@ MonoBehaviour:
       prefabLayer: 0
     secondEnemySettings:
       enemyPrefab: {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+      startRow: 2
+      endRow: 2
+      rowStep: 1
+      columnStep: 2
+      prefabLayer: 0
+  - waveName: 2
+    isSingleEnemyWave: 1
+    singleEnemyPrefab: {fileID: 4598602158235825869, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
+    maxColumns: 1
+    maxRows: 1
+    firstEnemySettings:
+      enemyPrefab: {fileID: 4598602158235825869, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
+      startRow: 1
+      endRow: 2
+      rowStep: 1
+      columnStep: 2
+      prefabLayer: 0
+    secondEnemySettings:
+      enemyPrefab: {fileID: 0}
       startRow: 3
       endRow: 4
       rowStep: 1

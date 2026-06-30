@@ -390,8 +390,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7b1539a926787342a257e8e09e4e6fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.EnemyRocketLauncher
-  speed: 10
-  health: 10
+  speed: 40
+  health: 1
   score: 100
   showDamageDuration: 0.1
   powerUpDropChance: 1

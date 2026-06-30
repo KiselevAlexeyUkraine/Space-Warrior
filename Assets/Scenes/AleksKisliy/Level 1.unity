@@ -775,7 +775,7 @@ MonoBehaviour:
       columnStep: 2
       prefabLayer: 0
     secondEnemySettings:
-      enemyPrefab: {fileID: 185822709802943670, guid: 7b5e7a5145da1b34e90edc32720045cf, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
       startRow: 3
       endRow: 5
       rowStep: 2

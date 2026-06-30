@@ -1,101 +1,164 @@
 using UnityEngine;
+using Components.Weapon;
 using Lean.Pool;
 using Zenject;
 using Servise;
 
 namespace Components.Enemy
 {
-    public class EnemyShooter : EnemyBase
+    public class EnemyShieldShooter : EnemyBase
     {
-        [Header("Shooting Settings")]
-        [Tooltip("Префаб вражеского снаряда (может быть пустым префабом без скриптов).")]
-        [SerializeField] private GameObject _projectilePrefab;
+        [Header("Shield Settings")]
+        [Tooltip("Объект щита (с Renderer), который висит на враге.")]
+        [SerializeField] private GameObject _shieldObject;
+        
+        [Tooltip("Максимальный уровень щита (сколько снарядов он может отразить).")]
+        [SerializeField] private int _maxShieldLevel = 3;
+        
+        [Tooltip("Скорость вращения щита вокруг своей оси.")]
+        [SerializeField] private float _rotationsPerSecond = 0.1f;
 
-        [Tooltip("Точка (Трансформ), из которой будут вылетать снаряды.")]
-        [SerializeField] private Transform _firePoint;
+        [Header("Reflection (Shooting) Settings")]
+        [Tooltip("Префаб вражеского снаряда, который спавнится ПРИ ОТРАЖЕНИИ.")]
+        [SerializeField] private GameObject _reflectedProjectilePrefab;
 
-        // ИЗМЕНЕНО: Заменили фиксированный fireRate на рандомный интервал
-        [Header("Randomized Interval Settings")]
-        [Tooltip("Минимальное время ожидания между выстрелами (в секундах).")]
-        [SerializeField, Min(0.1f)] private float minFireInterval = 1f;
+        [Tooltip("Скорость полета отраженного снаряда вниз. Считывается AnimatorService.")]
+        [SerializeField] private float _reflectedProjectileSpeed = 15f;
 
-        [Tooltip("Максимальное время ожидания между выстрелами (в секундах).")]
-        [SerializeField, Min(0.1f)] private float maxFireInterval = 3f;
-
-        [Tooltip("Задержка перед самым первым выстрелом после спавна врага.")]
-        [SerializeField] private float _initialShotDelay = 0.5f;
-
-        [Tooltip("Скорость полета пули вниз. Считывается AnimatorService.")]
-        [SerializeField] private float _projectileSpeed = 15f;
+        private float _currentShieldLevel;
+        private Material _shieldMat;
+        private int _lastShownLevel = -1;
 
         private DiContainer _diContainer;
         private AnimatorService _animatorService;
-        private float _nextFireTime;
 
         [Inject]
-        private void ConstructShooter(DiContainer diContainer, AnimatorService animatorService)
+        private void ConstructReflector(DiContainer diContainer, AnimatorService animatorService)
         {
             _diContainer = diContainer;
             _animatorService = animatorService; 
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
+            
+            if (_shieldObject != null)
+            {
+                Renderer shieldRend = _shieldObject.GetComponent<Renderer>();
+                if (shieldRend != null)
+                {
+                    // Используем .material, чтобы у каждого врага была своя копия материала
+                    _shieldMat = shieldRend.material;
+                }
+            }
         }
 
         protected override void OnEnable()
         {
             base.OnEnable();
             
-            // Задаем время первого выстрела при активации из пула
-            _nextFireTime = Time.time + _initialShotDelay;
+            // Сброс щита при активации из пула
+            _currentShieldLevel = _maxShieldLevel;
+            _lastShownLevel = -1;
+            
+            if (_shieldObject != null)
+            {
+                _shieldObject.SetActive(true);
+            }
+            
+            UpdateShieldVisual(forceUpdate: true);
+        }
+
+        public override void Move()
+        {
+            // Стандартное движение вниз (если не Grid Formation)
+            Vector3 tempPos = pos;
+            tempPos.y -= speed * Time.deltaTime;
+            pos = tempPos;
         }
 
         protected override void Update()
         {
             base.Update();
 
-            // Логика стрельбы по плавающему таймеру
-            if (Time.time >= _nextFireTime)
+            // Вращаем щит точно так же, как у игрока
+            if (_shieldObject != null && _shieldObject.activeSelf)
             {
-                Shoot();
-                CalculateNextFireTime(); // Рассчитываем случайный интервал для следующего выстрела
+                float rZ = -(_rotationsPerSecond * Time.time * 360f) % 360f;
+                _shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
             }
         }
 
+        protected override void OnTriggerEnter(Collider other)
+        {
+            // Если щит активен и в него попал снаряд игрока
+            if (_shieldObject != null && _shieldObject.activeSelf && other.CompareTag("ProjectileHero"))
+            {
+                // Сначала спавним ответный снаряд в точке столкновения
+                SpawnReflectedProjectile(other.transform.position);
+
+                // Тратим прочность щита
+                _currentShieldLevel -= 1f;
+                ShowDamage(); // Мигание самого корабля для фидбека
+
+                // Проверяем прочность щита
+                if (_currentShieldLevel <= 0)
+                {
+                    _currentShieldLevel = 0;
+                    if (_shieldObject != null)
+                    {
+                        _shieldObject.SetActive(false); // Ломаем щит
+                    }
+                }
+
+                UpdateShieldVisual();
+
+                // Уничтожаем (деспавним) оригинальный патрон игрока
+                SafeDespawn(other.gameObject);
+                return; 
+            }
+
+            // Если щит пробит или это не пуля игрока — обычная логика урона
+            base.OnTriggerEnter(other);
+        }
+
         /// <summary>
-        /// Выбирает случайный интервал времени и сдвигает точку следующего выстрела.
+        /// Спавнит новый вражеский префаб из точки, куда попал патрон игрока
         /// </summary>
-        private void CalculateNextFireTime()
+        private void SpawnReflectedProjectile(Vector3 spawnPosition)
         {
-            // Подстраховка на случай, если в инспекторе перепутали min и max местами
-            float min = Mathf.Min(minFireInterval, maxFireInterval);
-            float max = Mathf.Max(minFireInterval, maxFireInterval);
+            if (_reflectedProjectilePrefab == null) return;
 
-            float randomDelay = Random.Range(min, max);
-            _nextFireTime = Time.time + randomDelay;
-        }
-
-        public override void Move()
-        {
-            Vector3 tempPos = pos;
-            tempPos.y -= speed * Time.deltaTime;
-            pos = tempPos;
-        }
-
-        private void Shoot()
-        {
-            if (_projectilePrefab == null) return;
-            
-            Transform spawnPoint = _firePoint != null ? _firePoint : transform;
-
-            GameObject projectileGo = LeanPool.Spawn(_projectilePrefab, spawnPoint.position, spawnPoint.rotation);
+            // Спавним префаб. Разворачиваем на 180 градусов (Quaternion.Euler(0, 0, 180f)), чтобы он летел вниз
+            GameObject projectileGo = LeanPool.Spawn(_reflectedProjectilePrefab, spawnPosition, Quaternion.Euler(0, 0, 180f));
             
             _diContainer?.InjectGameObject(projectileGo);
 
             if (_animatorService != null)
             {
-                _animatorService.RegisterProjectile(projectileGo, _projectileSpeed);
+                _animatorService.RegisterProjectile(projectileGo, _reflectedProjectileSpeed);
             }
             else
             {
-                Debug.LogError("[EnemyShooter] AnimatorService не найден! Пуля будет стоять на месте.");
+                Debug.LogError("[EnemyReflector] AnimatorService не найден!");
+            }
+        }
+
+        /// <summary>
+        /// Сдвиг текстуры щита по принципу игрока
+        /// </summary>
+        private void UpdateShieldVisual(bool forceUpdate = false)
+        {
+            if (_shieldMat == null) return;
+
+            int currentVisualLevel = Mathf.FloorToInt(_currentShieldLevel);
+
+            if (_lastShownLevel != currentVisualLevel || forceUpdate)
+            {
+                _lastShownLevel = currentVisualLevel;
+                // Сдвигаем текстуру на 0.2 за каждый шаг прочности
+                _shieldMat.mainTextureOffset = new Vector2(0.2f * _lastShownLevel, 0);
             }
         }
     }

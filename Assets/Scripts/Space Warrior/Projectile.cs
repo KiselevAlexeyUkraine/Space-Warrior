@@ -13,6 +13,10 @@ public sealed class Projectile : MonoBehaviour
     [Tooltip("Слой (или слои), при столкновении с которыми пуля деспавнит цель и себя.")]
     [SerializeField] private LayerMask targetLayerMask;
 
+    // ДОБАВЛЕНО: Слой ракеты, настраиваемый в инспекторе
+    [Tooltip("Выберите слой ракеты (Rocket). Объекты на этом слое НЕ будут деспавниться при попадании пули.")]
+    [SerializeField] private LayerMask _rocketLayer;
+
     [Header("Set Dynamically")]
     public Rigidbody rigid;
     [SerializeField] private WeaponType _type;
@@ -38,15 +42,25 @@ public sealed class Projectile : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         GameObject otherGo = other.gameObject;
+        int objectLayer = otherGo.layer;
 
-        if (((1 << otherGo.layer) & targetLayerMask) != 0)
+        // Проверяем, входит ли задетый слой в общую маску целей
+        if (((1 << objectLayer) & targetLayerMask.value) != 0)
         {
-            Debug.Log($"[Пуля] Столкновение с: {otherGo.name} на слое {LayerMask.LayerToName(otherGo.layer)}");
+            Debug.Log($"[Пуля] Столкновение с: {otherGo.name} на слое {LayerMask.LayerToName(objectLayer)}");
 
-            // ИСПРАВЛЕНО: Просто деспавним объект, с которым столкнулись, без проверок на скрипты
-            SafeDespawn(otherGo);
+            // ИСПРАВЛЕНО: Проверяем, является ли этот объект ракетой (через маску из инспектора)
+            if (((1 << objectLayer) & _rocketLayer.value) != 0)
+            {
+                Debug.Log($"[Пуля] Попадание в ракету. Объект {otherGo.name} игнорирует деспавн пули.");
+            }
+            else
+            {
+                // Для всех остальных слоев (например, обычных врагов) — удаляем цель
+                SafeDespawn(otherGo);
+            }
             
-            // Деспавним саму пулю
+            // Саму пулю игрока убираем в любом случае
             SafeDespawn(gameObject);
         }
     }

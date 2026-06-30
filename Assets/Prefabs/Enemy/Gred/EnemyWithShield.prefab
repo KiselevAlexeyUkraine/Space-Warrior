@@ -299,7 +299,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8736b8376eb6db43a2c3d121de66dec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.EnemyWithShield
-  speed: 10
+  speed: 70
   health: 1
   score: 100
   showDamageDuration: 0.1

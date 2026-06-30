@@ -3,6 +3,7 @@ using Lean.Pool;
 using Zenject;
 using Servise;
 using Components.Player;
+using Components.Weapon;
 
 namespace Components.Enemy
 {
@@ -15,12 +16,15 @@ namespace Components.Enemy
         [Tooltip("Точка вылета ракеты.")]
         [SerializeField] private Transform _firePoint;
 
+        [Tooltip("Если включено, ракета летит строго вниз. Если выключено — целится в игрока.")]
+        [SerializeField] private bool _shootStraightDown = false;
+
         [Header("Randomized Interval Settings")]
         [SerializeField, Min(0.1f)] private float minFireInterval = 2f;
         [SerializeField, Min(0.1f)] private float maxFireInterval = 4f;
         [SerializeField] private float _initialShotDelay = 1f;
 
-        [Tooltip("Скорость полета ракеты в сторону игрока.")]
+        [Tooltip("Скорость полета ракеты (используется, только если нет скрипта авто-движения).")]
         [SerializeField] private float _rocketSpeed = 12f;
 
         private DiContainer _diContainer;
@@ -29,11 +33,11 @@ namespace Components.Enemy
         private float _nextFireTime;
 
         [Inject]
-        private void ConstructLauncher(DiContainer diContainer, AnimatorService animatorService, PlayerMove player)
+        private void ConstructLauncher(DiContainer diContainer, AnimatorService animatorService, PlayerMove player = null)
         {
             _diContainer = diContainer;
             _animatorService = animatorService;
-            _player = player;
+            _player = player; 
         }
 
         protected override void OnEnable()
@@ -63,41 +67,66 @@ namespace Components.Enemy
         private void ShootRocket()
         {
             if (_rocketPrefab == null) return;
-            if (_player == null)
+            
+            if (!_shootStraightDown && _player == null)
             {
-                Debug.LogWarning($"[{name}] Не могу выстрелить: PlayerComponent не найден в DiContainer!");
+                Debug.LogWarning($"[{name}] Не могу выстрелить с наведением: PlayerComponent не найден в DiContainer!");
                 return;
             }
 
             Transform spawnPoint = _firePoint != null ? _firePoint : transform;
+            Vector3 directionToPlayer;
+            Quaternion rocketRotation;
 
-            // 1. Считаем направление до игрока на момент выстрела
-            Vector3 directionToPlayer = _player.transform.position - spawnPoint.position;
-            directionToPlayer.z = 0f; // Оставляем полет строго в 2D (X, Y)
-
-            // 2. Рассчитываем поворот ракеты в сторону направления полета (синей стрелкой Z вперед)
-            Quaternion rocketRotation = spawnPoint.rotation;
-            if (directionToPlayer != Vector3.zero)
+            if (_shootStraightDown)
             {
-                float angle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg;
-                // Смещаем на -90 градусов, если префаб ракеты изначально смотрит «вверх»
-                rocketRotation = Quaternion.Euler(0, 0, angle - 90f); 
+                directionToPlayer = Vector3.down;
+                rocketRotation = Quaternion.Euler(0f, 0f, 180f);
+            }
+            else
+            {
+                directionToPlayer = _player.transform.position - spawnPoint.position;
+                directionToPlayer.z = 0f;
+
+                rocketRotation = spawnPoint.rotation;
+                if (directionToPlayer != Vector3.zero)
+                {
+                    float angle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg;
+                    rocketRotation = Quaternion.Euler(0, 0, angle - 90f); 
+                }
             }
 
-            // 3. Спавним ракету
+            // Спавним ракету
             GameObject rocketGo = LeanPool.Spawn(_rocketPrefab, spawnPoint.position, rocketRotation);
+            
+            // КРИТИЧЕСКИ ВАЖНО: Инжектим зависимости, чтобы EnemyFollowProjectile внутри себя получил AudioService и PlayerMove
             _diContainer?.InjectGameObject(rocketGo);
 
-            // 4. Регистрируем в сервисе с вектором направления
+            // ИСПРАВЛЕНО: Проверяем, есть ли на снаряде скрипт EnemyFollowProjectile
+            if (rocketGo.TryGetComponent<EnemyFollowProjectile>(out var followProjectile))
+            {
+                // Если скрипт есть, он сам управляет движением в своем Update().
+                // Никуда в AnimatorService его не пихаем, просто выходим из метода!
+                return;
+            }
+
+            // Если скриптаEnemyFollowProjectile нет — значит это обычная «тупая» пуля,
+            // отдаем её управление стандартному сервису анимации
             if (_animatorService != null)
             {
-                _animatorService.RegisterDirectedProjectile(rocketGo, _rocketSpeed, directionToPlayer);
+                if (_shootStraightDown)
+                {
+                    _animatorService.RegisterProjectile(rocketGo, _rocketSpeed);
+                }
+                else
+                {
+                    _animatorService.RegisterDirectedProjectile(rocketGo, _rocketSpeed, directionToPlayer);
+                }
             }
         }
 
         public override void Move()
         {
-            // Обычное поведение вне сетки (полет вниз)
             Vector3 tempPos = pos;
             tempPos.y -= speed * Time.deltaTime;
             pos = tempPos;

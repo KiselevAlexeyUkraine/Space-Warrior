@@ -130,7 +130,7 @@ Rigidbody:
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 512
+    m_Bits: 16896
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -156,5 +156,8 @@ MonoBehaviour:
   targetLayerMask:
     serializedVersion: 2
     m_Bits: 2048
+  _rocketLayer:
+    serializedVersion: 2
+    m_Bits: 16384
   rigid: {fileID: 6997558440577309661}
   _type: 1

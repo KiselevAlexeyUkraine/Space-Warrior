@@ -299,8 +299,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 327485485ce78ce4b82cdcfe7ac88d2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.EnemyReflector
-  speed: 10
-  health: 10
+  speed: 50
+  health: 1
   score: 100
   showDamageDuration: 0.1
   powerUpDropChance: 1

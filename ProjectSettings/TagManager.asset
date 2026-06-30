@@ -17,6 +17,7 @@ TagManager:
   - Hero
   - ProjectileHero
   - Laser
+  - FxTemporaire
   layers:
   - Default
   - TransparentFX
@@ -32,7 +33,7 @@ TagManager:
   - ProjectileEnemy
   - PowerUp
   - Laser
-  - 
+  - Rocket
   - 
   - 
   - 

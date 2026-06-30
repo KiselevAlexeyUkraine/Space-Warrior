@@ -768,17 +768,17 @@ MonoBehaviour:
   waves:
   - waveName: 1
     firstEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: b6741573f4edde84bbe9444a4e2b47d3, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
       startRow: 1
-      endRow: 3
-      rowStep: 2
+      endRow: 2
+      rowStep: 1
       columnStep: 2
       prefabLayer: 0
     secondEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
+      enemyPrefab: {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
       startRow: 3
-      endRow: 5
-      rowStep: 2
+      endRow: 4
+      rowStep: 1
       columnStep: 2
       prefabLayer: 0
   spawnPerSecond: 2

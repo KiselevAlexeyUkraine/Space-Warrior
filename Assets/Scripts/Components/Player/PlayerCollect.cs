@@ -13,21 +13,31 @@ namespace Components.Player
         private PlayerConfig _playerConfig;
         private AudioService _audioService;
 
-        [Header("Weapons")]
+        [Header("===== Weapons =====")]
+        [Tooltip("Список всех оружейных слотов, установленных на корабле игрока.")]
         [SerializeField]
         private Components.Weapon.Weapon[] _weapons;
 
-        [Header("Runtime")]
+        [Header("===== Shield Visuals =====")]
+        [Tooltip("Эффект частиц (или GameObject визуала щита), который активируется при наличии прочности щита и гаснет при её обнулении.")]
+        [SerializeField]
+        private GameObject _shieldParticle;
+
+        [Header("===== Runtime =====")]
+        [Tooltip("Текущий уровень прочности щита игрока в реальном времени.")]
         [SerializeField]
         private float _shieldLevel;
         
-        [Header("Layers")]
+        [Header("===== Layers =====")]
+        [Tooltip("Слой, на котором находятся объекты вражеских кораблей.")]
         [SerializeField]
         private LayerMask enemyLayer;
 
+        [Tooltip("Слой, на котором находятся подбираемые бонусы (PowerUps).")]
         [SerializeField]
         private LayerMask powerUpLayer;
         
+        [Tooltip("Слой, выделенный под лазерные лучи и лазерные ловушки.")]
         [SerializeField]
         private LayerMask laserLayer;
 
@@ -48,6 +58,9 @@ namespace Components.Player
         private void Start()
         {
             _shieldLevel = _playerConfig.StartShieldLevel;
+
+            // Принудительно обновляем состояние партикла при старте игры
+            UpdateShieldParticleVisual();
 
             ClearWeapons();
 
@@ -71,7 +84,6 @@ namespace Components.Player
             // 1. ПРИОРИТЕТНАЯ ПРОВЕРКА: СТОЛКНОВЕНИЕ С ЛАЗЕРОМ (По слою ИЛИ по тегу)
             bool isLaser = (laserLayer.value & (1 << objectLayer)) != 0;
 
-            // Безопасная проверка тега (если тег "Laser" не создан в Unity, ошибка в консоль НЕ вылетит)
             try
             {
                 if (triggerObject.CompareTag("Laser"))
@@ -85,8 +97,6 @@ namespace Components.Player
             {
                 _audioService?.PlayTakeDamage();
                 ShieldLevel--;
-
-                // Полностью блокируем выполнение кода ниже, враг останется жив!
                 return; 
             }
 
@@ -172,12 +182,25 @@ namespace Components.Player
                 _shieldLevel =
                     Mathf.Min(value, _playerConfig.MaxShieldLevel);
 
+                // АВТОМАТИКА: Включаем или выключаем партикл в зависимости от текущего значения щита
+                UpdateShieldParticleVisual();
+
                 if (_shieldLevel >= 0)
                     return;
 
                 Destroy(gameObject);
 
                 _pageSwitcher?.Open(PageName.Failed).Forget();
+            }
+        }
+
+        // Вспомогательный метод контроля активации объекта партиклов щита
+        private void UpdateShieldParticleVisual()
+        {
+            if (_shieldParticle != null)
+            {
+                // Щит активен, если его уровень строго больше нуля
+                _shieldParticle.SetActive(_shieldLevel > 0);
             }
         }
 

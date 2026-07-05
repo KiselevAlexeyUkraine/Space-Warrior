@@ -1,6 +1,5 @@
 using UnityEngine;
 using Lean.Pool;
-using UnityEngine.Serialization;
 using Zenject;
 
 namespace Components.Weapon
@@ -14,35 +13,16 @@ namespace Components.Weapon
 
         [Inject]
         private WeaponConfig _config;
-        
-        [Header("===== References =====")]
-        [Tooltip("Дуло или визуальная часть оружия. Отсюда будут вылетать снаряды и этот объект меняет цвет под конфигурацию оружия.")]
-        [SerializeField]
-        private GameObject firePoint;
 
-        private Renderer _collarRenderer;
+        [Header("===== References =====")]
+        [Tooltip("Точка (Трансформ), из которой будут физически спавниться снаряды при выстреле.")]
+        [SerializeField]
+        private Transform firePoint;
+
         private float _lastShotTime;
 
         public WeaponType Type => _type;
         public WeaponConfig Config => _config;
-
-        private void Awake()
-        {
-            if (firePoint == null)
-            {
-                Transform collarTransform = transform.Find("Collar");
-
-                if (collarTransform != null)
-                {
-                    firePoint = collarTransform.gameObject;
-                }
-            }
-
-            if (firePoint != null)
-            {
-                _collarRenderer = firePoint.GetComponent<Renderer>();
-            }
-        }
 
         private void Start()
         {
@@ -70,12 +50,6 @@ namespace Components.Weapon
             {
                 Debug.LogError($"{name}: WeaponConfig не назначен.");
                 return;
-            }
-
-            if (_collarRenderer != null)
-            {
-                _collarRenderer.material.color =
-                    _config.weaponColor;
             }
 
             _lastShotTime = 0f;
@@ -179,19 +153,12 @@ namespace Components.Weapon
             if (_config.projectilePrefab == null)
                 return null;
 
-            // ИСПРАВЛЕНО: Убран projectileAnchor, теперь спавн идет без указания родителя (в корень сцены)
+            // Спавним снаряд. Слой и тег подтянутся из самого префаба автоматически.
             GameObject projectileGo =
                 LeanPool.Spawn(
                     _config.projectilePrefab,
-                    firePoint.transform.position,
+                    firePoint.position,
                     Quaternion.identity);
-
-            if (transform.root.CompareTag("Hero"))
-            {
-                projectileGo.tag = "ProjectileHero";
-                projectileGo.layer =
-                    LayerMask.NameToLayer("ProjectileHero");
-            }
 
             Projectile projectile =
                 projectileGo.GetComponent<Projectile>();

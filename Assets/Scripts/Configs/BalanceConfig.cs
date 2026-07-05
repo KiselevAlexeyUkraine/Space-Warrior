@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -17,48 +19,37 @@ public class BalanceConfig : MonoBehaviour
     private enum TableSection { None, Player, Enemy }
 
     #region Player
-
     public float PlayerMoveSpeed { get; private set; }
     public float PlayerFireRate { get; private set; }
     public float PlayerBulletSpeed { get; private set; }
-
     public int PlayerHealth { get; private set; }
     public int PlayerShield { get; private set; }
-
     #endregion
 
     #region Enemy Common
-
     public int EnemyHealth { get; private set; }
     public int EnemyShield { get; private set; }
     public float EnemyCollisionDamage { get; private set; }
-
     #endregion
 
     #region Enemy Shooter
-
     public float EnemyBulletFireRate { get; private set; }
     public float EnemyBulletSpeed { get; private set; }
     public float EnemyBulletDamage { get; private set; }
-
     #endregion
 
     #region Enemy Rocket
-
     public float EnemyRocketFireRate { get; private set; }
     public float EnemyRocketSpeed { get; private set; }
     public float EnemyRocketRadius { get; private set; }
     public float EnemyRocketDamage { get; private set; }
-
     #endregion
 
     #region Enemy Laser
-
     public float EnemyLaserFireRate { get; private set; }
     public float EnemyLaserDelay { get; private set; }
     public float EnemyLaserDuration { get; private set; }
     public float EnemyLaserDamage { get; private set; }
-
     #endregion
 
     private void Awake()
@@ -85,13 +76,15 @@ public class BalanceConfig : MonoBehaviour
 
         IsLoaded = true;
 
-        // Выводим в консоль для проверки ячейку B9
-        Debug.Log($"⚙️ Balance loaded успешно! PlayerMoveSpeed (ячейка B9): {PlayerMoveSpeed}");
+        // ВЫВОД В ДЕБАГ: Теперь все значения выводятся корректно, включая float
+        Debug.Log($"⚙️ Balance loaded успешно!\n" +
+                  $"🔹 Скорость движения игрока (B9): {PlayerMoveSpeed}\n" +
+                  $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
+                  $"🔹 Темп стрельбы игрока (ячейка 7B): {PlayerFireRate} сек.");
     }
 
     private void Parse(string csv)
     {
-        // Нормализуем переносы строк для корректного разделения
         string[] lines = csv.Replace("\r", "").Split('\n');
         TableSection currentSection = TableSection.None;
 
@@ -100,109 +93,144 @@ public class BalanceConfig : MonoBehaviour
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            string[] cells = line.Split(',');
+            // Разбираем CSV по столбцам с учётом кавычек,
+            // чтобы значения вида "3,5" не резались на две колонки
+            List<string> cells = SplitCsvLine(line);
 
-            if (cells.Length < 1)
+            if (cells.Count < 2)
                 continue;
 
-            // Очищаем имя от пробелов и кавычек CSV
-            string key = cells[0].Trim().Trim('"');
+            string key = cells[0].Trim().Trim('"').ToLower();
+            string valueRaw = cells[1].Trim().Trim('"');
 
-            // Переключаем секции при чтении заголовков таблицы
-            if (key.Contains("Параметры игрока"))
+            // Если первая колонка пустая — пропускаем
+            if (string.IsNullOrEmpty(key))
+                continue;
+
+            // Определяем текущий блок таблицы
+            if (key.Contains("параметры игрока"))
             {
                 currentSection = TableSection.Player;
                 continue;
             }
-            if (key.Contains("Параметры врагов"))
+
+            if (key.Contains("параметры врагов"))
             {
                 currentSection = TableSection.Enemy;
                 continue;
             }
 
-            // Если в строке нет значения во второй колонке, идти дальше нет смысла
-            if (cells.Length < 2)
-                continue;
+            // Запятая теперь всегда десятичный разделитель
+            // (разделение по колонкам уже корректно обработано в SplitCsvLine)
+            valueRaw = valueRaw.Replace(',', '.');
 
-            // Заменяем запятую на точку, чтобы InvariantCulture смог распарсить "30,0" как float 30.0
-            string valueRaw = cells[1].Trim().Replace(',', '.').Trim('"');
-
-            if (!float.TryParse(valueRaw,
+            if (!float.TryParse(
+                    valueRaw,
                     NumberStyles.Float,
                     CultureInfo.InvariantCulture,
                     out float value))
+            {
                 continue;
+            }
 
-            // Парсинг параметров на основе текущей секции таблицы
             if (currentSection == TableSection.Player)
             {
-                switch (key)
+                if (key.Contains("здоров"))
                 {
-                    case "Здоровье (единицы)":
-                        PlayerHealth = (int)value;
-                        break;
-
-                    case "Щит (единицы)":
-                        PlayerShield = (int)value;
-                        break;
-
-                    case "Скорость стрельбы (секунды между выстрелами)":
-                        PlayerFireRate = value;
-                        break;
-
-                    case "Скорость полета снаряда (юниты в секунду)":
-                        PlayerBulletSpeed = value;
-                        break;
-
-                    case "Скорость движения корабля (юниты в секунду)":
-                        PlayerMoveSpeed = value; // Твоя ячейка B9!
-                        break;
+                    PlayerHealth = (int)value;
+                }
+                else if (key.Contains("щит"))
+                {
+                    PlayerShield = (int)value;
+                }
+                else if (key.Contains("скорость стрельбы"))
+                {
+                    PlayerFireRate = value;
+                }
+                else if (key.Contains("скорость полета снаряд"))
+                {
+                    PlayerBulletSpeed = value;
+                }
+                else if (key.Contains("скорость движения"))
+                {
+                    PlayerMoveSpeed = value;
                 }
             }
             else if (currentSection == TableSection.Enemy)
             {
-                switch (key)
+                if (key.Contains("здоров"))
                 {
-                    // Общие параметры врагов
-                    case "Скорость движения (юниты в секунды)":
-                        // Если у тебя будет переменная для базовой скорости врага, запиши сюда
-                        break;
-
-                    case "Здоровье (единицы)":
-                        EnemyHealth = (int)value;
-                        break;
-
-                    case "Урон от столкновения (единицы)":
-                        EnemyCollisionDamage = value;
-                        break;
-
-                    case "Щит (единицы)":
-                        EnemyShield = (int)value;
-                        break;
-
-                    // Обычные стрелки
-                    case "Скорость стрельбы (секунды между выстрелами)":
-                        EnemyBulletFireRate = value;
-                        break;
-
-                    case "Скорость полета выстрела (юниты в секунду)":
-                        EnemyBulletSpeed = value;
-                        break;
-
-                    case "Урон от выстрелов (единицы)":
-                        EnemyBulletDamage = value;
-                        break;
-
-                    // Ракетницы / Лазеры (добавь по аналогии, если точные строки появятся ниже в таблице)
-                    case "Скорость запуска ракеты (секунды между запуском)":
-                        EnemyRocketFireRate = value;
-                        break;
-
-                    case "Скорость полета ракеты (юниты в секунду)":
-                        EnemyRocketSpeed = value;
-                        break;
+                    EnemyHealth = (int)value;
+                }
+                else if (key.Contains("урон от столкновения"))
+                {
+                    EnemyCollisionDamage = value;
+                }
+                else if (key.Contains("щит"))
+                {
+                    EnemyShield = (int)value;
+                }
+                else if (key.Contains("скорость стрельбы"))
+                {
+                    EnemyBulletFireRate = value;
+                }
+                else if (key.Contains("скорость полета выстрел"))
+                {
+                    EnemyBulletSpeed = value;
+                }
+                else if (key.Contains("урон от выстрелов"))
+                {
+                    EnemyBulletDamage = value;
+                }
+                else if (key.Contains("скорость запуска ракеты"))
+                {
+                    EnemyRocketFireRate = value;
+                }
+                else if (key.Contains("скорость полета ракеты"))
+                {
+                    EnemyRocketSpeed = value;
                 }
             }
         }
+    }
+
+    // Простой CSV-парсер строки, корректно обрабатывающий поля в кавычках,
+    // в том числе с запятыми внутри (например "3,5" — дробное число из Google Sheets)
+    private static List<string> SplitCsvLine(string line)
+    {
+        var result = new List<string>();
+        var current = new StringBuilder();
+        bool inQuotes = false;
+
+        for (int i = 0; i < line.Length; i++)
+        {
+            char c = line[i];
+
+            if (c == '"')
+            {
+                // Экранированная кавычка внутри поля в кавычках: ""
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i++;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (c == ',' && !inQuotes)
+            {
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+        }
+
+        result.Add(current.ToString());
+        return result;
     }
 }

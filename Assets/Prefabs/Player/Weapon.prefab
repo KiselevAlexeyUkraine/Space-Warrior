@@ -77,4 +77,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _type: 1
+  projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
+  projectileLifeTime: 3
+  projectileCount: 3
+  spreadAngle: 45
   firePoint: {fileID: 337113564714073348}

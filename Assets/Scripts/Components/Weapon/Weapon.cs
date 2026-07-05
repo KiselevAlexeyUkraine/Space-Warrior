@@ -12,7 +12,10 @@ namespace Components.Weapon
         private WeaponType _type = WeaponType.none;
 
         [Inject]
-        private WeaponConfig _config;
+        private WeaponConfig _config; // Визуал, паттерн снарядов, префаб и т.д.
+
+        [Inject]
+        private BalanceConfig _balanceConfig; // Динамический баланс из Google Sheets
 
         [Header("===== References =====")]
         [Tooltip("Точка (Трансформ), из которой будут физически спавниться снаряды при выстреле.")]
@@ -23,6 +26,11 @@ namespace Components.Weapon
 
         public WeaponType Type => _type;
         public WeaponConfig Config => _config;
+
+        // Темп стрельбы и скорость снаряда всегда берутся из полей игрока в BalanceConfig
+        private float DynamicFireRate => _balanceConfig.PlayerFireRate;
+
+        private float DynamicProjectileSpeed => _balanceConfig.PlayerBulletSpeed;
 
         private void Start()
         {
@@ -52,6 +60,16 @@ namespace Components.Weapon
                 return;
             }
 
+            if (_balanceConfig == null)
+            {
+                Debug.LogError($"{name}: BalanceConfig не внедрен через Zenject.");
+                return;
+            }
+
+            // ДЕБАГ: проверяем, какие значения реально применились
+            Debug.Log($"🚀 [{name}] Инициализация. " +
+                      $"Скорость снаряда: {DynamicProjectileSpeed}, Темп стрельбы: {DynamicFireRate}");
+
             _lastShotTime = 0f;
         }
 
@@ -60,14 +78,19 @@ namespace Components.Weapon
             if (!gameObject.activeInHierarchy)
                 return;
 
-            if (_config == null)
+            if (_config == null || _balanceConfig == null)
                 return;
 
-            if (Time.time - _lastShotTime < _config.fireRate)
+            // Если таблица еще загружается на старте, ждем завершения
+            if (!_balanceConfig.IsLoaded)
                 return;
 
-            Vector3 velocity =
-                Vector3.up * _config.projectileSpeed;
+            // Проверка кулдауна по значению из BalanceConfig
+            if (Time.time - _lastShotTime < DynamicFireRate)
+                return;
+
+            // Скорость полета берется из BalanceConfig
+            Vector3 velocity = Vector3.up * DynamicProjectileSpeed;
 
             if (transform.up.y < 0)
             {
@@ -99,18 +122,16 @@ namespace Components.Weapon
             if (projectile != null &&
                 projectile.rigid != null)
             {
-                projectile.rigid.linearVelocity =
-                    baseVelocity;
+                projectile.rigid.linearVelocity = baseVelocity;
             }
         }
 
         private void FireSpread(Vector3 baseVelocity)
         {
-            int count =
-                Mathf.Max(1, _config.projectileCount);
-
-            float spread =
-                _config.spreadAngle;
+            // Паттерн (кол-во снарядов, угол) берется из WeaponConfig,
+            // а скорость снаряда — динамически из BalanceConfig (см. Fire()).
+            int count = Mathf.Max(1, _config.projectileCount);
+            float spread = _config.spreadAngle;
 
             if (count == 1)
             {
@@ -125,20 +146,16 @@ namespace Components.Weapon
             {
                 float angle = startAngle + step * i;
 
-                Projectile projectile =
-                    MakeProjectile();
+                Projectile projectile = MakeProjectile();
 
                 if (projectile == null ||
                     projectile.rigid == null)
                     continue;
 
                 Quaternion rotation =
-                    Quaternion.AngleAxis(
-                        angle,
-                        Vector3.back);
+                    Quaternion.AngleAxis(angle, Vector3.back);
 
-                projectile.transform.rotation =
-                    rotation;
+                projectile.transform.rotation = rotation;
 
                 projectile.rigid.linearVelocity =
                     rotation * baseVelocity;
@@ -147,13 +164,9 @@ namespace Components.Weapon
 
         private Projectile MakeProjectile()
         {
-            if (_config == null)
+            if (_config == null || _config.projectilePrefab == null)
                 return null;
 
-            if (_config.projectilePrefab == null)
-                return null;
-
-            // Спавним снаряд. Слой и тег подтянутся из самого префаба автоматически.
             GameObject projectileGo =
                 LeanPool.Spawn(
                     _config.projectilePrefab,
@@ -168,6 +181,7 @@ namespace Components.Weapon
                 projectile.type = _type;
             }
 
+            // Время жизни снаряда берется из WeaponConfig
             LeanPool.Despawn(
                 projectileGo,
                 _config.projectileLifeTime);

@@ -8,14 +8,17 @@ namespace Components.Player
     {
         private PlayerConfig _playerConfig;
         private DesktopInput _desktopInput;
+        private BalanceConfig _balanceConfig;
 
         [Inject]
         private void Construct(
             DesktopInput desktopInput,
-            PlayerConfig playerConfig)
+            PlayerConfig playerConfig,
+            BalanceConfig balanceConfig)
         {
             _desktopInput = desktopInput;
             _playerConfig = playerConfig;
+            _balanceConfig = balanceConfig;
         }
 
         private void Update()
@@ -29,11 +32,11 @@ namespace Components.Player
             Vector3 position = transform.position;
 
             position.x += _desktopInput.Horizontal *
-                          _playerConfig.Speed *
+                          _balanceConfig.PlayerMoveSpeed *
                           Time.deltaTime;
 
             position.y += _desktopInput.Vertical *
-                          _playerConfig.Speed *
+                          _balanceConfig.PlayerMoveSpeed *
                           Time.deltaTime;
 
             transform.position = position;

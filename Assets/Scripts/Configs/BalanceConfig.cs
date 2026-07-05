@@ -13,6 +13,9 @@ public class BalanceConfig : MonoBehaviour
 
     public bool IsLoaded { get; private set; }
 
+    // Переменная для отслеживания текущего блока в цикле парсинга
+    private enum TableSection { None, Player, Enemy }
+
     #region Player
 
     public float PlayerMoveSpeed { get; private set; }
@@ -74,7 +77,7 @@ public class BalanceConfig : MonoBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError(request.error);
+            Debug.LogError($"[BalanceConfig] Ошибка скачивания таблицы: {request.error}");
             yield break;
         }
 
@@ -82,12 +85,15 @@ public class BalanceConfig : MonoBehaviour
 
         IsLoaded = true;
 
-        Debug.Log("Balance loaded.");
+        // Выводим в консоль для проверки ячейку B9
+        Debug.Log($"⚙️ Balance loaded успешно! PlayerMoveSpeed (ячейка B9): {PlayerMoveSpeed}");
     }
 
     private void Parse(string csv)
     {
-        string[] lines = csv.Split('\n');
+        // Нормализуем переносы строк для корректного разделения
+        string[] lines = csv.Replace("\r", "").Split('\n');
+        TableSection currentSection = TableSection.None;
 
         foreach (string line in lines)
         {
@@ -96,94 +102,106 @@ public class BalanceConfig : MonoBehaviour
 
             string[] cells = line.Split(',');
 
+            if (cells.Length < 1)
+                continue;
+
+            // Очищаем имя от пробелов и кавычек CSV
+            string key = cells[0].Trim().Trim('"');
+
+            // Переключаем секции при чтении заголовков таблицы
+            if (key.Contains("Параметры игрока"))
+            {
+                currentSection = TableSection.Player;
+                continue;
+            }
+            if (key.Contains("Параметры врагов"))
+            {
+                currentSection = TableSection.Enemy;
+                continue;
+            }
+
+            // Если в строке нет значения во второй колонке, идти дальше нет смысла
             if (cells.Length < 2)
                 continue;
 
-            string key = cells[0].Trim();
+            // Заменяем запятую на точку, чтобы InvariantCulture смог распарсить "30,0" как float 30.0
+            string valueRaw = cells[1].Trim().Replace(',', '.').Trim('"');
 
-            if (!float.TryParse(cells[1],
+            if (!float.TryParse(valueRaw,
                     NumberStyles.Float,
                     CultureInfo.InvariantCulture,
                     out float value))
                 continue;
 
-            switch (key)
+            // Парсинг параметров на основе текущей секции таблицы
+            if (currentSection == TableSection.Player)
             {
-                case "PlayerHealth":
-                    PlayerHealth = (int)value;
-                    break;
+                switch (key)
+                {
+                    case "Здоровье (единицы)":
+                        PlayerHealth = (int)value;
+                        break;
 
-                case "PlayerShield":
-                    PlayerShield = (int)value;
-                    break;
+                    case "Щит (единицы)":
+                        PlayerShield = (int)value;
+                        break;
 
-                case "PlayerFireRate":
-                    PlayerFireRate = value;
-                    break;
+                    case "Скорость стрельбы (секунды между выстрелами)":
+                        PlayerFireRate = value;
+                        break;
 
-                case "PlayerBulletSpeed":
-                    PlayerBulletSpeed = value;
-                    break;
+                    case "Скорость полета снаряда (юниты в секунду)":
+                        PlayerBulletSpeed = value;
+                        break;
 
-                case "PlayerMoveSpeed":
-                    PlayerMoveSpeed = value;
-                    break;
+                    case "Скорость движения корабля (юниты в секунду)":
+                        PlayerMoveSpeed = value; // Твоя ячейка B9!
+                        break;
+                }
+            }
+            else if (currentSection == TableSection.Enemy)
+            {
+                switch (key)
+                {
+                    // Общие параметры врагов
+                    case "Скорость движения (юниты в секунды)":
+                        // Если у тебя будет переменная для базовой скорости врага, запиши сюда
+                        break;
 
-                case "EnemyHealth":
-                    EnemyHealth = (int)value;
-                    break;
+                    case "Здоровье (единицы)":
+                        EnemyHealth = (int)value;
+                        break;
 
-                case "EnemyShield":
-                    EnemyShield = (int)value;
-                    break;
+                    case "Урон от столкновения (единицы)":
+                        EnemyCollisionDamage = value;
+                        break;
 
-                case "EnemyCollisionDamage":
-                    EnemyCollisionDamage = value;
-                    break;
+                    case "Щит (единицы)":
+                        EnemyShield = (int)value;
+                        break;
 
-                case "EnemyBulletFireRate":
-                    EnemyBulletFireRate = value;
-                    break;
+                    // Обычные стрелки
+                    case "Скорость стрельбы (секунды между выстрелами)":
+                        EnemyBulletFireRate = value;
+                        break;
 
-                case "EnemyBulletSpeed":
-                    EnemyBulletSpeed = value;
-                    break;
+                    case "Скорость полета выстрела (юниты в секунду)":
+                        EnemyBulletSpeed = value;
+                        break;
 
-                case "EnemyBulletDamage":
-                    EnemyBulletDamage = value;
-                    break;
+                    case "Урон от выстрелов (единицы)":
+                        EnemyBulletDamage = value;
+                        break;
 
-                case "EnemyRocketFireRate":
-                    EnemyRocketFireRate = value;
-                    break;
+                    // Ракетницы / Лазеры (добавь по аналогии, если точные строки появятся ниже в таблице)
+                    case "Скорость запуска ракеты (секунды между запуском)":
+                        EnemyRocketFireRate = value;
+                        break;
 
-                case "EnemyRocketSpeed":
-                    EnemyRocketSpeed = value;
-                    break;
-
-                case "EnemyRocketRadius":
-                    EnemyRocketRadius = value;
-                    break;
-
-                case "EnemyRocketDamage":
-                    EnemyRocketDamage = value;
-                    break;
-
-                case "EnemyLaserFireRate":
-                    EnemyLaserFireRate = value;
-                    break;
-
-                case "EnemyLaserDelay":
-                    EnemyLaserDelay = value;
-                    break;
-
-                case "EnemyLaserDuration":
-                    EnemyLaserDuration = value;
-                    break;
-
-                case "EnemyLaserDamage":
-                    EnemyLaserDamage = value;
-                    break;
+                    case "Скорость полета ракеты (юниты в секунду)":
+                        EnemyRocketSpeed = value;
+                        break;
+                }
             }
         }
     }

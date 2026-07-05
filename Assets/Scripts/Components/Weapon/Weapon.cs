@@ -1,24 +1,24 @@
 using UnityEngine;
 using Lean.Pool;
+using UnityEngine.Serialization;
 using Zenject;
 
 namespace Components.Weapon
 {
     public sealed class Weapon : MonoBehaviour
     {
-        [Header("Weapon Settings")]
+        [Header("===== Weapon Settings =====")]
+        [Tooltip("Тип оружия (например: blaster, spread). Определяет логику стрельбы и паттерн снарядов.")]
         [SerializeField]
         private WeaponType _type = WeaponType.none;
 
         [Inject]
         private WeaponConfig _config;
-
-        [Header("References")]
+        
+        [Header("===== References =====")]
+        [Tooltip("Дуло или визуальная часть оружия. Отсюда будут вылетать снаряды и этот объект меняет цвет под конфигурацию оружия.")]
         [SerializeField]
-        private Transform projectileAnchor;
-
-        [SerializeField]
-        private GameObject collar;
+        private GameObject firePoint;
 
         private Renderer _collarRenderer;
         private float _lastShotTime;
@@ -28,25 +28,19 @@ namespace Components.Weapon
 
         private void Awake()
         {
-            if (collar == null)
+            if (firePoint == null)
             {
                 Transform collarTransform = transform.Find("Collar");
 
                 if (collarTransform != null)
                 {
-                    collar = collarTransform.gameObject;
+                    firePoint = collarTransform.gameObject;
                 }
             }
 
-            if (collar != null)
+            if (firePoint != null)
             {
-                _collarRenderer = collar.GetComponent<Renderer>();
-            }
-
-            if (projectileAnchor == null)
-            {
-                GameObject anchor = new GameObject("_ProjectileAnchor");
-                projectileAnchor = anchor.transform;
+                _collarRenderer = firePoint.GetComponent<Renderer>();
             }
         }
 
@@ -185,12 +179,12 @@ namespace Components.Weapon
             if (_config.projectilePrefab == null)
                 return null;
 
+            // ИСПРАВЛЕНО: Убран projectileAnchor, теперь спавн идет без указания родителя (в корень сцены)
             GameObject projectileGo =
                 LeanPool.Spawn(
                     _config.projectilePrefab,
-                    collar.transform.position,
-                    Quaternion.identity,
-                    projectileAnchor);
+                    firePoint.transform.position,
+                    Quaternion.identity);
 
             if (transform.root.CompareTag("Hero"))
             {

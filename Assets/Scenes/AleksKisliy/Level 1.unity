@@ -328,7 +328,7 @@ Light:
   serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
+  m_Intensity: 3.31
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
@@ -390,13 +390,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 705507993}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
+  m_LocalRotation: {x: 0.25924048, y: 0, z: 0, w: 0.9658128}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 60, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 30.05, y: 0, z: 0}
 --- !u!114 &705507996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -482,6 +482,10 @@ PrefabInstance:
       propertyPath: _main
       value: 
       objectReference: {fileID: 963194229}
+    - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: _player
+      value: 
+      objectReference: {fileID: 8030490555240087705, guid: 1f397f38bf16c454984660176b4db58d, type: 3}
     - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
       propertyPath: _playerSpawn
       value: 
@@ -681,8 +685,9 @@ MonoBehaviour:
   - {fileID: 6457830071259349374, guid: 94c4ed3a4dbe2f440a8efa3931ae0ade, type: 3}
   enemySpawnPerSecond: 0.5
   enemyDefaultPadding: 1.5
+  enablePowerUpDrops: 0
   prefabPowerUp: {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
-  powerUpFrequency: 010000000100000001000000
+  powerUpFrequency: 01000000
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -761,49 +766,88 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridFormationSpawner
   formationRoot: {fileID: 7215469652385854143}
-  defaultColumns: 5
-  defaultRows: 4
+  defaultColumns: 8
+  defaultRows: 8
   spacingX: 8
   spacingY: 8
   waves:
   - waveName: 1
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 3
-    maxRows: 3
-    firstEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: 49b611bd254e62048a6734fc30d0f9f7, type: 3}
-      startRow: 1
-      endRow: 2
-      rowStep: 1
-      columnStep: 2
-      prefabLayer: 0
-    secondEnemySettings:
-      enemyPrefab: {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-      startRow: 2
-      endRow: 2
-      rowStep: 1
-      columnStep: 2
-      prefabLayer: 0
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    cachedLayers: 
   - waveName: 2
-    isSingleEnemyWave: 1
-    singleEnemyPrefab: {fileID: 4598602158235825869, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
-    maxColumns: 1
-    maxRows: 1
-    firstEnemySettings:
-      enemyPrefab: {fileID: 4598602158235825869, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
-      startRow: 1
-      endRow: 2
-      rowStep: 1
-      columnStep: 2
-      prefabLayer: 0
-    secondEnemySettings:
-      enemyPrefab: {fileID: 0}
-      startRow: 3
-      endRow: 4
-      rowStep: 1
-      columnStep: 2
-      prefabLayer: 0
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    cachedLayers: 
+  - waveName: 3
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    cachedLayers: 
+  - waveName: 4
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    cachedLayers: 
+  - waveName: 5
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    cachedLayers: 
+  - waveName: 6
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    cachedLayers: 
+  - waveName: 7
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 7
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
+    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    cachedLayers: 
   spawnPerSecond: 2
   criticalYPosition: -65
 --- !u!1 &1241598046

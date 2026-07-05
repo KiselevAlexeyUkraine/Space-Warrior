@@ -14,7 +14,7 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -139,7 +139,7 @@ Material:
     - _Darken: 0.2
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _Dirty: 1
+    - _Dirty: 0
     - _DstBlend: 0
     - _Emission: 1
     - _EmissionMultiplier: 1

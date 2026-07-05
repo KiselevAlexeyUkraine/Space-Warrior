@@ -16,6 +16,7 @@ namespace Installers
         [SerializeField] private AudioService _audioService;
         [SerializeField] private PostProcessingController _postProcessingController;
         [SerializeField] private LocalizationManager _localizationManager;
+        [SerializeField] private BalanceConfig balanceConfig;
 
         
         public override void InstallBindings()
@@ -27,6 +28,7 @@ namespace Installers
             Container.Bind<AudioService>().FromComponentInNewPrefab(_audioService).AsSingle().NonLazy();
             Container.Bind<PostProcessingController>().FromComponentInNewPrefab(_postProcessingController).AsSingle().NonLazy();
             Container.Bind<LocalizationManager>().FromComponentInNewPrefab(_localizationManager).AsSingle().NonLazy();
+            Container.Bind<BalanceConfig>().FromComponentInNewPrefab(balanceConfig).AsSingle().NonLazy();
         }
     }
 }

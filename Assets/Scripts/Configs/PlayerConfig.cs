@@ -8,7 +8,6 @@ namespace Configs
     public class PlayerConfig : ScriptableConfig
     {
         [Header("Movement")]
-
         [SerializeField]
         [Tooltip("Скорость перемещения игрока")]
         private float _speed = 30f;

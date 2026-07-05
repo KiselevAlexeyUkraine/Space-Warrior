@@ -13,9 +13,17 @@ namespace Components.Enemy
         [SerializeField] private int maxShieldLevel = 4;
         [SerializeField] private float rotationsPerSecond = 0.1f;
 
+        [Header("Настройки Регенерации Щита")]
+        [Tooltip("Сколько единиц щита восстанавливается в секунду")]
+        [SerializeField] private float regenRate = 1f;
+
+        [Tooltip("Задержка перед началом восстановления после получения урона (в секундах)")]
+        [SerializeField] private float regenDelay = 3f;
+
         private float currentShieldLevel;
         private Material shieldMat;
         private int lastShownLevel = -1;
+        private float nextRegenTime; // Время, начиная с которого щит может регенерировать
 
         protected override void Awake()
         {
@@ -39,6 +47,7 @@ namespace Components.Enemy
             // Сбрасываем уровень щита при активации из пула
             currentShieldLevel = maxShieldLevel;
             lastShownLevel = -1;
+            nextRegenTime = 0f;
             
             if (shieldObject != null)
             {
@@ -48,7 +57,6 @@ namespace Components.Enemy
             UpdateShieldVisual(forceUpdate: true);
         }
 
-        // Обязательная реализация движения из EnemyBase (настрой под себя или оставь пустой, если рулит Grid)
         public override void Move()
         {
             // Пример простого движения вниз, если не используется Grid Formation
@@ -64,6 +72,26 @@ namespace Components.Enemy
             {
                 float rZ = -(rotationsPerSecond * Time.time * 360f) % 360f;
                 shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
+            }
+
+            // Логика регенерации щита
+            HandleShieldRegeneration();
+        }
+
+        private void HandleShieldRegeneration()
+        {
+            // Если щит уничтожен полностью (выключен) или уже на максимуме — ничего не делаем
+            if (shieldObject == null || !shieldObject.activeSelf || currentShieldLevel >= maxShieldLevel) 
+                return;
+
+            // Ждем пока пройдет время задержки после последнего попадания
+            if (Time.time >= nextRegenTime)
+            {
+                // Постепенно увеличиваем щит, но не выше максимального значения
+                currentShieldLevel += regenRate * Time.deltaTime;
+                currentShieldLevel = Mathf.Min(currentShieldLevel, maxShieldLevel);
+
+                UpdateShieldVisual();
             }
         }
 
@@ -90,6 +118,9 @@ namespace Components.Enemy
         {
             // Мигание красным цветом самого корабля при попадании в щит (по желанию можно убрать)
             ShowDamage(); 
+
+            // Сдвигаем время начала регенерации в будущее (текущее время + задержка)
+            nextRegenTime = Time.time + regenDelay;
 
             WeaponConfig config = main.GetWeaponConfig(weaponType);
             if (config != null)

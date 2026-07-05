@@ -11,34 +11,10 @@ namespace Level
     public sealed class GridFormationSpawner : MonoBehaviour
     {
         [System.Serializable]
-        public class RowSettings
-        {
-            [Tooltip("Префаб врага (должен наследоваться от EnemyBase и иметь галочку Use Grid Formation).")]
-            public GameObject enemyPrefab;
-
-            [Header("Фильтры размещения")]
-            [Tooltip("С какого индекса ряда начинать спавнить этого врага (включительно).")]
-            public int startRow = 0;
-
-            [Tooltip("По какой индекс ряда спавнить этого врага (включительно).")]
-            public int endRow = 3;
-
-            [Tooltip("Шаг по рядам. 1 — каждый ряд, 2 — через один и т.д.")]
-            [Min(1)] public int rowStep = 1;
-
-            [Tooltip("Шаг по колонкам. 1 — подряд, 2 — в шахматном порядке.")]
-            [Min(1)] public int columnStep = 1;
-
-            [HideInInspector] public int prefabLayer;
-        }
-
-        [System.Serializable]
         public class WaveConfiguration
         {
-            [Tooltip("Название волны для логов.")]
             public string waveName = "Волна";
 
-            // ДОБАВЛЕНО: Настройки для спавна одиночного юнита (Офицера / Босса)
             [Header("===== SINGLE ENEMY SETTINGS =====")]
             [Tooltip("Если включено, эта волна спавнит только ОДНОГО врага по центру вместо сетки.")]
             public bool isSingleEnemyWave = false;
@@ -50,12 +26,14 @@ namespace Level
             [Tooltip("Количество столбцов в этой волне (если 0, возьмутся настройки по умолчанию).")]
             [Min(0)] public int maxColumns = 5;
 
-            [Tooltip("Количество рядов в этой волне (если 0, возьмутся настройки по умолчанию).")]
+            [Tooltip("Количество рядов в этой волне. Определяет, сколько рядов будет создано.")]
             [Min(0)] public int maxRows = 4;
 
-            [Header("Enemy Preps")]
-            public RowSettings firstEnemySettings;
-            public RowSettings secondEnemySettings;
+            [Header("Prefabs Per Row")]
+            [Tooltip("Список префабов для каждого ряда. Индекс элемента = номер ряда (Ряд 0, Ряд 1 и т.д.). Если рядов больше, чем элементов в списке, будет использоваться последний префаб.")]
+            public List<GameObject> rowPrefabs = new List<GameObject>();
+            
+            [HideInInspector] public List<int> cachedLayers = new List<int>();
         }
 
         [Header("Grid Formation (Default Settings)")]
@@ -103,10 +81,7 @@ namespace Level
             _bndCheck = GetComponent<BoundsCheck>();
             if (_bndCheck == null) _bndCheck = gameObject.AddComponent<BoundsCheck>();
 
-            if (formationRoot == null)
-            {
-                formationRoot = this.transform;
-            }
+            if (formationRoot == null) formationRoot = this.transform;
 
             CacheWaveLayers();
         }
@@ -132,15 +107,13 @@ namespace Level
             _activeEnemies.Clear();
             _isTransitioningBetweenWaves = false; 
 
-            // ПРОВЕРКА: Если это волна с одним врагом
             if (currentWave.isSingleEnemyWave)
             {
-                _spawningWaveActive = false; // Сетку генерировать не нужно
+                _spawningWaveActive = false;
                 SpawnSingleEnemy(currentWave.singleEnemyPrefab);
                 return;
             }
 
-            // Иначе — стандартный запуск обычной сетки
             _currentWaveMaxColumns = currentWave.maxColumns > 0 ? currentWave.maxColumns : defaultColumns;
             _currentWaveMaxRows = currentWave.maxRows > 0 ? currentWave.maxRows : defaultRows;
 
@@ -156,7 +129,6 @@ namespace Level
             Invoke(nameof(SpawnNextGridEnemy), 1f / spawnPerSecond);
         }
 
-        // ДОБАВЛЕНО: Метод мгновенного спавна одного юнита по центру
         private void SpawnSingleEnemy(GameObject prefab)
         {
             if (prefab == null)
@@ -169,12 +141,10 @@ namespace Level
             GameObject go = LeanPool.Spawn(prefab);
             _container.InjectGameObject(go);
 
-            // Спавним сверху по центру экрана
             float spawnY = _bndCheck.camHeight + 2f;
             go.transform.position = new Vector3(0f, spawnY, 0f);
             go.transform.SetParent(formationRoot, true);
 
-            // Одиночный враг летит на позицию локального центра (0, 0, 0) внутри formationRoot
             EnemyBase enemyScript = go.GetComponent<EnemyBase>();
             if (enemyScript != null)
             {
@@ -188,8 +158,6 @@ namespace Level
             {
                 _animatorService.StartAnimation(formationRoot);
             }
-
-            Debug.Log($"👾 Заспавнен Одиночный Офицер/Босс: {go.name}. Ожидаем его уничтожения.");
         }
 
         private void SpawnNextGridEnemy()
@@ -197,16 +165,20 @@ namespace Level
             if (!_spawningWaveActive) return;
 
             WaveConfiguration currentWave = waves[_currentWaveIndex];
-            RowSettings activeSettings = GetActiveSettingsForCurrentCell(currentWave);
+            
+            // Получаем префаб и слой для текущего ряда
+            GameObject prefab = GetPrefabForCurrentRow(currentWave, _currentRow);
+            int layer = GetLayerForCurrentRow(currentWave, _currentRow);
 
-            if (activeSettings == null || activeSettings.enemyPrefab == null)
+            if (prefab == null)
             {
+                // Если префаб для этого ряда забыли поставить, просто идем дальше
                 AdvanceGridPointers();
                 CheckWaveSpawnCompletion();
                 return;
             }
 
-            GameObject go = LeanPool.Spawn(activeSettings.enemyPrefab);
+            GameObject go = LeanPool.Spawn(prefab);
             _container.InjectGameObject(go);
 
             float spawnY = _bndCheck.camHeight + 2f;
@@ -214,7 +186,7 @@ namespace Level
             go.transform.position = new Vector3(spawnX, spawnY, 0f);
             go.transform.SetParent(formationRoot, true); 
 
-            SetLayerRecursively(go, activeSettings.prefabLayer);
+            SetLayerRecursively(go, layer);
 
             Vector3 localTargetPos = new Vector3(_currentColumn * spacingX, _currentRow * spacingY, 0f);
 
@@ -246,8 +218,6 @@ namespace Level
             if (_currentRow >= _currentWaveMaxRows)
             {
                 _spawningWaveActive = false;
-                Debug.Log($"Спавн волны {_currentWaveIndex + 1} завершен. Ожидаем зачистки. Всего заспавнено: {_totalSpawnedInWave}");
-                
                 if (_activeEnemies.Count == 0 && !_isTransitioningBetweenWaves)
                 {
                     OnWaveCleared();
@@ -264,13 +234,11 @@ namespace Level
 
             if (formationRoot != null && formationRoot.position.y <= criticalYPosition)
             {
-                Debug.LogWarning($"⚠️ Сетка врагов опустилась до {formationRoot.position.y} (Критический Y: {criticalYPosition}). Принудительно завершаем волну!");
                 ForceClearRemainingEnemies();
                 OnWaveCleared();
                 return;
             }
 
-            // Логика отслеживания конца волны (актуальна и для сетки, и для одного врага)
             if (!_spawningWaveActive && _activeEnemies.Count > 0)
             {
                 _activeEnemies.RemoveWhere(item => item == null || !item.activeInHierarchy);
@@ -291,14 +259,8 @@ namespace Level
             {
                 if (enemy != null && enemy.activeInHierarchy)
                 {
-                    if (LeanPool.Links.ContainsKey(enemy))
-                    {
-                        LeanPool.Despawn(enemy);
-                    }
-                    else
-                    {
-                        Destroy(enemy);
-                    }
+                    if (LeanPool.Links.ContainsKey(enemy)) LeanPool.Despawn(enemy);
+                    else Destroy(enemy);
                 }
             }
             _activeEnemies.Clear();
@@ -308,16 +270,12 @@ namespace Level
         {
             _isTransitioningBetweenWaves = true;
             CancelInvoke(nameof(SpawnNextGridEnemy));
-            Debug.Log($"👍 Волна {_currentWaveIndex + 1} завершена!");
             
             _currentWaveIndex++;
 
             if (_animatorService != null)
             {
-                _animatorService.ResetFormationAndCall(() =>
-                {
-                    StartNextWave();
-                });
+                _animatorService.ResetFormationAndCall(() => StartNextWave());
             }
             else
             {
@@ -325,30 +283,35 @@ namespace Level
             }
         }
 
-        private RowSettings GetActiveSettingsForCurrentCell(WaveConfiguration wave)
+        // Защитная логика выбора префаба для текущего ряда
+        private GameObject GetPrefabForCurrentRow(WaveConfiguration wave, int rowIndex)
         {
-            if (IsCellValidForConfig(_currentRow, _currentColumn, wave.secondEnemySettings)) return wave.secondEnemySettings;
-            if (IsCellValidForConfig(_currentRow, _currentColumn, wave.firstEnemySettings)) return wave.firstEnemySettings;
-            return null;
+            if (wave.rowPrefabs == null || wave.rowPrefabs.Count == 0) return null;
+            
+            // Если указано рядов больше, чем закинуто префабов — используем последний доступный
+            int index = Mathf.Min(rowIndex, wave.rowPrefabs.Count - 1);
+            return wave.rowPrefabs[index];
         }
 
-        private bool IsCellValidForConfig(int row, int col, RowSettings settings)
+        private int GetLayerForCurrentRow(WaveConfiguration wave, int rowIndex)
         {
-            if (settings == null || settings.enemyPrefab == null) return false;
-            if (row < settings.startRow || row > settings.endRow) return false;
-            if ((row - settings.startRow) % settings.rowStep != 0) return false;
-            if (col % settings.columnStep != 0) return false;
-            return true;
+            if (wave.cachedLayers == null || wave.cachedLayers.Count == 0) return 0;
+            int index = Mathf.Min(rowIndex, wave.cachedLayers.Count - 1);
+            return wave.cachedLayers[index];
         }
 
         private void CacheWaveLayers()
         {
             foreach (var wave in waves)
             {
-                if (wave.firstEnemySettings?.enemyPrefab != null)
-                    wave.firstEnemySettings.prefabLayer = wave.firstEnemySettings.enemyPrefab.layer;
-                if (wave.secondEnemySettings?.enemyPrefab != null)
-                    wave.secondEnemySettings.prefabLayer = wave.secondEnemySettings.enemyPrefab.layer;
+                wave.cachedLayers = new List<int>();
+                if (wave.rowPrefabs == null) continue;
+
+                foreach (var prefab in wave.rowPrefabs)
+                {
+                    if (prefab != null) wave.cachedLayers.Add(prefab.layer);
+                    else wave.cachedLayers.Add(0); // дефолтный слой, если слот пустой
+                }
             }
         }
 

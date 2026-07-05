@@ -62,7 +62,14 @@ public class BalanceConfig : MonoBehaviour
     {
         IsLoaded = false;
 
-        using UnityWebRequest request = UnityWebRequest.Get(googleSheetCsvUrl);
+        // Cache-buster: без этого Google CDN может годами отдавать закэшированную
+        // версию CSV, и изменения в таблице не будут доходить до игры
+        string separator = googleSheetCsvUrl.Contains("?") ? "&" : "?";
+        string noCacheUrl = $"{googleSheetCsvUrl}{separator}nocache={System.DateTime.UtcNow.Ticks}";
+
+        using UnityWebRequest request = UnityWebRequest.Get(noCacheUrl);
+        request.SetRequestHeader("Cache-Control", "no-cache, no-store");
+        request.SetRequestHeader("Pragma", "no-cache");
 
         yield return request.SendWebRequest();
 
@@ -76,11 +83,11 @@ public class BalanceConfig : MonoBehaviour
 
         IsLoaded = true;
 
-        // ВЫВОД В ДЕБАГ: Теперь все значения выводятся корректно, включая float
-        Debug.Log($"⚙️ Balance loaded успешно!\n" +
-                  $"🔹 Скорость движения игрока (B9): {PlayerMoveSpeed}\n" +
-                  $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
-                  $"🔹 Темп стрельбы игрока (ячейка 7B): {PlayerFireRate} сек.");
+        // // ВЫВОД В ДЕБАГ: Теперь все значения выводятся корректно, включая float
+        // Debug.Log($"⚙️ Balance loaded успешно!\n" +
+        //           $"🔹 Скорость движения игрока (B9): {PlayerMoveSpeed}\n" +
+        //           $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
+        //           $"🔹 Темп стрельбы игрока (ячейка 7B): {PlayerFireRate} сек.");
     }
 
     private void Parse(string csv)

@@ -65,10 +65,7 @@ namespace Components.Weapon
                 Debug.LogError($"{name}: BalanceConfig не внедрен через Zenject.");
                 return;
             }
-
-            // ДЕБАГ: проверяем, какие значения реально применились
-            Debug.Log($"🚀 [{name}] Инициализация. " +
-                      $"Скорость снаряда: {DynamicProjectileSpeed}, Темп стрельбы: {DynamicFireRate}");
+            
 
             _lastShotTime = 0f;
         }

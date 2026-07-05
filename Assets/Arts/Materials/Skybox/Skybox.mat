@@ -121,7 +121,7 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Rotation: 4.642422
+    - _Rotation: 5.8496737
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -135,6 +135,6 @@ Material:
     - _Color: {r: 0.5058824, g: 0.07058824, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Tint: {r: 0.9592361, g: 1, b: 0.9465321, a: 0.43228284}
+    - _Tint: {r: 0.9486355, g: 1, b: 0.93262786, a: 0.43251956}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

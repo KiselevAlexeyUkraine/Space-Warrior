@@ -12,6 +12,7 @@ namespace Components.Player
     {
         private PlayerConfig _playerConfig;
         private AudioService _audioService;
+        private BalanceConfig _balanceConfig;
 
         [Header("===== Weapons =====")]
         [Tooltip("Список всех оружейных слотов, установленных на корабле игрока.")]
@@ -48,16 +49,19 @@ namespace Components.Player
         private void Construct(
             PageSwitcher pageSwitcher,
             PlayerConfig playerConfig,
-            AudioService audioService) 
+            AudioService audioService,
+            BalanceConfig balanceConfig) 
         {
             _pageSwitcher = pageSwitcher;
             _playerConfig = playerConfig;
             _audioService = audioService;
+            _balanceConfig = balanceConfig;
         }
 
         private void Start()
         {
-            _shieldLevel = _playerConfig.StartShieldLevel;
+            // Стартовый уровень щита теперь берется из BalanceConfig (Google Sheets)
+            _shieldLevel = _balanceConfig.PlayerShield;
 
             // Принудительно обновляем состояние партикла при старте игры
             UpdateShieldParticleVisual();
@@ -179,8 +183,9 @@ namespace Components.Player
 
             set
             {
+                // Максимальный уровень щита теперь тоже берется из BalanceConfig
                 _shieldLevel =
-                    Mathf.Min(value, _playerConfig.MaxShieldLevel);
+                    Mathf.Min(value, _balanceConfig.PlayerShield);
 
                 // АВТОМАТИКА: Включаем или выключаем партикл в зависимости от текущего значения щита
                 UpdateShieldParticleVisual();

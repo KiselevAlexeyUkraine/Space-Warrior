@@ -44,5 +44,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c36bd73d1e62f14aa116917d876df8f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BalanceConfig
-  googleSheetCsvUrl: https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3fyq3xdzL7lv_5VXXIpM3U1XBd_GuWelmhF9zmT27wzQkhp-MRu8Lm6NrEQW3qQ/pub?output=csv
+  googleSheetCsvUrl: https://docs.google.com/spreadsheets/d/1RBHH4UJFLj880j62VlfpAgyu8xRTAwuM/export?format=csv
   loadOnAwake: 1

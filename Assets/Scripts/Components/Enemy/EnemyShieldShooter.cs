@@ -18,6 +18,13 @@ namespace Components.Enemy
         [Tooltip("Скорость вращения щита вокруг своей оси.")]
         [SerializeField] private float _rotationsPerSecond = 0.1f;
 
+        [Header("Shield Regeneration Settings")]
+        [Tooltip("Сколько единиц щита восстанавливается в секунду.")]
+        [SerializeField] private float _regenRate = 0.5f;
+
+        [Tooltip("Задержка перед началом восстановления после получения урона (в секундах).")]
+        [SerializeField] private float _regenDelay = 3f;
+
         [Header("Reflection (Shooting) Settings")]
         [Tooltip("Префаб вражеского снаряда, который спавнится ПРИ ОТРАЖЕНИИ.")]
         [SerializeField] private GameObject _reflectedProjectilePrefab;
@@ -28,6 +35,7 @@ namespace Components.Enemy
         private float _currentShieldLevel;
         private Material _shieldMat;
         private int _lastShownLevel = -1;
+        private float _nextRegenTime; // Время, начиная с которого щит может восстанавливаться
 
         private DiContainer _diContainer;
         private AnimatorService _animatorService;
@@ -61,6 +69,7 @@ namespace Components.Enemy
             // Сброс щита при активации из пула
             _currentShieldLevel = _maxShieldLevel;
             _lastShownLevel = -1;
+            _nextRegenTime = 0f;
             
             if (_shieldObject != null)
             {
@@ -88,6 +97,32 @@ namespace Components.Enemy
                 float rZ = -(_rotationsPerSecond * Time.time * 360f) % 360f;
                 _shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
             }
+
+            // Запускаем логику регенерации щита
+            HandleShieldRegeneration();
+        }
+
+        private void HandleShieldRegeneration()
+        {
+            // ИСПРАВЛЕНО: Убрана проверка !_shieldObject.activeSelf, чтобы регенерация работала и для выключенного щита
+            if (_shieldObject == null || _currentShieldLevel >= _maxShieldLevel)
+                return;
+
+            // Ждем пока пройдет время задержки после последнего отражения
+            if (Time.time >= _nextRegenTime)
+            {
+                // Если щит был выключен (уничтожен), включаем его обратно, так как регенерация пошла
+                if (!_shieldObject.activeSelf)
+                {
+                    _shieldObject.SetActive(true);
+                }
+
+                // Постепенно восстанавливаем прочность, не превышая максимум
+                _currentShieldLevel += _regenRate * Time.deltaTime;
+                _currentShieldLevel = Mathf.Min(_currentShieldLevel, _maxShieldLevel);
+
+                UpdateShieldVisual();
+            }
         }
 
         protected override void OnTriggerEnter(Collider other)
@@ -97,6 +132,9 @@ namespace Components.Enemy
             {
                 // Сначала спавним ответный снаряд в точке столкновения
                 SpawnReflectedProjectile(other.transform.position);
+
+                // Сдвигаем время регенерации в будущее
+                _nextRegenTime = Time.time + _regenDelay;
 
                 // Тратим прочность щита
                 _currentShieldLevel -= 1f;

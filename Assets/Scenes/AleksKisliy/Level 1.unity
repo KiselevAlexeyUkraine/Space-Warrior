@@ -957,8 +957,8 @@ MonoBehaviour:
   panels:
   - {fileID: 570151356}
   - {fileID: 238893471}
-  scrollSpeed: -30
-  motionMult: 0.25
+  scrollSpeed: -5
+  motionMult: 1
 --- !u!4 &7215469652385854143
 Transform:
   m_ObjectHideFlags: 0

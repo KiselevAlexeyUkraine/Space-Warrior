@@ -302,7 +302,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.EnemyWithShield
   speed: 70
   health: 1
-  score: 100
+  score: 300
   showDamageDuration: 0.1
   powerUpDropChance: 1
   useGridFormation: 1
@@ -317,6 +317,8 @@ MonoBehaviour:
   shieldObject: {fileID: 294879069107364754}
   maxShieldLevel: 2
   rotationsPerSecond: 0.5
+  regenRate: 1
+  regenDelay: 3
 --- !u!1 &7773630860476256196
 GameObject:
   m_ObjectHideFlags: 0

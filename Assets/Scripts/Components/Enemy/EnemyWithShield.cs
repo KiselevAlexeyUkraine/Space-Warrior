@@ -80,13 +80,19 @@ namespace Components.Enemy
 
         private void HandleShieldRegeneration()
         {
-            // Если щит уничтожен полностью (выключен) или уже на максимуме — ничего не делаем
-            if (shieldObject == null || !shieldObject.activeSelf || currentShieldLevel >= maxShieldLevel) 
+            // ИСПРАВЛЕНО: Убрана проверка !shieldObject.activeSelf, чтобы регенерация запускалась даже с нуля
+            if (shieldObject == null || currentShieldLevel >= maxShieldLevel) 
                 return;
 
             // Ждем пока пройдет время задержки после последнего попадания
             if (Time.time >= nextRegenTime)
             {
+                // ИСПРАВЛЕНО: Если щит был выключен, включаем его обратно, так как пошло восстановление
+                if (!shieldObject.activeSelf)
+                {
+                    shieldObject.SetActive(true);
+                }
+
                 // Постепенно увеличиваем щит, но не выше максимального значения
                 currentShieldLevel += regenRate * Time.deltaTime;
                 currentShieldLevel = Mathf.Min(currentShieldLevel, maxShieldLevel);

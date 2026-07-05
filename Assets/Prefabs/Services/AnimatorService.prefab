@@ -47,6 +47,6 @@ MonoBehaviour:
   minX: -60
   maxX: 10
   stepY: -5
-  speed: 10
+  speed: 5
   bulletDestroyY: -40
   screenBoundaryRadius: 100

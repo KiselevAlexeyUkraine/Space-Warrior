@@ -5,61 +5,67 @@ namespace Components.Enemy
 {
     public class EnemyWithShield : EnemyBase
     {
-        [Header("Настройки Щита Врага")]
-        [Tooltip("Объект щита (с Renderer), который висит на враге")]
-        [SerializeField] private GameObject shieldObject;
-        
-        [Tooltip("Текущий и максимальный уровень щита (целое число для текстуры)")]
+        [Header("Настройки Щита Врага (партиклы)")]
+        [Tooltip("Партикл-система щита, висящая на враге. Play/Stop вместо SetActive.")]
+        [SerializeField] private GameObject shieldParticle;
+
+        [Tooltip("Максимальное количество единиц щита. Перезаписывается из BalanceConfig по enemyLevel.")]
         [SerializeField] private int maxShieldLevel = 4;
-        [SerializeField] private float rotationsPerSecond = 0.1f;
 
-        [Header("Настройки Регенерации Щита")]
-        [Tooltip("Сколько единиц щита восстанавливается в секунду")]
-        [SerializeField] private float regenRate = 1f;
+        [Tooltip("Через сколько секунд восстанавливается 1 единица щита. Перезаписывается из BalanceConfig (значение из таблицы, столбец уровня).")]
+        [SerializeField] private float regenIntervalSeconds = 15f;
 
-        [Tooltip("Задержка перед началом восстановления после получения урона (в секундах)")]
-        [SerializeField] private float regenDelay = 3f;
-
-        private float currentShieldLevel;
+        private int currentShieldLevel;
         private Material shieldMat;
         private int lastShownLevel = -1;
-        private float nextRegenTime; // Время, начиная с которого щит может регенерировать
+        private float nextRegenTime;
+        private bool isRegenScheduled;
+        private bool isShieldParticleActive;
+        
 
-        protected override void Awake()
+        // Перезаписываем щитовые параметры из таблицы баланса поверх базовых (speed/health/collisionDamage)
+        protected override void ApplyBalanceConfig()
         {
-            base.Awake();
-            
-            if (shieldObject != null)
+            base.ApplyBalanceConfig();
+
+            if (balanceConfig == null)
             {
-                Renderer shieldRend = shieldObject.GetComponent<Renderer>();
-                if (shieldRend != null)
+                if (debugBalanceValues)
                 {
-                    // Используем .material (создает копию для этого врага, чтобы не ломать общий материал)
-                    shieldMat = shieldRend.material;
+                    Debug.LogWarning($"[{gameObject.name}] BalanceConfig не внедрён — щит использует значения из инспектора: maxShieldLevel={maxShieldLevel}, regenIntervalSeconds={regenIntervalSeconds}");
                 }
+                return;
+            }
+
+            maxShieldLevel = Mathf.RoundToInt(balanceConfig.GetEnemyShield(enemyLevel));
+            regenIntervalSeconds = balanceConfig.GetEnemyShieldRegenInterval(enemyLevel);
+
+            if (debugBalanceValues)
+            {
+                Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) щит из баланса: " +
+                          $"MaxShieldLevel = {maxShieldLevel}, RegenInterval = {regenIntervalSeconds} сек/единица");
             }
         }
 
         protected override void OnEnable()
         {
             base.OnEnable();
-            
-            // Сбрасываем уровень щита при активации из пула
+
             currentShieldLevel = maxShieldLevel;
             lastShownLevel = -1;
-            nextRegenTime = 0f;
-            
-            if (shieldObject != null)
-            {
-                shieldObject.SetActive(true);
-            }
-            
+            isRegenScheduled = false;
+            isShieldParticleActive = false;
+
+            SetShieldParticleActive(currentShieldLevel > 0, forceRestart: true);
+
             UpdateShieldVisual(forceUpdate: true);
+
+            // Если щит изначально не полный (например, задан меньше максимума), сразу запускаем таймер восстановления
+            ScheduleRegenIfNeeded();
         }
 
         public override void Move()
         {
-            // Пример простого движения вниз, если не используется Grid Formation
             pos -= new Vector3(0, speed * Time.deltaTime, 0);
         }
 
@@ -67,96 +73,143 @@ namespace Components.Enemy
         {
             base.Update();
 
-            // Если щит еще активен, вращаем его точно так же, как у игрока
-            if (shieldObject != null && shieldObject.activeSelf)
-            {
-                float rZ = -(rotationsPerSecond * Time.time * 360f) % 360f;
-                shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
-            }
-
-            // Логика регенерации щита
             HandleShieldRegeneration();
         }
 
-        private void HandleShieldRegeneration()
+        // Ставит таймер на восстановление следующей единицы, если щит не полный и таймер ещё не запущен
+        private void ScheduleRegenIfNeeded()
         {
-            // ИСПРАВЛЕНО: Убрана проверка !shieldObject.activeSelf, чтобы регенерация запускалась даже с нуля
-            if (shieldObject == null || currentShieldLevel >= maxShieldLevel) 
-                return;
-
-            // Ждем пока пройдет время задержки после последнего попадания
-            if (Time.time >= nextRegenTime)
+            if (maxShieldLevel <= 0 || currentShieldLevel >= maxShieldLevel)
             {
-                // ИСПРАВЛЕНО: Если щит был выключен, включаем его обратно, так как пошло восстановление
-                if (!shieldObject.activeSelf)
-                {
-                    shieldObject.SetActive(true);
-                }
+                isRegenScheduled = false;
+                return;
+            }
 
-                // Постепенно увеличиваем щит, но не выше максимального значения
-                currentShieldLevel += regenRate * Time.deltaTime;
-                currentShieldLevel = Mathf.Min(currentShieldLevel, maxShieldLevel);
-
-                UpdateShieldVisual();
+            if (!isRegenScheduled)
+            {
+                nextRegenTime = Time.time + regenIntervalSeconds;
+                isRegenScheduled = true;
             }
         }
 
-        // Переопределяем получение урона, чтобы сначала страдал щит
+        // Пошаговая регенерация: раз в regenIntervalSeconds добавляется ровно 1 единица щита.
+        // Работает одинаково и когда щит частично поврежден, и когда он полностью сбит до 0 —
+        // таймер в обоих случаях считает от момента последнего попадания.
+        private void HandleShieldRegeneration()
+        {
+            if (maxShieldLevel <= 0 || currentShieldLevel >= maxShieldLevel)
+            {
+                isRegenScheduled = false;
+                return;
+            }
+
+            if (!isRegenScheduled)
+            {
+                nextRegenTime = Time.time + regenIntervalSeconds;
+                isRegenScheduled = true;
+                return;
+            }
+
+            if (Time.time >= nextRegenTime)
+            {
+                // Запоминаем старое значение до прибавления
+                int previousShieldLevel = currentShieldLevel;
+
+                currentShieldLevel += 1;
+                currentShieldLevel = Mathf.Min(currentShieldLevel, maxShieldLevel);
+
+                // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если щит поднялся с 0 до 1, 
+                // включаем партиклы принудительно с флагом forceRestart = true
+                if (previousShieldLevel == 0 && currentShieldLevel > 0)
+                {
+                    SetShieldParticleActive(true, forceRestart: true);
+                }
+                else if (currentShieldLevel > 0 && !isShieldParticleActive)
+                {
+                    SetShieldParticleActive(true);
+                }
+
+                UpdateShieldVisual(forceUpdate: true);
+
+                if (currentShieldLevel < maxShieldLevel)
+                {
+                    nextRegenTime = Time.time + regenIntervalSeconds;
+                }
+                else
+                {
+                    isRegenScheduled = false;
+                }
+            }
+        }
+
         protected override void OnTriggerEnter(Collider other)
         {
-            if (shieldObject != null && shieldObject.activeSelf && other.CompareTag("ProjectileHero"))
+            if (isShieldParticleActive && other.CompareTag("ProjectileHero"))
             {
                 Projectile p = other.GetComponent<Projectile>();
                 if (p != null)
                 {
                     ProcessShieldDamage(p.type);
                 }
-                
+
                 SafeDespawn(other.gameObject);
-                return; // Выходим, чтобы базовый урон по корпусу не наносился
+                return;
             }
 
-            // Если щита нет — вызываем стандартную логику из EnemyBase
             base.OnTriggerEnter(other);
         }
 
         private void ProcessShieldDamage(WeaponType weaponType)
         {
-            // Мигание красным цветом самого корабля при попадании в щит (по желанию можно убрать)
-            ShowDamage(); 
-
-            // Сдвигаем время начала регенерации в будущее (текущее время + задержка)
-            nextRegenTime = Time.time + regenDelay;
+            ShowDamage();
 
             WeaponConfig config = main.GetWeaponConfig(weaponType);
             if (config != null)
             {
-                currentShieldLevel -= config.damageOnHit;
+                currentShieldLevel -= Mathf.RoundToInt(config.damageOnHit);
             }
 
             if (currentShieldLevel <= 0)
             {
                 currentShieldLevel = 0;
-                if (shieldObject != null)
-                {
-                    shieldObject.SetActive(false); // Выключаем щит, теперь урон пойдет по броне
-                }
+                SetShieldParticleActive(false);
             }
 
+            // Сразу перезапускаем отсчёт до следующей единицы, не дожидаясь следующего Update —
+            // гарантирует, что щит (в том числе сбитый до 0) начнёт восстанавливаться ровно через regenIntervalSeconds
+            nextRegenTime = Time.time + regenIntervalSeconds;
+            isRegenScheduled = true;
+
             UpdateShieldVisual();
+        }
+
+        // Включает/выключает партиклы щита. Play/Stop вместо SetActive(GameObject).
+        private void SetShieldParticleActive(bool active, bool forceRestart = false)
+        {
+
+
+            if (isShieldParticleActive == active && !forceRestart)
+                return;
+
+            isShieldParticleActive = active;
+
+            if (active)
+            {
+                shieldParticle.SetActive(true);
+            }
+            else
+            {
+                shieldParticle.SetActive(false);
+            }
         }
 
         private void UpdateShieldVisual(bool forceUpdate = false)
         {
             if (shieldMat == null) return;
 
-            // Округляем до ближайшего целого вниз, как в скрипте игрока
-            int currentVisualLevel = Mathf.FloorToInt(currentShieldLevel);
-
-            if (lastShownLevel != currentVisualLevel || forceUpdate)
+            if (lastShownLevel != currentShieldLevel || forceUpdate)
             {
-                lastShownLevel = currentVisualLevel;
-                // Сдвиг текстуры по оси X (каждый уровень сдвигает на 0.2f)
+                lastShownLevel = currentShieldLevel;
                 shieldMat.mainTextureOffset = new Vector2(0.2f * lastShownLevel, 0);
             }
         }

@@ -5,15 +5,16 @@ using System.Text;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using Components.Enemy;
 using Zenject;
 
 public class BalanceConfig : IInitializable
 {
+    private const int LevelsCount = 5;
+
     private readonly string googleSheetCsvUrl =
         "https://docs.google.com/spreadsheets/d/1RBHH4UJFLj880j62VlfpAgyu8xRTAwuM/export?format=csv";
-    
 
-    // Переменная для отслеживания текущего блока в цикле парсинга
     private enum TableSection { None, Player, Enemy }
 
     #region Player
@@ -24,47 +25,66 @@ public class BalanceConfig : IInitializable
     public int PlayerShield { get; private set; }
     #endregion
 
-    #region Enemy Common
-    public int EnemyHealth { get; private set; }
-    public int EnemyShield { get; private set; }
-    public float EnemyCollisionDamage { get; private set; }
+    #region Enemy Common (по уровням 1-5)
+    private readonly float[] _enemyHealthByLevel = new float[LevelsCount];
+    private readonly float[] _enemyShieldByLevel = new float[LevelsCount];               // строка 17 (столбцы C..G)
+    private readonly float[] _enemyShieldRegenIntervalByLevel = new float[LevelsCount];  // строка 18 (столбцы C..G), "раз в N секунд"
+    private readonly float[] _enemyCollisionDamageByLevel = new float[LevelsCount];
+    private readonly float[] _enemySpeedByLevel = new float[LevelsCount];
+
+    // Свойства-геттеры прежней формы (значения Уровня 1) — для обратной совместимости со старым кодом
+    public int EnemyHealth => (int)GetEnemyHealth(EnemyLevel.Level_1);
+    public int EnemyShield => (int)GetEnemyShield(EnemyLevel.Level_1);
+    public float EnemyCollisionDamage => GetEnemyCollisionDamage(EnemyLevel.Level_1);
+
+    public float GetEnemySpeed(EnemyLevel level) => GetValue(_enemySpeedByLevel, level, "Скорость движения врага");
+    public float GetEnemyHealth(EnemyLevel level) => GetValue(_enemyHealthByLevel, level, "Здоровье врага");
+    public float GetEnemyShield(EnemyLevel level) => GetValue(_enemyShieldByLevel, level, "Щит врага");
+    public float GetEnemyShieldRegenInterval(EnemyLevel level) => GetValue(_enemyShieldRegenIntervalByLevel, level, "Восстановление щита (сек/ед)");
+    public float GetEnemyCollisionDamage(EnemyLevel level) => GetValue(_enemyCollisionDamageByLevel, level, "Урон от столкновения");
     #endregion
 
-    #region Enemy Shooter
-    public float EnemyBulletFireRate { get; private set; }
-    public float EnemyBulletSpeed { get; private set; }
-    public float EnemyBulletDamage { get; private set; }
+    #region Enemy Shooter (по уровням 1-5)
+    private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount];
+    private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];
+    private readonly float[] _enemyBulletDamageByLevel = new float[LevelsCount];
+
+    public float GetEnemyBulletFireRate(EnemyLevel level) => GetValue(_enemyBulletFireRateByLevel, level, "Темп стрельбы врага");
+    public float GetEnemyBulletSpeed(EnemyLevel level) => GetValue(_enemyBulletSpeedByLevel, level, "Скорость выстрела врага");
+    public float GetEnemyBulletDamage(EnemyLevel level) => GetValue(_enemyBulletDamageByLevel, level, "Урон от выстрелов врага");
     #endregion
 
-    #region Enemy Rocket
-    public float EnemyRocketFireRate { get; private set; }
-    public float EnemyRocketSpeed { get; private set; }
-    public float EnemyRocketRadius { get; private set; }
-    public float EnemyRocketDamage { get; private set; }
+    #region Enemy Rocket (по уровням 1-5)
+    private readonly float[] _enemyRocketFireRateByLevel = new float[LevelsCount];
+    private readonly float[] _enemyRocketSpeedByLevel = new float[LevelsCount];
+    private readonly float[] _enemyRocketRadiusByLevel = new float[LevelsCount];
+    private readonly float[] _enemyRocketDamageByLevel = new float[LevelsCount];
+
+    public float GetEnemyRocketFireRate(EnemyLevel level) => GetValue(_enemyRocketFireRateByLevel, level, "Темп запуска ракеты");
+    public float GetEnemyRocketSpeed(EnemyLevel level) => GetValue(_enemyRocketSpeedByLevel, level, "Скорость ракеты");
+    public float GetEnemyRocketRadius(EnemyLevel level) => GetValue(_enemyRocketRadiusByLevel, level, "Радиус поражения ракеты");
+    public float GetEnemyRocketDamage(EnemyLevel level) => GetValue(_enemyRocketDamageByLevel, level, "Урон от ракеты");
     #endregion
 
-    #region Enemy Laser
-    public float EnemyLaserFireRate { get; private set; }
-    public float EnemyLaserDelay { get; private set; }
-    public float EnemyLaserDuration { get; private set; }
-    public float EnemyLaserDamage { get; private set; }
+    #region Enemy Laser (по уровням 1-5)
+    private readonly float[] _enemyLaserFireRateByLevel = new float[LevelsCount];
+    private readonly float[] _enemyLaserDelayByLevel = new float[LevelsCount];
+    private readonly float[] _enemyLaserDurationByLevel = new float[LevelsCount];
+    private readonly float[] _enemyLaserDamageByLevel = new float[LevelsCount];
+
+    public float GetEnemyLaserFireRate(EnemyLevel level) => GetValue(_enemyLaserFireRateByLevel, level, "Скорострельность лазера");
+    public float GetEnemyLaserDelay(EnemyLevel level) => GetValue(_enemyLaserDelayByLevel, level, "Задержка перед уроном лазера");
+    public float GetEnemyLaserDuration(EnemyLevel level) => GetValue(_enemyLaserDurationByLevel, level, "Длительность лазера");
+    public float GetEnemyLaserDamage(EnemyLevel level) => GetValue(_enemyLaserDamageByLevel, level, "Урон лазера");
     #endregion
 
-    // Zenject автоматически вызывает Initialize() при старте контейнера,
-    // если класс забиндлен через BindInterfacesAndSelfTo
     public void Initialize()
     {
         LoadAsync().Forget();
     }
 
-    /// <summary>
-    /// Публичный метод для ручной перезагрузки баланса из таблицы (например, по кнопке в дебаг-меню).
-    /// </summary>
     public async UniTaskVoid LoadAsync()
     {
-
-        // Cache-buster: без этого Google CDN может годами отдавать закэшированную
-        // версию CSV, и изменения в таблице не будут доходить до игры
         string separator = googleSheetCsvUrl.Contains("?") ? "&" : "?";
         string noCacheUrl = $"{googleSheetCsvUrl}{separator}nocache={DateTime.UtcNow.Ticks}";
 
@@ -95,6 +115,8 @@ public class BalanceConfig : IInitializable
                   $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
                   $"🔹 Щит игрока: {PlayerShield}\n" +
                   $"🔹 Темп стрельбы игрока: {PlayerFireRate} сек.");
+
+        LogEnemyBalanceByLevel();
     }
 
     private void Parse(string csv)
@@ -107,21 +129,13 @@ public class BalanceConfig : IInitializable
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Разбираем CSV по столбцам с учётом кавычек,
-            // чтобы значения вида "3,5" не резались на две колонки
             List<string> cells = SplitCsvLine(line);
 
             if (cells.Count < 2)
                 continue;
 
             string key = cells[0].Trim().Trim('"').ToLower();
-            string valueRaw = cells[1].Trim().Trim('"');
 
-            // Если первая колонка пустая — пропускаем
-            if (string.IsNullOrEmpty(key))
-                continue;
-
-            // Определяем текущий блок таблицы
             if (key.Contains("параметры игрока"))
             {
                 currentSection = TableSection.Player;
@@ -134,83 +148,147 @@ public class BalanceConfig : IInitializable
                 continue;
             }
 
-            // Запятая теперь всегда десятичный разделитель
-            // (разделение по колонкам уже корректно обработано в SplitCsvLine)
-            valueRaw = valueRaw.Replace(',', '.');
-
-            if (!float.TryParse(
-                    valueRaw,
-                    NumberStyles.Float,
-                    CultureInfo.InvariantCulture,
-                    out float value))
-            {
-                continue;
-            }
-
             if (currentSection == TableSection.Player)
             {
-                if (key.Contains("здоров"))
-                {
-                    PlayerHealth = (int)value;
-                }
-                else if (key.Contains("щит"))
-                {
-                    PlayerShield = (int)value;
-                }
-                else if (key.Contains("скорость стрельбы"))
-                {
-                    PlayerFireRate = value;
-                }
-                else if (key.Contains("скорость полета снаряд"))
-                {
-                    PlayerBulletSpeed = value;
-                }
-                else if (key.Contains("скорость движения"))
-                {
-                    PlayerMoveSpeed = value;
-                }
+                if (string.IsNullOrEmpty(key))
+                    continue;
+
+                float? value = ParseFloat(cells[1]);
+                if (value == null)
+                    continue;
+
+                if (key.Contains("здоров")) PlayerHealth = (int)value.Value;
+                else if (key.Contains("щит")) PlayerShield = (int)value.Value;
+                else if (key.Contains("скорость стрельбы")) PlayerFireRate = value.Value;
+                else if (key.Contains("скорость полета снаряд")) PlayerBulletSpeed = value.Value;
+                else if (key.Contains("скорость движения")) PlayerMoveSpeed = value.Value;
             }
             else if (currentSection == TableSection.Enemy)
             {
-                if (key.Contains("здоров"))
-                {
-                    EnemyHealth = (int)value;
-                }
-                else if (key.Contains("урон от столкновения"))
-                {
-                    EnemyCollisionDamage = value;
-                }
-                else if (key.Contains("щит"))
-                {
-                    EnemyShield = (int)value;
-                }
-                else if (key.Contains("скорость стрельбы"))
-                {
-                    EnemyBulletFireRate = value;
-                }
-                else if (key.Contains("скорость полета выстрел"))
-                {
-                    EnemyBulletSpeed = value;
-                }
-                else if (key.Contains("урон от выстрелов"))
-                {
-                    EnemyBulletDamage = value;
-                }
-                else if (key.Contains("скорость запуска ракеты"))
-                {
-                    EnemyRocketFireRate = value;
-                }
-                else if (key.Contains("скорость полета ракеты"))
-                {
-                    EnemyRocketSpeed = value;
-                }
+                // Колонка A = категория (может быть пустой из-за объединения ячеек),
+                // колонка B = параметр, колонки C..G = уровни 1-5
+                if (cells.Count < 3)
+                    continue;
+
+                string paramKey = cells[1].Trim().Trim('"').ToLower();
+
+                if (string.IsNullOrEmpty(paramKey))
+                    continue;
+
+                float[] levelValues = ParseLevelValues(cells, 2);
+
+                if (levelValues == null)
+                    continue;
+
+                ApplyEnemyLevelValues(paramKey, levelValues);
             }
         }
     }
 
-    // Простой CSV-парсер строки, корректно обрабатывающий поля в кавычках,
-    // в том числе с запятыми внутри (например "3,5" — дробное число из Google Sheets)
-    private static List<string> SplitCsvLine(string line)
+    // Универсальный парсинг числа: поддерживает и точку, и запятую как разделитель дробной части.
+    private float? ParseFloat(string raw)
+    {
+        string cleaned = raw.Trim().Trim('"');
+
+        if (string.IsNullOrEmpty(cleaned) || cleaned == "-")
+            return null;
+
+        cleaned = cleaned.Replace(',', '.');
+
+        if (float.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    private float[] ParseLevelValues(List<string> cells, int startIndex)
+    {
+        var values = new float[LevelsCount];
+        bool anyParsed = false;
+
+        for (int level = 0; level < LevelsCount; level++)
+        {
+            int cellIndex = startIndex + level;
+
+            if (cellIndex >= cells.Count)
+            {
+                values[level] = level > 0 ? values[level - 1] : 0f;
+                continue;
+            }
+
+            float? parsed = ParseFloat(cells[cellIndex]);
+
+            if (parsed.HasValue)
+            {
+                values[level] = parsed.Value;
+                anyParsed = true;
+            }
+            else
+            {
+                // Пустая ячейка или "-" — переносим значение предыдущего уровня
+                values[level] = level > 0 ? values[level - 1] : 0f;
+            }
+        }
+
+        return anyParsed ? values : null;
+    }
+
+    private void ApplyEnemyLevelValues(string key, float[] levelValues)
+    {
+        // ВАЖНО: "восстановление щита" проверяем РАНЬШЕ общей проверки "щит",
+        // иначе строка 18 попадёт в _enemyShieldByLevel вместо _enemyShieldRegenIntervalByLevel
+        if (key.Contains("скорость движения")) CopyTo(_enemySpeedByLevel, levelValues);
+        else if (key.Contains("здоров")) CopyTo(_enemyHealthByLevel, levelValues);
+        else if (key.Contains("урон от столкновения")) CopyTo(_enemyCollisionDamageByLevel, levelValues);
+        else if (key.Contains("восстановление щита")) CopyTo(_enemyShieldRegenIntervalByLevel, levelValues);
+        else if (key.Contains("щит")) CopyTo(_enemyShieldByLevel, levelValues);
+        else if (key.Contains("скорость стрельбы")) CopyTo(_enemyBulletFireRateByLevel, levelValues);
+        else if (key.Contains("скорость полета выстрел")) CopyTo(_enemyBulletSpeedByLevel, levelValues);
+        else if (key.Contains("урон от выстрелов")) CopyTo(_enemyBulletDamageByLevel, levelValues);
+        else if (key.Contains("скорость запуска ракеты")) CopyTo(_enemyRocketFireRateByLevel, levelValues);
+        else if (key.Contains("скорость полета ракеты")) CopyTo(_enemyRocketSpeedByLevel, levelValues);
+        else if (key.Contains("радиус поражения ракеты")) CopyTo(_enemyRocketRadiusByLevel, levelValues);
+        else if (key.Contains("урон от ракеты")) CopyTo(_enemyRocketDamageByLevel, levelValues);
+        else if (key.Contains("скорострельность лазера")) CopyTo(_enemyLaserFireRateByLevel, levelValues);
+        else if (key.Contains("задержка перед нанесением урона")) CopyTo(_enemyLaserDelayByLevel, levelValues);
+        else if (key.Contains("длительность лазера")) CopyTo(_enemyLaserDurationByLevel, levelValues);
+    }
+
+    private void CopyTo(float[] target, float[] source)
+    {
+        for (int i = 0; i < LevelsCount && i < target.Length && i < source.Length; i++)
+        {
+            target[i] = source[i];
+        }
+    }
+
+    private float GetValue(float[] array, EnemyLevel level, string paramName)
+    {
+        int index = Mathf.Clamp((int)level, 0, LevelsCount - 1);
+        float value = array[index];
+
+        Debug.Log($"[BalanceConfig] Считано из таблицы: '{paramName}' для {level} = {value}");
+
+        return value;
+    }
+
+    private void LogEnemyBalanceByLevel()
+    {
+        for (int i = 0; i < LevelsCount; i++)
+        {
+            var level = (EnemyLevel)i;
+            Debug.Log($"👾 Enemy balance [{level}] -> " +
+                      $"Speed: {_enemySpeedByLevel[i]}, " +
+                      $"Health: {_enemyHealthByLevel[i]}, " +
+                      $"Shield: {_enemyShieldByLevel[i]}, " +
+                      $"ShieldRegenInterval: {_enemyShieldRegenIntervalByLevel[i]}с/ед, " +
+                      $"CollisionDamage: {_enemyCollisionDamageByLevel[i]}");
+        }
+    }
+
+    private List<string> SplitCsvLine(string line)
     {
         var result = new List<string>();
         var current = new StringBuilder();
@@ -222,7 +300,6 @@ public class BalanceConfig : IInitializable
 
             if (c == '"')
             {
-                // Экранированная кавычка внутри поля в кавычках: ""
                 if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
                 {
                     current.Append('"');

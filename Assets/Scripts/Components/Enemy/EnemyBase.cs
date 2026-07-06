@@ -12,10 +12,20 @@ namespace Components.Enemy
     [RequireComponent(typeof(BoundsCheck))]
     public abstract class EnemyBase : MonoBehaviour
     {
-        [Header("Параметры врага")]
-        [SerializeField] protected float speed = 10f; 
+        [Header("Параметры врага (fallback, если BalanceConfig не внедрён)")]
+        [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemySpeed(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
+        [SerializeField] protected float speed = 10f;
+
+        [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemyHealth(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
         [SerializeField] protected float health = 10f;
-        [SerializeField] private int score = 100; 
+        [SerializeField] private int score = 100;
+
+        [Header("Баланс (из таблицы GDD)")]
+        [SerializeField] protected EnemyLevel enemyLevel = EnemyLevel.Level_1;
+        [SerializeField] protected  bool debugBalanceValues = true;
+
+
+        [HideInInspector] public float collisionDamage = 1f; 
         
         public float showDamageDuration = 0.1f; 
         public float powerUpDropChance = 1f; 
@@ -45,6 +55,7 @@ namespace Components.Enemy
         private Utils _utils;
         private AudioService _audioService; 
         private PlayerScore _playerScore;
+        protected BalanceConfig balanceConfig;
         private bool _isInitialized = false;
 
         private Vector3 _targetLocalPosition;
@@ -64,12 +75,13 @@ namespace Components.Enemy
         public bool UseGridFormation => useGridFormation;
         
         [Inject]
-        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main)
+        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main, BalanceConfig balanceConfig)
         {
             _utils = utils;
             _audioService = audioService;
             _playerScore = playerScore;
             this.main = main;
+            this.balanceConfig = balanceConfig;
         }
 
         protected virtual void Awake()
@@ -81,6 +93,30 @@ namespace Components.Enemy
         protected virtual void Start()
         {
             EnsureMaterialsInitialized();
+            ApplyBalanceConfig();
+        }
+
+        protected virtual void ApplyBalanceConfig()
+        {
+            if (balanceConfig == null)
+            {
+                if (debugBalanceValues)
+                {
+                    Debug.LogWarning($"[{gameObject.name}] BalanceConfig не внедрён через Zenject — используются значения из инспектора: speed={speed}, health={health}, collisionDamage={collisionDamage}");
+                }
+                return;
+            }
+
+            speed = balanceConfig.GetEnemySpeed(enemyLevel);
+            health = balanceConfig.GetEnemyHealth(enemyLevel);
+            collisionDamage = balanceConfig.GetEnemyCollisionDamage(enemyLevel);
+            _maxHealthCached = health;
+
+            if (debugBalanceValues)
+            {
+                Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) применены значения баланса: " +
+                          $"Скорость = {speed}, Здоровье = {health}, Урон от столкновения = {collisionDamage}");
+            }
         }
 
         protected virtual void OnEnable()
@@ -230,7 +266,6 @@ namespace Components.Enemy
                 {
                     notifiedOfDestruction = true;
 
-                    // ИСПРАВЛЕНО: Спавним партиклы строго в мировой позиции корабля (transform.position)
                     if (_explosionParticlePrefab != null)
                     {
                         LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
@@ -243,7 +278,6 @@ namespace Components.Enemy
 
                     _playerScore?.AddScore(score);
             
-                    // Этот метод мгновенно прячет или деспавнит врага, но ошибки больше не будет!
                     main.ShipDestroyed(this);
                 }
             }

@@ -77,10 +77,7 @@ namespace Components.Weapon
 
             if (_config == null || _balanceConfig == null)
                 return;
-
-            // Если таблица еще загружается на старте, ждем завершения
-            if (!_balanceConfig.IsLoaded)
-                return;
+            
 
             // Проверка кулдауна по значению из BalanceConfig
             if (Time.time - _lastShotTime < DynamicFireRate)

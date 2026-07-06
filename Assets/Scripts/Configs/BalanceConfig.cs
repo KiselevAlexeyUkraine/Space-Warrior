@@ -1,19 +1,17 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using Zenject;
 
-public class BalanceConfig : MonoBehaviour
+public class BalanceConfig : IInitializable
 {
-    [Header("Google Sheets CSV URL")]
-    [SerializeField] private string googleSheetCsvUrl;
-
-    [Header("Load")]
-    [SerializeField] private bool loadOnAwake = true;
-
-    public bool IsLoaded { get; private set; }
+    private readonly string googleSheetCsvUrl =
+        "https://docs.google.com/spreadsheets/d/1RBHH4UJFLj880j62VlfpAgyu8xRTAwuM/export?format=csv";
+    
 
     // Переменная для отслеживания текущего блока в цикле парсинга
     private enum TableSection { None, Player, Enemy }
@@ -52,42 +50,51 @@ public class BalanceConfig : MonoBehaviour
     public float EnemyLaserDamage { get; private set; }
     #endregion
 
-    private void Awake()
+    // Zenject автоматически вызывает Initialize() при старте контейнера,
+    // если класс забиндлен через BindInterfacesAndSelfTo
+    public void Initialize()
     {
-        if (loadOnAwake)
-            StartCoroutine(Load());
+        LoadAsync().Forget();
     }
 
-    public IEnumerator Load()
+    /// <summary>
+    /// Публичный метод для ручной перезагрузки баланса из таблицы (например, по кнопке в дебаг-меню).
+    /// </summary>
+    public async UniTaskVoid LoadAsync()
     {
-        IsLoaded = false;
 
         // Cache-buster: без этого Google CDN может годами отдавать закэшированную
         // версию CSV, и изменения в таблице не будут доходить до игры
         string separator = googleSheetCsvUrl.Contains("?") ? "&" : "?";
-        string noCacheUrl = $"{googleSheetCsvUrl}{separator}nocache={System.DateTime.UtcNow.Ticks}";
+        string noCacheUrl = $"{googleSheetCsvUrl}{separator}nocache={DateTime.UtcNow.Ticks}";
 
         using UnityWebRequest request = UnityWebRequest.Get(noCacheUrl);
         request.SetRequestHeader("Cache-Control", "no-cache, no-store");
         request.SetRequestHeader("Pragma", "no-cache");
 
-        yield return request.SendWebRequest();
+        try
+        {
+            await request.SendWebRequest();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[BalanceConfig] Ошибка скачивания таблицы: {e.Message}");
+            return;
+        }
 
         if (request.result != UnityWebRequest.Result.Success)
         {
             Debug.LogError($"[BalanceConfig] Ошибка скачивания таблицы: {request.error}");
-            yield break;
+            return;
         }
 
         Parse(request.downloadHandler.text);
 
-        IsLoaded = true;
-
-        // // ВЫВОД В ДЕБАГ: Теперь все значения выводятся корректно, включая float
-        // Debug.Log($"⚙️ Balance loaded успешно!\n" +
-        //           $"🔹 Скорость движения игрока (B9): {PlayerMoveSpeed}\n" +
-        //           $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
-        //           $"🔹 Темп стрельбы игрока (ячейка 7B): {PlayerFireRate} сек.");
+        Debug.Log($"⚙️ Balance loaded успешно!\n" +
+                  $"🔹 Скорость движения игрока: {PlayerMoveSpeed}\n" +
+                  $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
+                  $"🔹 Щит игрока: {PlayerShield}\n" +
+                  $"🔹 Темп стрельбы игрока: {PlayerFireRate} сек.");
     }
 
     private void Parse(string csv)

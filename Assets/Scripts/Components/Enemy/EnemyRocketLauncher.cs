@@ -9,28 +9,36 @@ namespace Components.Enemy
 {
     public class EnemyRocketLauncher : EnemyBase
     {
-        [Header("Rocket Launcher Settings")]
-        [Tooltip("Префаб ракеты (без скриптов, только визуал и коллайдер).")]
+        public enum WeaponShooterType
+        {
+            StraightDownShooter, // Обычный стрелок (стреляет строго вниз)
+            TargetPlayerShooter, // Обычный стрелок (целится в игрока)
+            RocketLauncher       // Враг с ракетницами
+        }
+
+        [Header("Универсальный тип стрелка")]
+        [Tooltip("Определяет, из каких строк таблицы считывать параметры и куда вести огонь.")]
+        [SerializeField] private WeaponShooterType _shooterType = WeaponShooterType.RocketLauncher;
+
+        [Header("Weapon Settings")]
+        [Tooltip("Префаб снаряда (пуля или ракета).")]
         [SerializeField] private GameObject _rocketPrefab;
 
-        [Tooltip("Точка вылета ракеты.")]
+        [Tooltip("Точка вылета снаряда.")]
         [SerializeField] private Transform _firePoint;
 
-        [Tooltip("Если включено, ракета летит строго вниз. Если выключено — целится в игрока.")]
-        [SerializeField] private bool _shootStraightDown = false;
-
-        [Header("Randomized Interval Settings")]
-        [SerializeField, Min(0.1f)] private float minFireInterval = 2f;
-        [SerializeField, Min(0.1f)] private float maxFireInterval = 4f;
+        [Header("Interval Settings")]
         [SerializeField] private float _initialShotDelay = 1f;
 
-        [Tooltip("Скорость полета ракеты (используется, только если нет скрипта авто-движения).")]
-        [SerializeField] private float _rocketSpeed = 12f;
+        // Эти параметры теперь динамически перезаписываются на основе типа и уровня врага из таблицы
+        private float _rocketSpeed = 12f;
+        private float _fireInterval = 3f;
+        private bool _shootStraightDown = false;
+        private float _nextFireTime;
 
         private DiContainer _diContainer;
         private AnimatorService _animatorService;
         private PlayerMove _player;
-        private float _nextFireTime;
 
         [Inject]
         private void ConstructLauncher(DiContainer diContainer, AnimatorService animatorService, PlayerMove player = null)
@@ -38,6 +46,51 @@ namespace Components.Enemy
             _diContainer = diContainer;
             _animatorService = animatorService;
             _player = player; 
+        }
+
+        // Динамическое считывание параметров для каждого уровня и типа врага
+        protected override void ApplyBalanceConfig()
+        {
+            base.ApplyBalanceConfig();
+
+            if (balanceConfig == null)
+            {
+                if (debugBalanceValues)
+                {
+                    Debug.LogWarning($"[{gameObject.name}] BalanceConfig не внедрён — используются дефолтные инспекторные значения.");
+                }
+                return;
+            }
+
+            switch (_shooterType)
+            {
+                case WeaponShooterType.StraightDownShooter:
+                    _shootStraightDown = true;
+                    // Строка 21 и 22: Обычные стрелки
+                    _fireInterval = balanceConfig.GetEnemyBulletFireRate(enemyLevel);
+                    _rocketSpeed = balanceConfig.GetEnemyBulletSpeed(enemyLevel);
+                    break;
+
+                case WeaponShooterType.TargetPlayerShooter:
+                    _shootStraightDown = false;
+                    // Строка 21 и 22: Обычные стрелки
+                    _fireInterval = balanceConfig.GetEnemyBulletFireRate(enemyLevel);
+                    _rocketSpeed = balanceConfig.GetEnemyBulletSpeed(enemyLevel);
+                    break;
+
+                case WeaponShooterType.RocketLauncher:
+                    _shootStraightDown = false; 
+                    // Строка 24 и 25: Ракетницы
+                    _fireInterval = balanceConfig.GetEnemyRocketFireRate(enemyLevel);
+                    _rocketSpeed = balanceConfig.GetEnemyRocketSpeed(enemyLevel);
+                    break;
+            }
+
+            if (debugBalanceValues)
+            {
+                Debug.Log($"[{gameObject.name}] ({GetType().Name} -> {_shooterType}, Уровень: {enemyLevel}) Успешно обновлен из таблицы: " +
+                          $"Интервал стрельбы = {_fireInterval} сек, Скорость полета = {_rocketSpeed}, Направление вниз = {_shootStraightDown}");
+            }
         }
 
         protected override void OnEnable()
@@ -59,9 +112,8 @@ namespace Components.Enemy
 
         private void CalculateNextFireTime()
         {
-            float min = Mathf.Min(minFireInterval, maxFireInterval);
-            float max = Mathf.Max(minFireInterval, maxFireInterval);
-            _nextFireTime = Time.time + Random.Range(min, max);
+            // Берем строгое значение интервала из таблицы баланса (для текущего уровня)
+            _nextFireTime = Time.time + _fireInterval;
         }
 
         private void ShootRocket()
@@ -96,22 +148,19 @@ namespace Components.Enemy
                 }
             }
 
-            // Спавним ракету
+            // Спавним снаряд/ракету
             GameObject rocketGo = LeanPool.Spawn(_rocketPrefab, spawnPoint.position, rocketRotation);
             
-            // КРИТИЧЕСКИ ВАЖНО: Инжектим зависимости, чтобы EnemyFollowProjectile внутри себя получил AudioService и PlayerMove
+            // Прокидываем контекст и зависимости Zenject (AudioService, PlayerMove и др.)
             _diContainer?.InjectGameObject(rocketGo);
 
-            // ИСПРАВЛЕНО: Проверяем, есть ли на снаряде скрипт EnemyFollowProjectile
+            // Если на префабе есть скрипт умного движения, он сам перехватит инициализацию
             if (rocketGo.TryGetComponent<EnemyFollowProjectile>(out var followProjectile))
             {
-                // Если скрипт есть, он сам управляет движением в своем Update().
-                // Никуда в AnimatorService его не пихаем, просто выходим из метода!
                 return;
             }
 
-            // Если скриптаEnemyFollowProjectile нет — значит это обычная «тупая» пуля,
-            // отдаем её управление стандартному сервису анимации
+            // Если «тупой» снаряд — пускаем его по заданной траектории со скоростью из таблицы
             if (_animatorService != null)
             {
                 if (_shootStraightDown)

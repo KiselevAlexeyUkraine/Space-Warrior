@@ -465,7 +465,7 @@ GameObject:
   - component: {fileID: 241794260299982728}
   - component: {fileID: 4721991176222013801}
   m_Layer: 9
-  m_Name: Enemy_Shooter_3
+  m_Name: Straight_Down_Shooter_3
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -575,6 +575,9 @@ MonoBehaviour:
   speed: 50
   health: 1
   score: 600
+  enemyLevel: 2
+  debugBalanceValues: 1
+  collisionDamage: 1
   showDamageDuration: 0.1
   powerUpDropChance: 1
   useGridFormation: 1
@@ -586,13 +589,10 @@ MonoBehaviour:
   originalColors: []
   showingDamage: 0
   damageDoneTime: 0
+  _shooterType: 0
   _rocketPrefab: {fileID: 1843796405803476770, guid: c273c771c70bf8d409661f18bfea0f42, type: 3}
   _firePoint: {fileID: 5956065120054420852}
-  _shootStraightDown: 1
-  minFireInterval: 1
-  maxFireInterval: 1.5
   _initialShotDelay: 1
-  _rocketSpeed: 30
 --- !u!1 &7661810740051426653
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,4 @@
 using UnityEngine;
-using Components.Weapon;
 using Lean.Pool;
 using Zenject;
 using Servise;
@@ -12,30 +11,22 @@ namespace Components.Enemy
         [Tooltip("Объект щита (с Renderer), который висит на враге.")]
         [SerializeField] private GameObject _shieldObject;
         
-        [Tooltip("Максимальный уровень щита (сколько снарядов он может отразить).")]
+        [Tooltip("Максимальный уровень щита (сколько снарядов он может отразить). Перезаписывается из таблицы.")]
         [SerializeField] private int _maxShieldLevel = 3;
         
         [Tooltip("Скорость вращения щита вокруг своей оси.")]
         [SerializeField] private float _rotationsPerSecond = 0.1f;
 
-        [Header("Shield Regeneration Settings")]
-        [Tooltip("Сколько единиц щита восстанавливается в секунду.")]
-        [SerializeField] private float _regenRate = 0.5f;
-
-        [Tooltip("Задержка перед началом восстановления после получения урона (в секундах).")]
-        [SerializeField] private float _regenDelay = 3f;
-
         [Header("Reflection (Shooting) Settings")]
         [Tooltip("Префаб вражеского снаряда, который спавнится ПРИ ОТРАЖЕНИИ.")]
         [SerializeField] private GameObject _reflectedProjectilePrefab;
 
-        [Tooltip("Скорость полета отраженного снаряда вниз. Считывается AnimatorService.")]
+        [Tooltip("Скорость полета отраженного снаряда вниз. Перезаписывается из таблицы.")]
         [SerializeField] private float _reflectedProjectileSpeed = 15f;
 
-        private float _currentShieldLevel;
+        private int _currentShieldLevel;
         private Material _shieldMat;
         private int _lastShownLevel = -1;
-        private float _nextRegenTime; // Время, начиная с которого щит может восстанавливаться
 
         private DiContainer _diContainer;
         private AnimatorService _animatorService;
@@ -56,9 +47,33 @@ namespace Components.Enemy
                 Renderer shieldRend = _shieldObject.GetComponent<Renderer>();
                 if (shieldRend != null)
                 {
-                    // Используем .material, чтобы у каждого врага была своя копия материала
                     _shieldMat = shieldRend.material;
                 }
+            }
+        }
+
+        // Перезаписываем параметры отражения из таблицы баланса
+        protected override void ApplyBalanceConfig()
+        {
+            base.ApplyBalanceConfig();
+
+            if (balanceConfig == null)
+            {
+                if (debugBalanceValues)
+                {
+                    Debug.LogWarning($"[{gameObject.name}] BalanceConfig не внедрён — рефлектор использует значения из инспектора: maxShieldLevel={_maxShieldLevel}, reflectedProjectileSpeed={_reflectedProjectileSpeed}");
+                }
+                return;
+            }
+
+            // Получаем количество отражений и скорость полета снаряда из обновленного BalanceConfig
+            _maxShieldLevel = Mathf.RoundToInt(balanceConfig.GetEnemyReflectionCount(enemyLevel));
+            _reflectedProjectileSpeed = balanceConfig.GetEnemyReflectedProjectileSpeed(enemyLevel);
+
+            if (debugBalanceValues)
+            {
+                Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) из баланса: " +
+                          $"Количество отражений = {_maxShieldLevel}, Скорость отраженного снаряда = {_reflectedProjectileSpeed}");
             }
         }
 
@@ -66,14 +81,13 @@ namespace Components.Enemy
         {
             base.OnEnable();
             
-            // Сброс щита при активации из пула
             _currentShieldLevel = _maxShieldLevel;
             _lastShownLevel = -1;
-            _nextRegenTime = 0f;
             
             if (_shieldObject != null)
             {
-                _shieldObject.SetActive(true);
+                // Включаем или выключаем щит изначально в зависимости от того, есть ли у него заряды отражения
+                _shieldObject.SetActive(_currentShieldLevel > 0);
             }
             
             UpdateShieldVisual(forceUpdate: true);
@@ -81,7 +95,6 @@ namespace Components.Enemy
 
         public override void Move()
         {
-            // Стандартное движение вниз (если не Grid Formation)
             Vector3 tempPos = pos;
             tempPos.y -= speed * Time.deltaTime;
             pos = tempPos;
@@ -91,84 +104,51 @@ namespace Components.Enemy
         {
             base.Update();
 
-            // Вращаем щит точно так же, как у игрока
+            // Вращаем щит, если он активен
             if (_shieldObject != null && _shieldObject.activeSelf)
             {
                 float rZ = -(_rotationsPerSecond * Time.time * 360f) % 360f;
                 _shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
             }
-
-            // Запускаем логику регенерации щита
-            HandleShieldRegeneration();
-        }
-
-        private void HandleShieldRegeneration()
-        {
-            // ИСПРАВЛЕНО: Убрана проверка !_shieldObject.activeSelf, чтобы регенерация работала и для выключенного щита
-            if (_shieldObject == null || _currentShieldLevel >= _maxShieldLevel)
-                return;
-
-            // Ждем пока пройдет время задержки после последнего отражения
-            if (Time.time >= _nextRegenTime)
-            {
-                // Если щит был выключен (уничтожен), включаем его обратно, так как регенерация пошла
-                if (!_shieldObject.activeSelf)
-                {
-                    _shieldObject.SetActive(true);
-                }
-
-                // Постепенно восстанавливаем прочность, не превышая максимум
-                _currentShieldLevel += _regenRate * Time.deltaTime;
-                _currentShieldLevel = Mathf.Min(_currentShieldLevel, _maxShieldLevel);
-
-                UpdateShieldVisual();
-            }
         }
 
         protected override void OnTriggerEnter(Collider other)
         {
-            // Если щит активен и в него попал снаряд игрока
-            if (_shieldObject != null && _shieldObject.activeSelf && other.CompareTag("ProjectileHero"))
+            // Проверяем уровень прочности щита напрямую, как в EnemyWithShield
+            if (_currentShieldLevel > 0 && other.CompareTag("ProjectileHero"))
             {
-                // Сначала спавним ответный снаряд в точке столкновения
+                // Спавним ответный снаряд в точке столкновения
                 SpawnReflectedProjectile(other.transform.position);
 
-                // Сдвигаем время регенерации в будущее
-                _nextRegenTime = Time.time + _regenDelay;
+                // Отражение забирает ровно 1 единицу прочности щита
+                _currentShieldLevel -= 1;
+                ShowDamage(); 
 
-                // Тратим прочность щита
-                _currentShieldLevel -= 1f;
-                ShowDamage(); // Мигание самого корабля для фидбека
-
-                // Проверяем прочность щита
                 if (_currentShieldLevel <= 0)
                 {
                     _currentShieldLevel = 0;
                     if (_shieldObject != null)
                     {
-                        _shieldObject.SetActive(false); // Ломаем щит
+                        _shieldObject.SetActive(false); // Полностью ломаем щит без регенерации
                     }
                 }
 
-                UpdateShieldVisual();
+                UpdateShieldVisual(forceUpdate: true);
 
-                // Уничтожаем (деспавним) оригинальный патрон игрока
+                // Деспавним оригинальный патрон игрока
                 SafeDespawn(other.gameObject);
                 return; 
             }
 
-            // Если щит пробит или это не пуля игрока — обычная логика урона
+            // Если щит уничтожен (_currentShieldLevel <= 0) — урон проходит по корпусу врага
             base.OnTriggerEnter(other);
         }
 
-        /// <summary>
-        /// Спавнит новый вражеский префаб из точки, куда попал патрон игрока
-        /// </summary>
         private void SpawnReflectedProjectile(Vector3 spawnPosition)
         {
             if (_reflectedProjectilePrefab == null) return;
 
-            // Спавним префаб. Разворачиваем на 180 градусов (Quaternion.Euler(0, 0, 180f)), чтобы он летел вниз
+            // Разворачиваем снаряд на 180 градусов, чтобы он полетел вниз в сторону игрока
             GameObject projectileGo = LeanPool.Spawn(_reflectedProjectilePrefab, spawnPosition, Quaternion.Euler(0, 0, 180f));
             
             _diContainer?.InjectGameObject(projectileGo);
@@ -183,19 +163,14 @@ namespace Components.Enemy
             }
         }
 
-        /// <summary>
-        /// Сдвиг текстуры щита по принципу игрока
-        /// </summary>
         private void UpdateShieldVisual(bool forceUpdate = false)
         {
             if (_shieldMat == null) return;
 
-            int currentVisualLevel = Mathf.FloorToInt(_currentShieldLevel);
-
-            if (_lastShownLevel != currentVisualLevel || forceUpdate)
+            if (_lastShownLevel != _currentShieldLevel || forceUpdate)
             {
-                _lastShownLevel = currentVisualLevel;
-                // Сдвигаем текстуру на 0.2 за каждый шаг прочности
+                _lastShownLevel = _currentShieldLevel;
+                // Сдвигаем текстуру в зависимости от оставшегося количества отражений
                 _shieldMat.mainTextureOffset = new Vector2(0.2f * _lastShownLevel, 0);
             }
         }

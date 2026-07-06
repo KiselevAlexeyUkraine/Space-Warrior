@@ -778,8 +778,8 @@ MonoBehaviour:
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: ee937f873808a37488967a500b70ac61, type: 3}
-    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
+    - {fileID: 7654880680303113404, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
     - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
     cachedLayers: 
   - waveName: 2

@@ -44,6 +44,14 @@ public class BalanceConfig : IInitializable
     public float GetEnemyCollisionDamage(EnemyLevel level) => GetValue(_enemyCollisionDamageByLevel, level, "Урон от столкновения");
     #endregion
 
+    #region Enemy Reflector (по уровням 1-5)
+    private readonly float[] _enemyReflectionCountByLevel = new float[LevelsCount];            // строка 19 (столбцы C..G)
+    private readonly float[] _enemyReflectedProjectilesSpeedByLevel = new float[LevelsCount];  // строка 20 (столбцы C..G)
+
+    public float GetEnemyReflectionCount(EnemyLevel level) => GetValue(_enemyReflectionCountByLevel, level, "Количество отражений щита");
+    public float GetEnemyReflectedProjectileSpeed(EnemyLevel level) => GetValue(_enemyReflectedProjectilesSpeedByLevel, level, "Скорость отраженного снаряда");
+    #endregion
+
     #region Enemy Shooter (по уровням 1-5)
     private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount];
     private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];
@@ -165,8 +173,6 @@ public class BalanceConfig : IInitializable
             }
             else if (currentSection == TableSection.Enemy)
             {
-                // Колонка A = категория (может быть пустой из-за объединения ячеек),
-                // колонка B = параметр, колонки C..G = уровни 1-5
                 if (cells.Count < 3)
                     continue;
 
@@ -185,7 +191,6 @@ public class BalanceConfig : IInitializable
         }
     }
 
-    // Универсальный парсинг числа: поддерживает и точку, и запятую как разделитель дробной части.
     private float? ParseFloat(string raw)
     {
         string cleaned = raw.Trim().Trim('"');
@@ -227,7 +232,6 @@ public class BalanceConfig : IInitializable
             }
             else
             {
-                // Пустая ячейка или "-" — переносим значение предыдущего уровня
                 values[level] = level > 0 ? values[level - 1] : 0f;
             }
         }
@@ -237,13 +241,17 @@ public class BalanceConfig : IInitializable
 
     private void ApplyEnemyLevelValues(string key, float[] levelValues)
     {
-        // ВАЖНО: "восстановление щита" проверяем РАНЬШЕ общей проверки "щит",
-        // иначе строка 18 попадёт в _enemyShieldByLevel вместо _enemyShieldRegenIntervalByLevel
         if (key.Contains("скорость движения")) CopyTo(_enemySpeedByLevel, levelValues);
         else if (key.Contains("здоров")) CopyTo(_enemyHealthByLevel, levelValues);
         else if (key.Contains("урон от столкновения")) CopyTo(_enemyCollisionDamageByLevel, levelValues);
         else if (key.Contains("восстановление щита")) CopyTo(_enemyShieldRegenIntervalByLevel, levelValues);
         else if (key.Contains("щит")) CopyTo(_enemyShieldByLevel, levelValues);
+        
+        // --- ПАРСИНГ ПАРАМЕТРОВ РЕФЛЕКТОРА ---
+        else if (key.Contains("количество отражений")) CopyTo(_enemyReflectionCountByLevel, levelValues);
+        else if (key.Contains("скорость отраженного снаряда")) CopyTo(_enemyReflectedProjectilesSpeedByLevel, levelValues);
+        // -------------------------------------
+
         else if (key.Contains("скорость стрельбы")) CopyTo(_enemyBulletFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета выстрел")) CopyTo(_enemyBulletSpeedByLevel, levelValues);
         else if (key.Contains("урон от выстрелов")) CopyTo(_enemyBulletDamageByLevel, levelValues);
@@ -283,7 +291,8 @@ public class BalanceConfig : IInitializable
                       $"Speed: {_enemySpeedByLevel[i]}, " +
                       $"Health: {_enemyHealthByLevel[i]}, " +
                       $"Shield: {_enemyShieldByLevel[i]}, " +
-                      $"ShieldRegenInterval: {_enemyShieldRegenIntervalByLevel[i]}с/ед, " +
+                      $"ReflectCount: {_enemyReflectionCountByLevel[i]}, " +
+                      $"ReflectProjSpeed: {_enemyReflectedProjectilesSpeedByLevel[i]}, " +
                       $"CollisionDamage: {_enemyCollisionDamageByLevel[i]}");
         }
     }

@@ -25,7 +25,7 @@ public class BalanceConfig : IInitializable
     public int PlayerShield { get; private set; }
     #endregion
 
-    #region Enemy Common (по уровням 1-5)
+    #region Enemy Common
     private readonly float[] _enemyHealthByLevel = new float[LevelsCount];
     private readonly float[] _enemyShieldByLevel = new float[LevelsCount];               
     private readonly float[] _enemyShieldRegenIntervalByLevel = new float[LevelsCount];  
@@ -43,7 +43,7 @@ public class BalanceConfig : IInitializable
     public float GetEnemyCollisionDamage(EnemyLevel level) => GetValue(_enemyCollisionDamageByLevel, level, "Урон от столкновения");
     #endregion
 
-    #region Enemy Reflector (по уровням 1-5)
+    #region Enemy Reflector
     private readonly float[] _enemyReflectionCountByLevel = new float[LevelsCount];            
     private readonly float[] _enemyReflectedProjectilesSpeedByLevel = new float[LevelsCount];  
 
@@ -51,36 +51,28 @@ public class BalanceConfig : IInitializable
     public float GetEnemyReflectedProjectileSpeed(EnemyLevel level) => GetValue(_enemyReflectedProjectilesSpeedByLevel, level, "Скорость отраженного снаряда");
     #endregion
 
-    #region Enemy Shooter / Обычные стрелки (по уровням 1-5)
-    private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount]; // Строка 21
-    private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];    // Строка 22
+    #region Enemy Shooter / Обычные стрелки (Строки 21-22)
+    private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount]; 
+    private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];    
 
     public float GetEnemyBulletFireRate(EnemyLevel level) => GetValue(_enemyBulletFireRateByLevel, level, "Скорость стрельбы стрелка");
     public float GetEnemyBulletSpeed(EnemyLevel level) => GetValue(_enemyBulletSpeedByLevel, level, "Скорость полета выстрела стрелка");
     #endregion
 
-    #region Enemy Rocket (по уровням 1-5)
-    private readonly float[] _enemyRocketFireRateByLevel = new float[LevelsCount]; // Строка 24
-    private readonly float[] _enemyRocketSpeedByLevel = new float[LevelsCount];    // Строка 25
+    #region Enemy Rocket / Ракетницы (Строки 24-25)
+    private readonly float[] _enemyRocketFireRateByLevel = new float[LevelsCount]; 
+    private readonly float[] _enemyRocketSpeedByLevel = new float[LevelsCount];    
     private readonly float[] _enemyRocketRadiusByLevel = new float[LevelsCount];
     private readonly float[] _enemyRocketDamageByLevel = new float[LevelsCount];
 
-    public float GetEnemyRocketFireRate(EnemyLevel level) => GetValue(_enemyRocketFireRateByLevel, level, "Темп запуска ракеты");
-    public float GetEnemyRocketSpeed(EnemyLevel level) => GetValue(_enemyRocketSpeedByLevel, level, "Скорость ракеты");
-    public float GetEnemyRocketRadius(EnemyLevel level) => GetValue(_enemyRocketRadiusByLevel, level, "Радиус поражения ракеты");
-    public float GetEnemyRocketDamage(EnemyLevel level) => GetValue(_enemyRocketDamageByLevel, level, "Урон от ракеты");
+    public float GetEnemyRocketFireRate(EnemyLevel level) => GetValue(_enemyRocketFireRateByLevel, level, "Скорость запуска ракеты");
+    public float GetEnemyRocketSpeed(EnemyLevel level) => GetValue(_enemyRocketSpeedByLevel, level, "Скорость полета ракеты");
     #endregion
 
-    #region Enemy Laser (по уровням 1-5)
+    #region Enemy Laser
     private readonly float[] _enemyLaserFireRateByLevel = new float[LevelsCount];
     private readonly float[] _enemyLaserDelayByLevel = new float[LevelsCount];
     private readonly float[] _enemyLaserDurationByLevel = new float[LevelsCount];
-    private readonly float[] _enemyLaserDamageByLevel = new float[LevelsCount];
-
-    public float GetEnemyLaserFireRate(EnemyLevel level) => GetValue(_enemyLaserFireRateByLevel, level, "Скорострельность лазера");
-    public float GetEnemyLaserDelay(EnemyLevel level) => GetValue(_enemyLaserDelayByLevel, level, "Задержка перед уроном лазера");
-    public float GetEnemyLaserDuration(EnemyLevel level) => GetValue(_enemyLaserDurationByLevel, level, "Длительность лазера");
-    public float GetEnemyLaserDamage(EnemyLevel level) => GetValue(_enemyLaserDamageByLevel, level, "Урон лазера");
     #endregion
 
     public void Initialize()
@@ -97,30 +89,12 @@ public class BalanceConfig : IInitializable
         request.SetRequestHeader("Cache-Control", "no-cache, no-store");
         request.SetRequestHeader("Pragma", "no-cache");
 
-        try
-        {
-            await request.SendWebRequest();
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[BalanceConfig] Ошибка скачивания таблицы: {e.Message}");
-            return;
-        }
+        try { await request.SendWebRequest(); }
+        catch (Exception e) { Debug.LogError($"[BalanceConfig] Ошибка: {e.Message}"); return; }
 
-        if (request.result != UnityWebRequest.Result.Success)
-        {
-            Debug.LogError($"[BalanceConfig] Ошибка скачивания таблицы: {request.error}");
-            return;
-        }
+        if (request.result != UnityWebRequest.Result.Success) return;
 
         Parse(request.downloadHandler.text);
-
-        Debug.Log($"⚙️ Balance loaded успешно!\n" +
-                  $"🔹 Скорость движения игрока: {PlayerMoveSpeed}\n" +
-                  $"🔹 Скорость снаряда игрока: {PlayerBulletSpeed}\n" +
-                  $"🔹 Щит игрока: {PlayerShield}\n" +
-                  $"🔹 Темп стрельбы игрока: {PlayerFireRate} сек.");
-
         LogEnemyBalanceByLevel();
     }
 
@@ -131,36 +105,19 @@ public class BalanceConfig : IInitializable
 
         foreach (string line in lines)
         {
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
+            if (string.IsNullOrWhiteSpace(line)) continue;
             List<string> cells = SplitCsvLine(line);
-
-            if (cells.Count < 2)
-                continue;
+            if (cells.Count < 2) continue;
 
             string key = cells[0].Trim().Trim('"').ToLower();
 
-            if (key.Contains("параметры игрока"))
-            {
-                currentSection = TableSection.Player;
-                continue;
-            }
-
-            if (key.Contains("параметры врагов"))
-            {
-                currentSection = TableSection.Enemy;
-                continue;
-            }
+            if (key.Contains("параметры игрока")) { currentSection = TableSection.Player; continue; }
+            if (key.Contains("параметры врагов")) { currentSection = TableSection.Enemy; continue; }
 
             if (currentSection == TableSection.Player)
             {
-                if (string.IsNullOrEmpty(key))
-                    continue;
-
                 float? value = ParseFloat(cells[1]);
-                if (value == null)
-                    continue;
+                if (value == null) continue;
 
                 if (key.Contains("здоров")) PlayerHealth = (int)value.Value;
                 else if (key.Contains("щит")) PlayerShield = (int)value.Value;
@@ -170,18 +127,12 @@ public class BalanceConfig : IInitializable
             }
             else if (currentSection == TableSection.Enemy)
             {
-                if (cells.Count < 3)
-                    continue;
-
+                if (cells.Count < 3) continue;
                 string paramKey = cells[1].Trim().Trim('"').ToLower();
-
-                if (string.IsNullOrEmpty(paramKey))
-                    continue;
+                if (string.IsNullOrEmpty(paramKey)) continue;
 
                 float[] levelValues = ParseLevelValues(cells, 2);
-
-                if (levelValues == null)
-                    continue;
+                if (levelValues == null) continue;
 
                 ApplyEnemyLevelValues(paramKey, levelValues);
             }
@@ -191,17 +142,9 @@ public class BalanceConfig : IInitializable
     private float? ParseFloat(string raw)
     {
         string cleaned = raw.Trim().Trim('"');
-
-        if (string.IsNullOrEmpty(cleaned) || cleaned == "-")
-            return null;
-
+        if (string.IsNullOrEmpty(cleaned) || cleaned == "-") return null;
         cleaned = cleaned.Replace(',', '.');
-
-        if (float.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-        {
-            return value;
-        }
-
+        if (float.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)) return value;
         return null;
     }
 
@@ -209,30 +152,14 @@ public class BalanceConfig : IInitializable
     {
         var values = new float[LevelsCount];
         bool anyParsed = false;
-
         for (int level = 0; level < LevelsCount; level++)
         {
             int cellIndex = startIndex + level;
-
-            if (cellIndex >= cells.Count)
-            {
-                values[level] = level > 0 ? values[level - 1] : 0f;
-                continue;
-            }
-
+            if (cellIndex >= cells.Count) { values[level] = level > 0 ? values[level - 1] : 0f; continue; }
             float? parsed = ParseFloat(cells[cellIndex]);
-
-            if (parsed.HasValue)
-            {
-                values[level] = parsed.Value;
-                anyParsed = true;
-            }
-            else
-            {
-                values[level] = level > 0 ? values[level - 1] : 0f;
-            }
+            if (parsed.HasValue) { values[level] = parsed.Value; anyParsed = true; }
+            else { values[level] = level > 0 ? values[level - 1] : 0f; }
         }
-
         return anyParsed ? values : null;
     }
 
@@ -246,18 +173,15 @@ public class BalanceConfig : IInitializable
         else if (key.Contains("количество отражений")) CopyTo(_enemyReflectionCountByLevel, levelValues);
         else if (key.Contains("скорость отраженного снаряда")) CopyTo(_enemyReflectedProjectilesSpeedByLevel, levelValues);
         
-        // --- БОЛЕЕ ТОЧНЫЙ ПАРСИНГ ДЛЯ ОБЫЧНЫХ СТРЕЛКОВ (Строки 21-22) ---
+        // Стрелки
         else if (key.Contains("скорость стрельбы") && !key.Contains("раке") && !key.Contains("лазе")) CopyTo(_enemyBulletFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета выстрела")) CopyTo(_enemyBulletSpeedByLevel, levelValues);
-        // ---------------------------------------------------
 
-        // --- ДЛЯ РАКЕТНИЦ ---
+        // Ракетницы (Строки 24-25)
         else if (key.Contains("скорость запуска ракеты") || key.Contains("темп запуска ракеты")) CopyTo(_enemyRocketFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета ракеты") || key.Contains("скорость ракеты")) CopyTo(_enemyRocketSpeedByLevel, levelValues);
-        else if (key.Contains("радиус поражения ракеты")) CopyTo(_enemyRocketRadiusByLevel, levelValues);
-        else if (key.Contains("урон от ракеты")) CopyTo(_enemyRocketDamageByLevel, levelValues);
         
-        // --- ДЛЯ ЛАЗЕРА ---
+        // Лазер
         else if (key.Contains("скорострельность лазера")) CopyTo(_enemyLaserFireRateByLevel, levelValues);
         else if (key.Contains("задержка перед нанесением урона")) CopyTo(_enemyLaserDelayByLevel, levelValues);
         else if (key.Contains("длительность лазера")) CopyTo(_enemyLaserDurationByLevel, levelValues);
@@ -265,20 +189,13 @@ public class BalanceConfig : IInitializable
 
     private void CopyTo(float[] target, float[] source)
     {
-        for (int i = 0; i < LevelsCount && i < target.Length && i < source.Length; i++)
-        {
-            target[i] = source[i];
-        }
+        for (int i = 0; i < LevelsCount && i < target.Length && i < source.Length; i++) target[i] = source[i];
     }
 
     private float GetValue(float[] array, EnemyLevel level, string paramName)
     {
         int index = Mathf.Clamp((int)level, 0, LevelsCount - 1);
-        float value = array[index];
-
-        Debug.Log($"[BalanceConfig] Считано из таблицы: '{paramName}' для {level} = {value}");
-
-        return value;
+        return array[index];
     }
 
     private void LogEnemyBalanceByLevel()
@@ -286,13 +203,7 @@ public class BalanceConfig : IInitializable
         for (int i = 0; i < LevelsCount; i++)
         {
             var level = (EnemyLevel)i;
-            Debug.Log($"👾 Enemy balance [{level}] -> " +
-                      $"Speed: {_enemySpeedByLevel[i]}, " +
-                      $"Health: {_enemyHealthByLevel[i]}, " +
-                      $"ShooterFireRate: {_enemyBulletFireRateByLevel[i]}с, " +
-                      $"ShooterBulletSpeed: {_enemyBulletSpeedByLevel[i]}, " +
-                      $"RocketFireRate: {_enemyRocketFireRateByLevel[i]}с, " +
-                      $"RocketSpeed: {_enemyRocketSpeedByLevel[i]}");
+            Debug.Log($"👾 [{level}] -> ShooterFireRate: {_enemyBulletFireRateByLevel[i]}с, BulletSpeed: {_enemyBulletSpeedByLevel[i]} | RocketFireRate: {_enemyRocketFireRateByLevel[i]}с, RocketSpeed: {_enemyRocketSpeedByLevel[i]}");
         }
     }
 
@@ -301,34 +212,13 @@ public class BalanceConfig : IInitializable
         var result = new List<string>();
         var current = new StringBuilder();
         bool inQuotes = false;
-
         for (int i = 0; i < line.Length; i++)
         {
             char c = line[i];
-
-            if (c == '"')
-            {
-                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
-                {
-                    current.Append('"');
-                    i++;
-                }
-                else
-                {
-                    inQuotes = !inQuotes;
-                }
-            }
-            else if (c == ',' && !inQuotes)
-            {
-                result.Add(current.ToString());
-                current.Clear();
-            }
-            else
-            {
-                current.Append(c);
-            }
+            if (c == '"') { if (inQuotes && i + 1 < line.Length && line[i + 1] == '"') { current.Append('"'); i++; } else inQuotes = !inQuotes; }
+            else if (c == ',' && !inQuotes) { result.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
         }
-
         result.Add(current.ToString());
         return result;
     }

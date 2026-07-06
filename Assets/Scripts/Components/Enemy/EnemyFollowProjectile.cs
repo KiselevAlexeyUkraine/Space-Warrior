@@ -9,7 +9,7 @@ namespace Components.Weapon
     public class EnemyFollowProjectile : MonoBehaviour
     {
         [Header("Movement Settings")]
-        [Tooltip("Скорость преследования цели.")]
+        [Tooltip("Скорость преследования цели (Перезаписывается из таблицы через SetSpeed).")]
         [SerializeField] private float _speed = 12f;
 
         [Header("Collision Settings")]
@@ -17,9 +17,8 @@ namespace Components.Weapon
         [SerializeField] private LayerMask _targetLayer;
 
         [Header("Visual Settings")]
-        // ИСПРАВЛЕНО: Теперь здесь компонент Renderer вместо GameObject
         [Tooltip("Основной рендерер пули (SpriteRenderer или MeshRenderer), который отключится при взрыве.")]
-        [SerializeField] private Renderer _projectileVisual;
+        [SerializeField] private GameObject _projectileVisual;
 
         [Header("Explosion (LeanPool Particle) Settings")]
         [Tooltip("Префаб системы частиц взрыва, который будет создаваться через LeanPool.")]
@@ -48,6 +47,12 @@ namespace Components.Weapon
             _targetPlayer = player;
         }
 
+        // Публичный метод для динамической передачи скорости из таблицы в момент спавна
+        public void SetSpeed(float speed)
+        {
+            _speed = speed;
+        }
+
         private void Awake()
         {
             _mainCollider = GetComponent<Collider>();
@@ -58,8 +63,7 @@ namespace Components.Weapon
             _isExploding = false;
             
             if (_mainCollider != null) _mainCollider.enabled = true;
-            // ИСПРАВЛЕНО: Включаем рендерер обратно при выходе из пула
-            if (_projectileVisual != null) _projectileVisual.enabled = true;
+            if (_projectileVisual != null) _projectileVisual.SetActive(true);
             if (_explosionObject != null) _explosionObject.SetActive(false);
         }
 
@@ -102,8 +106,7 @@ namespace Components.Weapon
             _isExploding = true;
 
             if (_mainCollider != null) _mainCollider.enabled = false;
-            // ИСПРАВЛЕНО: Выключаем только рендерер, визуал скрывается, но объект активен
-            if (_projectileVisual != null) _projectileVisual.enabled = false;
+            if (_projectileVisual != null) _projectileVisual.SetActive(false);
 
             if (_audioService != null && _explosionSound != null)
             {

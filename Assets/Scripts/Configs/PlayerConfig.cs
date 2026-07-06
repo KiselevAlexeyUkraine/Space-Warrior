@@ -37,10 +37,7 @@ namespace Configs
         private float _projectileSpeed = 40f;
 
         [Header("Shield")]
-
-        [SerializeField]
-        [Tooltip("Начальное количество щита")]
-        private float _startShieldLevel = 1f;
+        
 
         [SerializeField]
         [Tooltip("Максимальное количество щита")]
@@ -63,8 +60,6 @@ namespace Configs
         public GameObject ProjectilePrefab => _projectilePrefab;
 
         public float ProjectileSpeed => _projectileSpeed;
-
-        public float StartShieldLevel => _startShieldLevel;
 
         public float MaxShieldLevel => _maxShieldLevel;
 

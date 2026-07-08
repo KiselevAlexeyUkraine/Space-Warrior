@@ -9,6 +9,24 @@ using System.Collections.Generic;
 
 namespace Components.Enemy
 {
+    public enum MovementPattern
+    {
+        [InspectorName("Прямо вниз")]
+        StraightDown,
+
+        [InspectorName("Синусоида (влево-вправо + вниз)")]
+        SineWave,
+
+        [InspectorName("Диагональный пролёт (вход/выход по краям экрана)")]
+        DiagonalSweep,
+
+        [InspectorName("Дугой вниз (заход сбоку, разворот)")]
+        SwoopCurve,
+
+        [InspectorName("Сбоку до края (появляется слева/справа, летит горизонтально)")]
+        HorizontalEdge
+    }
+
     [RequireComponent(typeof(BoundsCheck))]
     public abstract class EnemyBase : MonoBehaviour
     {
@@ -32,6 +50,34 @@ namespace Components.Enemy
 
         [Header("Grid Formation (Новое)")]
         [SerializeField] private bool useGridFormation = false;
+
+        [Header("Паттерн движения")]
+        [Tooltip("Траектория движения врага. Действует ТОЛЬКО если 'Use Grid Formation' выключен — в сетке позиция управляется GridFormationSpawner.")]
+        [SerializeField] protected MovementPattern movementPattern = MovementPattern.StraightDown;
+
+        [Header("Паттерн: Sine Wave (синусоида)")]
+        [Tooltip("Период колебания по X, секунд.")]
+        [SerializeField] protected float waveFrequency = 2f;
+        [Tooltip("Амплитуда колебания по X.")]
+        [SerializeField] protected float waveWidth = 4f;
+        [Tooltip("Максимальный угол поворота корабля по Y при колебании.")]
+        [SerializeField] protected float waveRotY = 45f;
+
+        [Header("Паттерн: Diagonal Sweep (диагональный пролёт)")]
+        [Tooltip("Время полного пролёта от одного края экрана до другого, секунд.")]
+        [SerializeField] protected float diagonalLifeTime = 10f;
+        [Tooltip("Степень 'выгибания' траектории синусоидой (0 = прямая линия).")]
+        [SerializeField] protected float diagonalEccentricity = 0.6f;
+
+        [Header("Паттерн: Swoop Curve (дуга вниз)")]
+        [Tooltip("Время прохождения всей дуги, секунд.")]
+        [SerializeField] protected float swoopLifeTime = 5f;
+
+        [Header("Паттерн: Horizontal Edge (сбоку до края)")]
+        [Tooltip("Если включено — сторона появления (слева/справа) выбирается случайно каждый раз. Если выключено — используется 'Fixed Start Side'.")]
+        [SerializeField] protected bool horizontalRandomSide = true;
+        [Tooltip("Фиксированная сторона появления, если 'Horizontal Random Side' выключен.")]
+        [SerializeField] protected bool horizontalStartFromLeft = true;
 
         [Header("Audio Settings")]
         [SerializeField] private AudioClip _explosionClip; 
@@ -62,6 +108,14 @@ namespace Components.Enemy
         private bool _hasGridTarget = false;
         private bool _reachedGridTarget = false;
         private float _maxHealthCached;
+
+        // --- Состояние паттернов движения ---
+        private float _patternX0;
+        private float _patternBirthTime;
+        private Vector3 _patternP0;
+        private Vector3 _patternP1;
+        private Vector3[] _patternSwoopPoints;
+        private int _patternHorizontalDirection; // 1 = слева направо, -1 = справа налево
 
         protected BoundsCheck bndCheck;
         protected Main main;
@@ -138,6 +192,11 @@ namespace Components.Enemy
             {
                 bndCheck.enabled = !useGridFormation;
             }
+
+            if (!useGridFormation)
+            {
+                InitMovementPattern();
+            }
         }
 
         private void EnsureMaterialsInitialized()
@@ -203,7 +262,184 @@ namespace Components.Enemy
             }
         }
 
-        public abstract void Move();
+        // --- Инициализация состояния под выбранный паттерн (вызывается при каждом OnEnable, т.к. объекты из пула) ---
+        private void InitMovementPattern()
+        {
+            _patternBirthTime = Time.time;
+
+            switch (movementPattern)
+            {
+                case MovementPattern.StraightDown:
+                    // Параметры не требуются.
+                    break;
+
+                case MovementPattern.SineWave:
+                    _patternX0 = pos.x;
+                    break;
+
+                case MovementPattern.DiagonalSweep:
+                    InitDiagonalSweep();
+                    break;
+
+                case MovementPattern.SwoopCurve:
+                    InitSwoopCurve();
+                    break;
+
+                case MovementPattern.HorizontalEdge:
+                    InitHorizontalEdge();
+                    break;
+            }
+        }
+
+        private void InitDiagonalSweep()
+        {
+            _patternP0 = Vector3.zero;
+            _patternP0.x = -bndCheck.camWidth - bndCheck.radius;
+            _patternP0.y = Random.Range(-bndCheck.camHeight, bndCheck.camHeight);
+
+            _patternP1 = Vector3.zero;
+            _patternP1.x = bndCheck.camWidth + bndCheck.radius;
+            _patternP1.y = Random.Range(-bndCheck.camHeight, bndCheck.camHeight);
+
+            if (Random.value > 0.5f)
+            {
+                _patternP0.x *= -1;
+                _patternP1.x *= -1;
+            }
+
+            pos = _patternP0;
+        }
+
+        private void InitSwoopCurve()
+        {
+            _patternSwoopPoints = new Vector3[3];
+            _patternSwoopPoints[0] = pos;
+
+            float xMin = -bndCheck.camWidth + bndCheck.radius;
+            float xMax = bndCheck.camWidth - bndCheck.radius;
+
+            Vector3 v = Vector3.zero;
+            v.x = Random.Range(xMin, xMax);
+            v.y = -bndCheck.camHeight * Random.Range(2f, 2.75f);
+            _patternSwoopPoints[1] = v;
+
+            v = Vector3.zero;
+            v.y = pos.y;
+            v.x = Random.Range(xMin, xMax);
+            _patternSwoopPoints[2] = v;
+        }
+
+        private void InitHorizontalEdge()
+        {
+            bool startFromLeft = horizontalRandomSide ? Random.value > 0.5f : horizontalStartFromLeft;
+
+            float edgeX = bndCheck.camWidth + bndCheck.radius;
+
+            Vector3 tempPos = pos;
+            tempPos.x = startFromLeft ? -edgeX : edgeX;
+            pos = tempPos;
+
+            _patternHorizontalDirection = startFromLeft ? 1 : -1;
+        }
+
+        // --- Движение по выбранному паттерну. Не абстрактный - можно переопределить в наследнике (см. Enemy_4). ---
+        public virtual void Move()
+        {
+            switch (movementPattern)
+            {
+                case MovementPattern.StraightDown:
+                    MoveStraightDown();
+                    break;
+
+                case MovementPattern.SineWave:
+                    MoveSineWave();
+                    break;
+
+                case MovementPattern.DiagonalSweep:
+                    MoveDiagonalSweep();
+                    break;
+
+                case MovementPattern.SwoopCurve:
+                    MoveSwoopCurve();
+                    break;
+
+                case MovementPattern.HorizontalEdge:
+                    MoveHorizontalEdge();
+                    break;
+            }
+        }
+
+        private void MoveStraightDown()
+        {
+            Vector3 tempPos = pos;
+            tempPos.y -= speed * Time.deltaTime;
+            pos = tempPos;
+        }
+
+        private void MoveSineWave()
+        {
+            Vector3 tempPos = pos;
+            float age = Time.time - _patternBirthTime;
+            float theta = Mathf.PI * 2 * age / waveFrequency;
+            float sin = Mathf.Sin(theta);
+
+            tempPos.x = _patternX0 + waveWidth * sin;
+            tempPos.y -= speed * Time.deltaTime;
+            pos = tempPos;
+
+            Vector3 rot = new Vector3(0, sin * waveRotY, 0);
+            transform.rotation = Quaternion.Euler(rot);
+        }
+
+        private void MoveDiagonalSweep()
+        {
+            float u = (Time.time - _patternBirthTime) / diagonalLifeTime;
+
+            if (u > 1)
+            {
+                SafeDespawn(gameObject);
+                return;
+            }
+
+            u = u + diagonalEccentricity * Mathf.Sin(u * Mathf.PI * 2);
+            pos = (1 - u) * _patternP0 + u * _patternP1;
+        }
+
+        private void MoveSwoopCurve()
+        {
+            float u = (Time.time - _patternBirthTime) / swoopLifeTime;
+
+            if (u > 1)
+            {
+                SafeDespawn(gameObject);
+                return;
+            }
+
+            u = u - 0.2f * Mathf.Sin(u * Mathf.PI * 2);
+
+            Vector3 p01 = (1 - u) * _patternSwoopPoints[0] + u * _patternSwoopPoints[1];
+            Vector3 p12 = (1 - u) * _patternSwoopPoints[1] + u * _patternSwoopPoints[2];
+            pos = (1 - u) * p01 + u * p12;
+        }
+
+        private void MoveHorizontalEdge()
+        {
+            Vector3 tempPos = pos;
+            tempPos.x += _patternHorizontalDirection * speed * Time.deltaTime;
+            pos = tempPos;
+
+            float edgeX = bndCheck.camWidth + bndCheck.radius;
+
+            // Долетел до противоположного края - и всё, исчезает.
+            if (_patternHorizontalDirection > 0 && tempPos.x >= edgeX)
+            {
+                SafeDespawn(gameObject);
+            }
+            else if (_patternHorizontalDirection < 0 && tempPos.x <= -edgeX)
+            {
+                SafeDespawn(gameObject);
+            }
+        }
 
         private void HandleGridMovement()
         {

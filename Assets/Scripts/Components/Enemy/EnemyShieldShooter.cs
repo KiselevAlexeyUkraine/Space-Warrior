@@ -14,8 +14,6 @@ namespace Components.Enemy
         [Tooltip("Максимальный уровень щита (сколько снарядов он может отразить). Перезаписывается из таблицы.")]
         [SerializeField] private int _maxShieldLevel = 3;
         
-        [Tooltip("Скорость вращения щита вокруг своей оси.")]
-        [SerializeField] private float _rotationsPerSecond = 0.1f;
 
         [Header("Reflection (Shooting) Settings")]
         [Tooltip("Префаб вражеского снаряда, который спавнится ПРИ ОТРАЖЕНИИ.")]
@@ -99,18 +97,7 @@ namespace Components.Enemy
             tempPos.y -= speed * Time.deltaTime;
             pos = tempPos;
         }
-
-        protected override void Update()
-        {
-            base.Update();
-
-            // Вращаем щит, если он активен
-            if (_shieldObject != null && _shieldObject.activeSelf)
-            {
-                float rZ = -(_rotationsPerSecond * Time.time * 360f) % 360f;
-                _shieldObject.transform.rotation = Quaternion.Euler(0, 0, rZ);
-            }
-        }
+        
 
         protected override void OnTriggerEnter(Collider other)
         {

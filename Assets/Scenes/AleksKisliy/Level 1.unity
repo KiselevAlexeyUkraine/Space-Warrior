@@ -676,7 +676,6 @@ MonoBehaviour:
   enemyDefaultPadding: 1.5
   gridFormationSpawner: {fileID: 963194232}
   wavePhases: []
-  enablePowerUpDrops: 0
   prefabPowerUp: {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
   powerUpFrequency: 01000000
 --- !u!114 &963194230
@@ -759,7 +758,7 @@ MonoBehaviour:
   formationRoot: {fileID: 7215469652385854143}
   defaultColumns: 8
   defaultRows: 8
-  spacingX: 8
+  spacingX: 10
   spacingY: 8
   waves:
   - waveName: 1

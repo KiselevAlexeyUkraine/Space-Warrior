@@ -252,6 +252,8 @@ namespace Level
                 return;
             }
 
+            // Резервная проверка: ловит врагов, которые исчезли не через Main.ShipDestroyed
+            // (например, улетели за экран и деспавнились сами внутри EnemyBase).
             if (!_spawningWaveActive && _activeEnemies.Count > 0)
             {
                 _activeEnemies.RemoveWhere(item => item == null || !item.activeInHierarchy);
@@ -261,6 +263,41 @@ namespace Level
                     OnWaveCleared();
                 }
             }
+        }
+
+        /// <summary>
+        /// Позволяет классу Main регистрировать врагов, созданных динамически, 
+        /// чтобы они учитывались в общем списке активных юнитов волны.
+        /// </summary>
+        public void RegisterAdditionalEnemy(GameObject enemy)
+        {
+            if (enemy != null && !_isTransitioningBetweenWaves)
+            {
+                _activeEnemies.Add(enemy);
+            }
+        }
+
+        /// <summary>
+        /// Вызывается при подтверждённом убийстве врага (через Main.ShipDestroyed).
+        /// Немедленно убирает врага из списка активных и, если это был последний враг волны,
+        /// сразу же запускает переход к следующей волне (не дожидаясь Update()).
+        /// Возвращает true, если враг был последним в волне.
+        /// </summary>
+        public bool CheckAndUnregisterLastEnemy(GameObject enemy)
+        {
+            if (enemy == null || _isTransitioningBetweenWaves) return false;
+
+            _activeEnemies.Remove(enemy);
+            _activeEnemies.RemoveWhere(item => item == null || !item.activeInHierarchy);
+
+            bool isLast = !_spawningWaveActive && _activeEnemies.Count == 0;
+
+            if (isLast)
+            {
+                OnWaveCleared();
+            }
+
+            return isLast;
         }
 
         private void ForceClearRemainingEnemies()
@@ -296,12 +333,10 @@ namespace Level
             }
         }
 
-        // Защитная логика выбора префаба для текущего ряда
         private GameObject GetPrefabForCurrentRow(WaveConfiguration wave, int rowIndex)
         {
             if (wave.rowPrefabs == null || wave.rowPrefabs.Count == 0) return null;
             
-            // Если указано рядов больше, чем закинуто префабов — используем последний доступный
             int index = Mathf.Min(rowIndex, wave.rowPrefabs.Count - 1);
             return wave.rowPrefabs[index];
         }
@@ -323,7 +358,7 @@ namespace Level
                 foreach (var prefab in wave.rowPrefabs)
                 {
                     if (prefab != null) wave.cachedLayers.Add(prefab.layer);
-                    else wave.cachedLayers.Add(0); // дефолтный слой, если слот пустой
+                    else wave.cachedLayers.Add(0);
                 }
             }
         }

@@ -49,9 +49,7 @@ namespace Level
         [SerializeField] private List<WaveSpawnSettings> wavePhases = new List<WaveSpawnSettings>();
 
         [Header("PowerUps")]
-        [Tooltip("Разрешить выпадение PowerUp с врагов.")]
-        [SerializeField] private bool enablePowerUpDrops = true;
-
+        [Tooltip("Префаб PowerUp, который спавнится при уничтожении последнего врага волны.")]
         [SerializeField] private GameObject prefabPowerUp;
 
         [SerializeField] private WeaponType[] powerUpFrequency =
@@ -160,8 +158,16 @@ namespace Level
             if (enemy == null)
                 return;
 
-            if (enablePowerUpDrops &&
-                UnityEngine.Random.value <= enemy.powerUpDropChance)
+            // Проверяем, был ли этот враг последним в текущей волне спавнера.
+            // CheckAndUnregisterLastEnemy сама запускает переход на следующую волну, если это так.
+            bool isLastEnemyInWave = false;
+            if (gridFormationSpawner != null)
+            {
+                isLastEnemyInWave = gridFormationSpawner.CheckAndUnregisterLastEnemy(enemy.gameObject);
+            }
+
+            // PowerUp спавнится ТОЛЬКО при уничтожении последнего врага волны.
+            if (isLastEnemyInWave && prefabPowerUp != null)
             {
                 int index = UnityEngine.Random.Range(0, powerUpFrequency.Length);
                 WeaponType powerUpType = powerUpFrequency[index];
@@ -177,6 +183,8 @@ namespace Level
                 {
                     powerUp.SetType(powerUpType);
                 }
+
+                Debug.Log("<color=yellow>⭐ Последний враг волны убит! PowerUp заспавнен! ⭐</color>");
             }
 
             SafeDespawn(enemy.gameObject);
@@ -211,6 +219,13 @@ namespace Level
             if (enemyBounds != null)
             {
                 enemyPadding = Mathf.Abs(enemyBounds.radius);
+            }
+
+            // Регистрируем врага, который спавнится случайно из Main, в общем спавнере волн, 
+            // чтобы он тоже учитывался при подсчете "последнего врага волны"
+            if (gridFormationSpawner != null)
+            {
+                gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
 
             Vector3 position = Vector3.zero;

@@ -1,6 +1,5 @@
 using UnityEngine;
 using Components.Weapon;
-using Level;
 
 namespace Components.Enemy
 {

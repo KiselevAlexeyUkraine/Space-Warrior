@@ -9,44 +9,77 @@ namespace Components.Items
     public sealed class PowerUp : MonoBehaviour
     {
         [Header("Set Inspector")]
-        [SerializeField] private Vector2 rotMinMax = new Vector2(15, 90);
-        [SerializeField] private Vector2 driftMinMax = new Vector2(0.25f, 2f);
-        [SerializeField] private float lifeTime = 6f;
-        [SerializeField] private float fadeTime = 4f;
+        [SerializeField] 
+        [Tooltip("Минимальная и максимальная скорость вращения куба по осям.")]
+        private Vector2 rotMinMax = new Vector2(15, 90);
+
+        [SerializeField] 
+        [Tooltip("Диапазон скорости движения вниз (X — минимальная, Y — максимальная).")]
+        private Vector2 driftMinMax = new Vector2(0.25f, 2f);
+
+        [SerializeField] 
+        [Tooltip("Время жизни объекта до начала исчезновения (в секундах).")]
+        private float lifeTime = 6f;
+
+        [SerializeField] 
+        [Tooltip("Длительность фазы плавного исчезновения (в секундах).")]
+        private float fadeTime = 4f;
 
         [Header("Set Dynamically")]
-        [SerializeField] private WeaponType type;
+        [SerializeField] 
+        [Tooltip("Текущий тип оружия, который дает этот PowerUp.")]
+        private WeaponType type;
         
         public WeaponType Type => type;
 
-        [SerializeField] private GameObject cube;
-        [SerializeField] private TextMesh letter;
-        [SerializeField] private Vector3 rotPerSecond;
-        [SerializeField] private float birthTime;
+        [SerializeField] 
+        [Tooltip("Ссылка на дочерний объект куба, который визуально вращается.")]
+        private GameObject cube;
 
+        [SerializeField] 
+        [Tooltip("Текстовый меш для отображения буквы оружия.")]
+        private TextMesh letter;
+
+        [SerializeField] 
+        [Tooltip("Рассчитанная скорость вращения куба в секунду для этой итерации.")]
+        private Vector3 rotPerSecond;
+
+        [SerializeField] 
+        [Tooltip("Время (Time.time) появления объекта в игре.")]
+        private float birthTime;
+
+        [SerializeField] 
+        [Tooltip("Рендерер куба для управления прозрачностью при исчезновении.")]
         private Renderer cubeRend;
+
         private Vector3 movementVelocity; 
         private Main _main;
-
-        // Внедряем Main через Zenject
+        
         [Inject]
         private void Construct(Main main)
         {
             _main = main;
         }
 
-        private void Awake()
+        // ВАЖНО: инициализация перенесена из Awake() в OnEnable().
+        // Awake() вызывается Unity только ОДИН раз за всё время жизни объекта.
+        // Так как PowerUp переиспользуется через LeanPool, при повторном спавне
+        // Awake() больше не срабатывает — а OnEnable() срабатывает каждый раз
+        // при повторной активации объекта из пула, поэтому сюда и переносим
+        // весь сброс состояния (birthTime, скорость, вращение, прозрачность).
+        private void OnEnable()
         {
-            cube = transform.Find("Cube").gameObject;
-            letter = GetComponent<TextMesh>();
-            cubeRend = cube.GetComponent<Renderer>();
-
-            Vector3 vel = Random.onUnitSphere; 
-            vel.z = 0;      
-            vel.Normalize();
+            // Направление движения строго вниз по оси Y
+            Vector3 direction = Vector3.down; 
             
-            vel *= Random.Range(driftMinMax.x, driftMinMax.y);
-            movementVelocity = vel;
+            /* Если вам нужен небольшой случайный наклон по бокам при падении, 
+               раскомментируйте строчку ниже:
+               direction.x = Random.Range(-0.2f, 0.2f); direction.Normalize();
+            */
+
+            // Задаем скорость падения на основе диапазона driftMinMax
+            float speed = Random.Range(driftMinMax.x, driftMinMax.y);
+            movementVelocity = direction * speed;
 
             transform.rotation = Quaternion.identity;
 
@@ -57,10 +90,27 @@ namespace Components.Items
             );
 
             birthTime = Time.time;
+
+            // Сбрасываем прозрачность, иначе объект из пула может появиться
+            // уже полупрозрачным/невидимым, если был деспавнен во время фазы затухания.
+            if (cubeRend != null && cubeRend.material.HasProperty("_Color"))
+            {
+                Color c = cubeRend.material.color;
+                c.a = 1f;
+                cubeRend.material.color = c;
+            }
+
+            if (letter != null)
+            {
+                Color c = letter.color;
+                c.a = 1f;
+                letter.color = c;
+            }
         }
 
         private void Update()
         {
+            // Движение вниз в мировых координатах
             transform.Translate(movementVelocity * Time.deltaTime, Space.World);
             cube.transform.rotation = Quaternion.Euler(rotPerSecond * Time.time);
 
@@ -93,7 +143,6 @@ namespace Components.Items
 
             if (_main == null) return;
 
-            // Исправлено: вызываем экземплярный метод у _main
             WeaponConfig config = _main.GetWeaponConfig(wt);
 
             if (config == null) return;

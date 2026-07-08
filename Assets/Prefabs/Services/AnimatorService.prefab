@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Servise.AnimatorService
   minX: -60
-  maxX: 10
+  maxX: 0
   stepY: -5
   speed: 10
   bulletDestroyY: -40

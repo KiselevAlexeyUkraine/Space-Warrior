@@ -100,7 +100,7 @@ namespace Components.Enemy
 
                 // Тратим прочность щита
                 _currentShieldLevel -= 1f;
-                ShowDamage(); // Мигание самого корабля для фидбека
+
 
                 // Проверяем прочность щита
                 if (_currentShieldLevel <= 0)

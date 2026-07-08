@@ -109,7 +109,7 @@ namespace Components.Enemy
 
                 // Отражение забирает ровно 1 единицу прочности щита
                 _currentShieldLevel -= 1;
-                ShowDamage(); 
+
 
                 if (_currentShieldLevel <= 0)
                 {

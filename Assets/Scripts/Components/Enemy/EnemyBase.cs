@@ -74,13 +74,17 @@ namespace Components.Enemy
         [Header("Visual Effects")]
         [Tooltip("Префаб частиц при уничтожении всего корабля")] [SerializeField] private ParticleSystem _explosionParticlePrefab;
 
-        [Header("Настройка рендереров (Вручную)")]
-        [Tooltip("Перетащи сюда объекты с MeshRenderer, которые должны краснеть при уроне")] [SerializeField] private Renderer[] renderersToFlash; 
+        [Header("Новая механика отстрела деталей")]
+        [Tooltip("Объекты на враге, которые будут СЛУЧАЙНО выключаться при попадании.")]
+        [SerializeField] private GameObject[] objectsToDisable;
+        [Tooltip("Объект (например, обломок или взрыв), который временно спавнитcя на месте отстреленной детали.")]
+        [SerializeField] private GameObject hitEffectPrefab;
+        [Tooltip("Время жизни спавнящегося временного объекта (в секундах).")]
+        [SerializeField] private float effectDestroyDelay = 2f;
 
-        [Header("Set Dynamically: Enemy")]
-        [SerializeField] [Tooltip("Материалы рендереров для визуализации урона.")] private Material[] materials; 
-        [SerializeField] [Tooltip("Оригинальные цвета материалов.")] private Color[] originalColors;
-        
+        // Список для отслеживания еще оставшихся активных деталей
+        private List<GameObject> _activeObjectsList = new List<GameObject>();
+
         [HideInInspector] public bool showingDamage = false;
         [HideInInspector] public float damageDoneTime; 
         
@@ -90,7 +94,6 @@ namespace Components.Enemy
         private PlayerScore _playerScore;
         private AnimatorService _animatorService; 
         protected BalanceConfig balanceConfig;
-        private bool _isInitialized = false;
 
         private Vector3 _targetLocalPosition;
         private bool _hasGridTarget = false;
@@ -146,10 +149,8 @@ namespace Components.Enemy
 
         protected virtual void Start()
         {
-            EnsureMaterialsInitialized();
+            InitializeActiveObjectsList();
             ApplyBalanceConfig();
-
-            // Безопасный запуск покачивания при самом первом появлении на сцене
             TriggerBobbingAnimation();
         }
         
@@ -174,7 +175,6 @@ namespace Components.Enemy
                 Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) применены значения баланса: " +
                           $"Скорость = {speed}, Здоровье = {health}, Урон от столкновения = {collisionDamage}");
             }
-            // Безопасный запуск покачивания при самом первом появлении на сцене
             TriggerBobbingAnimation();
         }
 
@@ -186,15 +186,8 @@ namespace Components.Enemy
             _hasGridTarget = false;
             _reachedGridTarget = false;
 
-            EnsureMaterialsInitialized();
-
-            // Вернул вызов конфигурации баланса при повторной активации из пула
+            InitializeActiveObjectsList();
             ApplyBalanceConfig();
-
-            if (_isInitialized && materials != null)
-            {
-                UnShowDamage();
-            }
 
             if (bndCheck != null)
             {
@@ -206,7 +199,6 @@ namespace Components.Enemy
                 InitMovementPattern();
             }
 
-            // Запускаем только если объект извлекается из пула (Awake уже выполнялся ранее)
             if (_isAwaken)
             {
                 TriggerBobbingAnimation();
@@ -231,49 +223,20 @@ namespace Components.Enemy
             }
         }
 
-        private void EnsureMaterialsInitialized()
+        private void InitializeActiveObjectsList()
         {
-            if (_isInitialized) return;
-
-            if (renderersToFlash == null || renderersToFlash.Length == 0)
+            _activeObjectsList.Clear();
+            if (objectsToDisable != null)
             {
-                materials = new Material[0];
-                originalColors = new Color[0];
-                _isInitialized = true;
-                return;
-            }
-
-            List<Material> extractedMaterials = new List<Material>();
-            foreach (Renderer rend in renderersToFlash)
-            {
-                if (rend != null && rend.materials != null)
+                foreach (var obj in objectsToDisable)
                 {
-                    foreach (Material mat in rend.materials)
+                    if (obj != null)
                     {
-                        if (mat != null)
-                        {
-                            extractedMaterials.Add(mat);
-                        }
+                        obj.SetActive(true);
+                        _activeObjectsList.Add(obj);
                     }
                 }
             }
-
-            materials = extractedMaterials.ToArray();
-            originalColors = new Color[materials.Length];
-
-            for (int i = 0; i < materials.Length; i++)
-            {
-                if (materials[i] != null && materials[i].HasProperty("_Color"))
-                {
-                    originalColors[i] = materials[i].color;
-                }
-                else
-                {
-                    originalColors[i] = Color.white;
-                }
-            }
-
-            _isInitialized = true;
         }
 
         protected virtual void Update()
@@ -282,11 +245,6 @@ namespace Components.Enemy
 
             if (useGridFormation) HandleGridMovement();
             else Move();
-
-            if (showingDamage && Time.time > damageDoneTime)
-            {
-                UnShowDamage();
-            }
             
             if (bndCheck != null && bndCheck.enabled && bndCheck.offDown)
             {
@@ -509,14 +467,15 @@ namespace Components.Enemy
         {
             if (notifiedOfDestruction) return;
 
-            ShowDamage();
-
             WeaponConfig config = main.GetWeaponConfig(weaponType);
+            float damage = config != null ? config.damageOnHit : 1f;
 
-            if (config != null)
+            if (health > 1)
             {
-                health -= config.damageOnHit;
+                HandlePartDetachment();
             }
+
+            health -= damage;
 
             if (health <= 0)
             {
@@ -541,6 +500,41 @@ namespace Components.Enemy
             }
         }
 
+        private void HandlePartDetachment()
+        {
+            if (_activeObjectsList.Count > 0)
+            {
+                // Выбираем РАНДОМНЫЙ индекс из оставшихся элементов списка
+                int randomIndex = Random.Range(0, _activeObjectsList.Count);
+                GameObject targetObj = _activeObjectsList[randomIndex];
+
+                if (targetObj != null)
+                {
+                    Vector3 partPosition = targetObj.transform.position;
+                    Quaternion partRotation = targetObj.transform.rotation;
+
+                    // Выключаем случайный объект
+                    targetObj.SetActive(false);
+
+                    // Создаем временный эффект на его месте
+                    if (hitEffectPrefab != null)
+                    {
+                        GameObject spawnedEffect = LeanPool.Spawn(hitEffectPrefab, partPosition, partRotation);
+                        StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, effectDestroyDelay));
+                    }
+                }
+                
+                // Удаляем именно этот обработанный объект, чтобы он больше не выбирался рандомом
+                _activeObjectsList.RemoveAt(randomIndex);
+            }
+        }
+
+        private System.Collections.IEnumerator DespawnEffectAfterDelay(GameObject effect, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            SafeDespawn(effect);
+        }
+
         protected void SafeDespawn(GameObject go)
         {
             if (go == null) return;
@@ -553,33 +547,6 @@ namespace Components.Enemy
             {
                 Destroy(go);
             }
-        }
-
-        protected void ShowDamage()
-        {
-            if (materials == null || notifiedOfDestruction) return;
-            foreach (Material m in materials)
-            {
-                if (m != null && m.HasProperty("_Color")) 
-                {
-                    m.color = Color.red;
-                }
-            }
-            showingDamage = true;
-            damageDoneTime = Time.time + showDamageDuration;
-        }
-
-        protected void UnShowDamage()
-        {
-            if (materials == null || notifiedOfDestruction) return;
-            for (int i = 0; i < materials.Length; i++)
-            {
-                if (materials[i] != null && i < originalColors.Length && materials[i].HasProperty("_Color"))
-                {
-                    materials[i].color = originalColors[i];
-                }
-            }
-            showingDamage = false;
         }
     }
 }

@@ -161,7 +161,6 @@ namespace Components.Enemy
 
         private void ProcessShieldDamage(WeaponType weaponType)
         {
-            ShowDamage();
 
             WeaponConfig config = main.GetWeaponConfig(weaponType);
             if (config != null)

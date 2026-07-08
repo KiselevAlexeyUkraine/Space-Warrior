@@ -188,7 +188,7 @@ namespace Components.Enemy
                 SpawnReflectedProjectile(other.transform.position);
 
                 _currentShieldLevel -= 1f;
-                ShowDamage(); 
+
 
                 if (_currentShieldLevel <= 0)
                 {

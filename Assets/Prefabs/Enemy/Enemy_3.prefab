@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 7589654315984395340}
   - component: {fileID: -5773397925247801872}
   - component: {fileID: 6040433495632561009}
+  - component: {fileID: 623793567170108960}
   m_Layer: 9
   m_Name: Enemy_3
   m_TagString: Enemy
@@ -169,12 +170,18 @@ MonoBehaviour:
   speed: 10
   health: 10
   score: 100
+  enemyLevel: 0
+  debugBalanceValues: 1
+  collisionDamage: 1
   showDamageDuration: 0.1
   powerUpDropChance: 0.75
   useGridFormation: 0
   _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
-  originalColors: []
+  _explosionParticlePrefab: {fileID: 19800000, guid: 77ec3c4e07a36814fb3169ecef41b50a, type: 3}
+  renderersToFlash:
+  - {fileID: 3742563460760381933}
   materials: []
+  originalColors: []
   showingDamage: 0
   damageDoneTime: 0
   lifeTime: 5
@@ -201,6 +208,27 @@ MonoBehaviour:
   offLeft: 0
   offUp: 0
   offDown: 0
+--- !u!135 &623793567170108960
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5240148939293931298}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7924390841846681597
 GameObject:
   m_ObjectHideFlags: 0

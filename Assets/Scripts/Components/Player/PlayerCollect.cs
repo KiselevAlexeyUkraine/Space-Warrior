@@ -23,7 +23,10 @@ namespace Components.Player
         [Tooltip("Эффект частиц (или GameObject визуала щита), который активируется при наличии прочности щита и гаснет при её обнулении.")]
         [SerializeField]
         private GameObject _shieldParticle;
-        
+
+        [Header("===== Runtime =====")]
+        [Tooltip("Текущий уровень прочности щита игрока в реальном времени.")]
+        [SerializeField]
         private float _shieldLevel;
         
         [Header("===== Layers =====")]
@@ -199,7 +202,6 @@ namespace Components.Player
         // Вспомогательный метод контроля активации объекта партиклов щита
         private void UpdateShieldParticleVisual()
         {
-            _shieldLevel = _balanceConfig.PlayerShield;
             if (_shieldParticle != null)
             {
                 // Щит активен, если его уровень строго больше нуля

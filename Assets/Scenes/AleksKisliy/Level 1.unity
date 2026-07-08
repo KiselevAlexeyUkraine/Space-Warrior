@@ -672,19 +672,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnEnemies: 1
-  prefabEnemies:
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 6457830071259349374, guid: 94c4ed3a4dbe2f440a8efa3931ae0ade, type: 3}
   enemySpawnPerSecond: 0.5
   enemyDefaultPadding: 1.5
+  gridFormationSpawner: {fileID: 963194232}
+  wavePhases:
+  - waveIndex: 1
+    enemies:
+    - {fileID: 7654880680303113404, guid: 9a56155227fc30646842b3e0678eaab4, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 20
+    spawnedCount: 0
+  - waveIndex: 2
+    enemies:
+    - {fileID: 7654880680303113404, guid: d31c4469e6d0b0b4086e26008bc85e59, type: 3}
+    - {fileID: 7654880680303113404, guid: 9a56155227fc30646842b3e0678eaab4, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 20
+    spawnedCount: 0
   enablePowerUpDrops: 0
   prefabPowerUp: {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
   powerUpFrequency: 01000000
@@ -790,7 +794,7 @@ MonoBehaviour:
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     cachedLayers: 
   - waveName: 3
@@ -799,9 +803,9 @@ MonoBehaviour:
     maxColumns: 7
     maxRows: 4
     rowPrefabs:
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     cachedLayers: 
   - waveName: 4
@@ -811,22 +815,11 @@ MonoBehaviour:
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     cachedLayers: 
   - waveName: 5
-    isSingleEnemyWave: 0
-    singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
-    rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    cachedLayers: 
-  - waveName: 6
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
     maxColumns: 7
@@ -837,7 +830,7 @@ MonoBehaviour:
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     cachedLayers: 
-  - waveName: 7
+  - waveName: 6
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
     maxColumns: 7

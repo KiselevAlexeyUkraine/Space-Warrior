@@ -1,3 +1,4 @@
+using System;
 using Components.Enemy;
 using UnityEngine;
 using Zenject;
@@ -68,6 +69,15 @@ namespace Level
         private int _currentWaveMaxColumns;
         private int _currentWaveMaxRows;
 
+        /// <summary>Индекс текущей активной волны (0-based). Используется извне (например, в Main) для привязки спавна врагов к волне.</summary>
+        public int CurrentWaveIndex => _currentWaveIndex;
+
+        /// <summary>Вызывается каждый раз при старте новой волны. Параметр — индекс волны (0-based).</summary>
+        public event Action<int> OnWaveStarted;
+
+        /// <summary>Вызывается один раз, когда пройдены все волны.</summary>
+        public event Action OnAllWavesCompleted;
+
         [Inject]
         private void Construct(DiContainer container, AnimatorService animatorService, PageSwitcher pageSwitcher)
         {
@@ -96,12 +106,15 @@ namespace Level
             if (_currentWaveIndex >= waves.Count)
             {
                 Debug.Log("🎉 ВСЕ ВОЛНЫ ПРОЙДЕНЫ! ПОБЕДА!");
+                OnAllWavesCompleted?.Invoke();
                 _pageSwitcher?.Open(PageName.Complete).Forget();
                 return;
             }
 
             WaveConfiguration currentWave = waves[_currentWaveIndex];
             Debug.Log($"⚔️ Старт волны [{_currentWaveIndex + 1}/{waves.Count}]: {currentWave.waveName}");
+
+            OnWaveStarted?.Invoke(_currentWaveIndex);
             
             _totalSpawnedInWave = 0;
             _activeEnemies.Clear();
@@ -182,7 +195,7 @@ namespace Level
             _container.InjectGameObject(go);
 
             float spawnY = _bndCheck.camHeight + 2f;
-            float spawnX = Random.Range(-_bndCheck.camWidth + 1f, _bndCheck.camWidth - 1f);
+            float spawnX = UnityEngine.Random.Range(-_bndCheck.camWidth + 1f, _bndCheck.camWidth - 1f);
             go.transform.position = new Vector3(spawnX, spawnY, 0f);
             go.transform.SetParent(formationRoot, true); 
 

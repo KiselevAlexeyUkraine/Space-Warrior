@@ -78,7 +78,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 10
-  health: 10
+  health: 1
   score: 100
   enemyLevel: 0
   debugBalanceValues: 1

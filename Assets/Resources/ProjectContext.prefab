@@ -82,7 +82,7 @@ MonoBehaviour:
   _audioService: {fileID: 8792944466112511475, guid: f8f59d3a7d37cbe4cbdbb8f65d73aa02, type: 3}
   _postProcessingController: {fileID: 3400497386409528362, guid: c5b167c3cbcabe149b7d9408c65610ff, type: 3}
   _localizationManager: {fileID: 8031055815664093772, guid: 9f8f43e3e72c5024988e38b5b1e42ecf, type: 3}
-  balanceConfig: {fileID: 7813852936730945839, guid: 7bd7c443e4459464c8629e353751fc13, type: 3}
+  _animatorService: {fileID: 32746105465805495, guid: def86242b3c5028438127a8bf6c4182a, type: 3}
 --- !u!1 &5933651418547886775
 GameObject:
   m_ObjectHideFlags: 0

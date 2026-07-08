@@ -114,6 +114,12 @@ MonoBehaviour:
   swoopLifeTime: 5
   horizontalRandomSide: 1
   horizontalStartFromLeft: 1
+  enableBobbing: 1
+  visualBobTarget: {fileID: 8935821108735736613}
+  bobPositionOffset: 1
+  bobRotationOffset: 15
+  bobDuration: 1.5
+  bobEase: 4
   _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
   _explosionParticlePrefab: {fileID: 19800000, guid: 77ec3c4e07a36814fb3169ecef41b50a, type: 3}
   renderersToFlash:

@@ -711,7 +711,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
-  m_RenderShadows: 1
+  m_RenderShadows: 0
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
@@ -768,7 +768,7 @@ MonoBehaviour:
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     cachedLayers: 

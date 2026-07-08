@@ -5,26 +5,18 @@ using Components.Player;
 using Zenject;
 using Lean.Pool;
 using Level;
+using Servise;
 using System.Collections.Generic;
 
 namespace Components.Enemy
 {
     public enum MovementPattern
     {
-        [InspectorName("Прямо вниз")]
-        StraightDown,
-
-        [InspectorName("Синусоида (влево-вправо + вниз)")]
-        SineWave,
-
-        [InspectorName("Диагональный пролёт (вход/выход по краям экрана)")]
-        DiagonalSweep,
-
-        [InspectorName("Дугой вниз (заход сбоку, разворот)")]
-        SwoopCurve,
-
-        [InspectorName("Сбоку до края (появляется слева/справа, летит горизонтально)")]
-        HorizontalEdge
+        [InspectorName("Прямо вниз")] StraightDown,
+        [InspectorName("Синусоида (влево-вправо + вниз)")] SineWave,
+        [InspectorName("Диагональный пролёт (вход/выход по краям экрана)")] DiagonalSweep,
+        [InspectorName("Дугой вниз (заход сбоку, разворот)")] SwoopCurve,
+        [InspectorName("Сбоку до края (появляется слева/справа, летит горизонтально)")] HorizontalEdge
     }
 
     [RequireComponent(typeof(BoundsCheck))]
@@ -33,66 +25,61 @@ namespace Components.Enemy
         [Header("Параметры врага (fallback, если BalanceConfig не внедрён)")]
         [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemySpeed(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
         [SerializeField] protected float speed = 10f;
-
         [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemyHealth(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
         [SerializeField] protected float health = 10f;
         [SerializeField] private int score = 100;
 
         [Header("Баланс (из таблицы GDD)")]
         [SerializeField] protected EnemyLevel enemyLevel = EnemyLevel.Level_1;
-        [SerializeField] protected  bool debugBalanceValues = true;
-
+        [SerializeField] protected bool debugBalanceValues = true;
 
         [HideInInspector] public float collisionDamage = 1f; 
-        
         public float showDamageDuration = 0.1f; 
         public float powerUpDropChance = 1f; 
 
         [Header("Grid Formation (Новое)")]
-        [SerializeField] private bool useGridFormation = false;
+        [SerializeField] [Tooltip("Использовать ли логику сетки для этого врага.")] private bool useGridFormation = false;
 
         [Header("Паттерн движения")]
         [Tooltip("Траектория движения врага. Действует ТОЛЬКО если 'Use Grid Formation' выключен — в сетке позиция управляется GridFormationSpawner.")]
         [SerializeField] protected MovementPattern movementPattern = MovementPattern.StraightDown;
 
         [Header("Паттерн: Sine Wave (синусоида)")]
-        [Tooltip("Период колебания по X, секунд.")]
-        [SerializeField] protected float waveFrequency = 2f;
-        [Tooltip("Амплитуда колебания по X.")]
-        [SerializeField] protected float waveWidth = 4f;
-        [Tooltip("Максимальный угол поворота корабля по Y при колебании.")]
-        [SerializeField] protected float waveRotY = 45f;
+        [Tooltip("Период колебания по X, секунд.")] [SerializeField] protected float waveFrequency = 2f;
+        [Tooltip("Амплитуда колебания по X.")] [SerializeField] protected float waveWidth = 4f;
+        [Tooltip("Максимальный угол поворота корабля по Y при колебании.")] [SerializeField] protected float waveRotY = 45f;
 
         [Header("Паттерн: Diagonal Sweep (диагональный пролёт)")]
-        [Tooltip("Время полного пролёта от одного края экрана до другого, секунд.")]
-        [SerializeField] protected float diagonalLifeTime = 10f;
-        [Tooltip("Степень 'выгибания' траектории синусоидой (0 = прямая линия).")]
-        [SerializeField] protected float diagonalEccentricity = 0.6f;
+        [Tooltip("Время полного пролёта от одного края экрана до другого, секунд.")] [SerializeField] protected float diagonalLifeTime = 10f;
+        [Tooltip("Степень 'выгибания' траектории синусоидой (0 = прямая линия).")] [SerializeField] protected float diagonalEccentricity = 0.6f;
 
         [Header("Паттерн: Swoop Curve (дуга вниз)")]
-        [Tooltip("Время прохождения всей дуги, секунд.")]
-        [SerializeField] protected float swoopLifeTime = 5f;
+        [Tooltip("Время прохождения всей дуги, секунд.")] [SerializeField] protected float swoopLifeTime = 5f;
 
         [Header("Паттерн: Horizontal Edge (сбоку до края)")]
-        [Tooltip("Если включено — сторона появления (слева/справа) выбирается случайно каждый раз. Если выключено — используется 'Fixed Start Side'.")]
-        [SerializeField] protected bool horizontalRandomSide = true;
-        [Tooltip("Фиксированная сторона появления, если 'Horizontal Random Side' выключен.")]
-        [SerializeField] protected bool horizontalStartFromLeft = true;
+        [Tooltip("Если включено — сторона появления (слева/справа) выбирается случайно каждый раз. Если выключено — используется 'Fixed Start Side'.")] [SerializeField] protected bool horizontalRandomSide = true;
+        [Tooltip("Фиксированная сторона появления, если 'Horizontal Random Side' выключен.")] [SerializeField] protected bool horizontalStartFromLeft = true;
+
+        [Header("Настройки покачивания (Bobbing Effect)")]
+        [SerializeField] [Tooltip("Включить ли комплексное покачивание (Зависание/Bounce эффекты) для визуальной модели корабля.")] private bool enableBobbing = true;
+        [SerializeField] [Tooltip("Трансформ-объект модели врага (визуальная часть), которую будет покачивать. ВНИМАНИЕ: Не кидайте сюда корневой объект! Создайте дочерний контейнер.")] private Transform visualBobTarget;
+        [SerializeField] [Tooltip("Амплитуда смещения вниз по локальной оси Y.")] private float bobPositionOffset = 0.3f;
+        [SerializeField] [Tooltip("Амплитуда покачивания вращения по осям Y и Z (в градусах).")] private float bobRotationOffset = 15f;
+        [SerializeField] [Tooltip("Время одного цикла покачивания (туда-обратно), в секундах.")] private float bobDuration = 1.5f;
+        [SerializeField] [Tooltip("Тип сглаживания PrimeTween анимации покачивания.")] private PrimeTween.Ease bobEase = PrimeTween.Ease.InOutSine;
 
         [Header("Audio Settings")]
         [SerializeField] private AudioClip _explosionClip; 
 
         [Header("Visual Effects")]
-        [Tooltip("Префаб частиц при уничтожении всего корабля")]
-        [SerializeField] private ParticleSystem _explosionParticlePrefab;
+        [Tooltip("Префаб частиц при уничтожении всего корабля")] [SerializeField] private ParticleSystem _explosionParticlePrefab;
 
         [Header("Настройка рендереров (Вручную)")]
-        [Tooltip("Перетащи сюда объекты с MeshRenderer, которые должны краснеть при уроне")]
-        [SerializeField] private Renderer[] renderersToFlash; 
+        [Tooltip("Перетащи сюда объекты с MeshRenderer, которые должны краснеть при уроне")] [SerializeField] private Renderer[] renderersToFlash; 
 
         [Header("Set Dynamically: Enemy")]
-        [SerializeField] private Material[] materials; 
-        [SerializeField] private Color[] originalColors;
+        [SerializeField] [Tooltip("Материалы рендереров для визуализации урона.")] private Material[] materials; 
+        [SerializeField] [Tooltip("Оригинальные цвета материалов.")] private Color[] originalColors;
         
         [HideInInspector] public bool showingDamage = false;
         [HideInInspector] public float damageDoneTime; 
@@ -101,6 +88,7 @@ namespace Components.Enemy
         private Utils _utils;
         private AudioService _audioService; 
         private PlayerScore _playerScore;
+        private AnimatorService _animatorService; 
         protected BalanceConfig balanceConfig;
         private bool _isInitialized = false;
 
@@ -109,13 +97,16 @@ namespace Components.Enemy
         private bool _reachedGridTarget = false;
         private float _maxHealthCached;
 
-        // --- Состояние паттернов движения ---
         private float _patternX0;
         private float _patternBirthTime;
         private Vector3 _patternP0;
         private Vector3 _patternP1;
         private Vector3[] _patternSwoopPoints;
-        private int _patternHorizontalDirection; // 1 = слева направо, -1 = справа налево
+        private int _patternHorizontalDirection; 
+
+        private Vector3 _initialVisualLocalPos;
+        private Quaternion _initialVisualLocalRot;
+        private bool _isAwaken = false;
 
         protected BoundsCheck bndCheck;
         protected Main main;
@@ -129,27 +120,39 @@ namespace Components.Enemy
         public bool UseGridFormation => useGridFormation;
         
         [Inject]
-        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main, BalanceConfig balanceConfig)
+        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main, BalanceConfig balanceConfig, AnimatorService animatorService)
         {
             _utils = utils;
             _audioService = audioService;
             _playerScore = playerScore;
             this.main = main;
             this.balanceConfig = balanceConfig;
+            _animatorService = animatorService; 
         }
 
         protected virtual void Awake()
         {
             bndCheck = GetComponent<BoundsCheck>();
             _maxHealthCached = health;
+
+            if (visualBobTarget != null)
+            {
+                _initialVisualLocalPos = visualBobTarget.localPosition;
+                _initialVisualLocalRot = visualBobTarget.localRotation;
+            }
+
+            _isAwaken = true;
         }
 
         protected virtual void Start()
         {
             EnsureMaterialsInitialized();
             ApplyBalanceConfig();
-        }
 
+            // Безопасный запуск покачивания при самом первом появлении на сцене
+            TriggerBobbingAnimation();
+        }
+        
         protected virtual void ApplyBalanceConfig()
         {
             if (balanceConfig == null)
@@ -171,6 +174,8 @@ namespace Components.Enemy
                 Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) применены значения баланса: " +
                           $"Скорость = {speed}, Здоровье = {health}, Урон от столкновения = {collisionDamage}");
             }
+            // Безопасный запуск покачивания при самом первом появлении на сцене
+            TriggerBobbingAnimation();
         }
 
         protected virtual void OnEnable()
@@ -182,6 +187,9 @@ namespace Components.Enemy
             _reachedGridTarget = false;
 
             EnsureMaterialsInitialized();
+
+            // Вернул вызов конфигурации баланса при повторной активации из пула
+            ApplyBalanceConfig();
 
             if (_isInitialized && materials != null)
             {
@@ -196,6 +204,30 @@ namespace Components.Enemy
             if (!useGridFormation)
             {
                 InitMovementPattern();
+            }
+
+            // Запускаем только если объект извлекается из пула (Awake уже выполнялся ранее)
+            if (_isAwaken)
+            {
+                TriggerBobbingAnimation();
+            }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (_animatorService != null && visualBobTarget != null)
+            {
+                _animatorService.StopComplexBob(visualBobTarget);
+                visualBobTarget.localPosition = _initialVisualLocalPos;
+                visualBobTarget.localRotation = _initialVisualLocalRot;
+            }
+        }
+
+        private void TriggerBobbingAnimation()
+        {
+            if (enableBobbing && visualBobTarget != null && _animatorService != null)
+            {
+                _animatorService.StartComplexBob(visualBobTarget, bobPositionOffset, bobRotationOffset, bobDuration, bobEase);
             }
         }
 
@@ -262,7 +294,6 @@ namespace Components.Enemy
             }
         }
 
-        // --- Инициализация состояния под выбранный паттерн (вызывается при каждом OnEnable, т.к. объекты из пула) ---
         private void InitMovementPattern()
         {
             _patternBirthTime = Time.time;
@@ -270,21 +301,16 @@ namespace Components.Enemy
             switch (movementPattern)
             {
                 case MovementPattern.StraightDown:
-                    // Параметры не требуются.
                     break;
-
                 case MovementPattern.SineWave:
                     _patternX0 = pos.x;
                     break;
-
                 case MovementPattern.DiagonalSweep:
                     InitDiagonalSweep();
                     break;
-
                 case MovementPattern.SwoopCurve:
                     InitSwoopCurve();
                     break;
-
                 case MovementPattern.HorizontalEdge:
                     InitHorizontalEdge();
                     break;
@@ -332,7 +358,6 @@ namespace Components.Enemy
         private void InitHorizontalEdge()
         {
             bool startFromLeft = horizontalRandomSide ? Random.value > 0.5f : horizontalStartFromLeft;
-
             float edgeX = bndCheck.camWidth + bndCheck.radius;
 
             Vector3 tempPos = pos;
@@ -342,7 +367,6 @@ namespace Components.Enemy
             _patternHorizontalDirection = startFromLeft ? 1 : -1;
         }
 
-        // --- Движение по выбранному паттерну. Не абстрактный - можно переопределить в наследнике (см. Enemy_4). ---
         public virtual void Move()
         {
             switch (movementPattern)
@@ -350,19 +374,15 @@ namespace Components.Enemy
                 case MovementPattern.StraightDown:
                     MoveStraightDown();
                     break;
-
                 case MovementPattern.SineWave:
                     MoveSineWave();
                     break;
-
                 case MovementPattern.DiagonalSweep:
                     MoveDiagonalSweep();
                     break;
-
                 case MovementPattern.SwoopCurve:
                     MoveSwoopCurve();
                     break;
-
                 case MovementPattern.HorizontalEdge:
                     MoveHorizontalEdge();
                     break;
@@ -387,8 +407,11 @@ namespace Components.Enemy
             tempPos.y -= speed * Time.deltaTime;
             pos = tempPos;
 
-            Vector3 rot = new Vector3(0, sin * waveRotY, 0);
-            transform.rotation = Quaternion.Euler(rot);
+            if (!enableBobbing)
+            {
+                Vector3 rot = new Vector3(0, sin * waveRotY, 0);
+                transform.rotation = Quaternion.Euler(rot);
+            }
         }
 
         private void MoveDiagonalSweep()
@@ -430,7 +453,6 @@ namespace Components.Enemy
 
             float edgeX = bndCheck.camWidth + bndCheck.radius;
 
-            // Долетел до противоположного края - и всё, исчезает.
             if (_patternHorizontalDirection > 0 && tempPos.x >= edgeX)
             {
                 SafeDespawn(gameObject);

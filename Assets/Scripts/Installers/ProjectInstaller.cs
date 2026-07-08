@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using Zenject;
 using Components.Effects;
 using Components.Player.Localization;
+using Servise;
 
 
 namespace Installers
@@ -16,6 +17,7 @@ namespace Installers
         [SerializeField] private AudioService _audioService;
         [SerializeField] private PostProcessingController _postProcessingController;
         [SerializeField] private LocalizationManager _localizationManager;
+        [SerializeField] private AnimatorService _animatorService;
 
         
         public override void InstallBindings()
@@ -31,6 +33,7 @@ namespace Installers
             Container.Bind<AudioService>().FromComponentInNewPrefab(_audioService).AsSingle().NonLazy();
             Container.Bind<PostProcessingController>().FromComponentInNewPrefab(_postProcessingController).AsSingle().NonLazy();
             Container.Bind<LocalizationManager>().FromComponentInNewPrefab(_localizationManager).AsSingle().NonLazy();
+            Container.Bind<AnimatorService>().FromComponentInNewPrefab(_animatorService).AsSingle().NonLazy();
         }
     }
 }

@@ -19,6 +19,48 @@ namespace Components.Player
         [Tooltip("Пул звуков попадания по врагу (без уничтожения). При каждом вызове выбирается случайный клип.")]
         [SerializeField] private AudioClip[] _enemyHitClips;
         
+        [Header("Shield Clips")]
+        [Tooltip("Пул звуков попадания по щиту (щит ещё жив после удара).")]
+        [SerializeField] private AudioClip[] _shieldHitClips;
+        [Tooltip("Пул звуков уничтожения щита (щит сбит до 0).")]
+        [SerializeField] private AudioClip[] _shieldBreakClips;
+        
+        [Tooltip("Пул звуков восстановления щита (при получении +1 единицы щита).")]
+        [SerializeField] private AudioClip[] _shieldRegenClips;
+        
+        /// <summary>
+        /// Воспроизводит случайный звук восстановления щита из пула _shieldRegenClips.
+        /// </summary>
+        public void PlayRandomShieldRegen()
+        {
+            if (_shieldRegenClips == null || _shieldRegenClips.Length == 0) return;
+
+            AudioClip clip = _shieldRegenClips[Random.Range(0, _shieldRegenClips.Length)];
+            PlayOneShot(clip);
+        }
+        
+        /// <summary>
+        /// Воспроизводит случайный звук попадания по щиту из пула _shieldHitClips.
+        /// </summary>
+        public void PlayRandomShieldHit()
+        {
+            if (_shieldHitClips == null || _shieldHitClips.Length == 0) return;
+
+            AudioClip clip = _shieldHitClips[Random.Range(0, _shieldHitClips.Length)];
+            PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук уничтожения щита из пула _shieldBreakClips.
+        /// </summary>
+        public void PlayRandomShieldBreak()
+        {
+            if (_shieldBreakClips == null || _shieldBreakClips.Length == 0) return;
+
+            AudioClip clip = _shieldBreakClips[Random.Range(0, _shieldBreakClips.Length)];
+            PlayOneShot(clip);
+        }
+        
         /// <summary>
         /// Воспроизводит случайный звук смерти врага из пула _enemyDeathClips.
         /// </summary>

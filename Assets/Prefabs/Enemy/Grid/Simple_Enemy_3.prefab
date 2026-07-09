@@ -116,7 +116,7 @@ MonoBehaviour:
   horizontalStartFromLeft: 1
   enableBobbing: 1
   visualBobTarget: {fileID: 5610869116604243046}
-  bobPositionOffset: 0.3
+  bobPositionOffset: 1.5
   bobRotationOffset: 15
   bobDuration: 1.5
   bobEase: 4

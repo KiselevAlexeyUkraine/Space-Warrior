@@ -87,7 +87,7 @@ namespace Components.Enemy
         [HideInInspector] public float damageDoneTime; 
         
         private bool notifiedOfDestruction = false; 
-        private AudioService _audioService; 
+        protected AudioService _audioService; 
         private PlayerScore _playerScore;
         private AnimatorService _animatorService; 
         protected BalanceConfig balanceConfig;
@@ -523,7 +523,7 @@ namespace Components.Enemy
             }
         }
 
-        private System.Collections.IEnumerator DespawnEffectAfterDelay(GameObject effect, float delay)
+        protected System.Collections.IEnumerator DespawnEffectAfterDelay(GameObject effect, float delay)
         {
             yield return new WaitForSeconds(delay);
             SafeDespawn(effect);

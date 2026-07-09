@@ -1,5 +1,6 @@
 using UnityEngine;
 using Components.Weapon;
+using Lean.Pool;
 
 namespace Components.Enemy
 {
@@ -8,6 +9,18 @@ namespace Components.Enemy
         [Header("Настройки Щита Врага (партиклы)")]
         [Tooltip("Партикл-система щита, висящая на враге. Play/Stop вместо SetActive.")]
         [SerializeField] private GameObject shieldParticle;
+
+        [Tooltip("Партикл, спавнящийся при каждом попадании по щиту, пока щит не сбит до 0.")]
+        [SerializeField] private GameObject shieldHitEffectPrefab;
+
+        [Tooltip("Время жизни спавнящегося партикла попадания по щиту (в секундах).")]
+        [SerializeField] private float shieldHitEffectDestroyDelay = 2f;
+        
+        [Tooltip("Партикл, спавнящийся один раз в момент полного уничтожения щита (когда щит доходит до 0).")]
+        [SerializeField] private GameObject shieldBreakEffectPrefab;
+
+        [Tooltip("Время жизни спавнящегося партикла уничтожения щита (в секундах).")]
+        [SerializeField] private float shieldBreakEffectDestroyDelay = 2f;
 
         [Tooltip("Максимальное количество единиц щита. Перезаписывается из BalanceConfig по enemyLevel.")]
         [SerializeField] private int maxShieldLevel = 4;
@@ -118,6 +131,9 @@ namespace Components.Enemy
                 currentShieldLevel += 1;
                 currentShieldLevel = Mathf.Min(currentShieldLevel, maxShieldLevel);
 
+                // Звук восстановления щита
+                _audioService?.PlayRandomShieldRegen();
+
                 // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Если щит поднялся с 0 до 1, 
                 // включаем партиклы принудительно с флагом forceRestart = true
                 if (previousShieldLevel == 0 && currentShieldLevel > 0)
@@ -161,7 +177,6 @@ namespace Components.Enemy
 
         private void ProcessShieldDamage(WeaponType weaponType)
         {
-
             WeaponConfig config = main.GetWeaponConfig(weaponType);
             if (config != null)
             {
@@ -172,6 +187,27 @@ namespace Components.Enemy
             {
                 currentShieldLevel = 0;
                 SetShieldParticleActive(false);
+
+                // Партикл разрушения щита
+                if (shieldBreakEffectPrefab != null)
+                {
+                    GameObject spawnedEffect = LeanPool.Spawn(shieldBreakEffectPrefab, transform.position, Quaternion.identity);
+                    StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, shieldBreakEffectDestroyDelay));
+                }
+
+                // Звук разрушения
+                _audioService?.PlayRandomShieldBreak();
+            }
+            else
+            {
+                // Щит ещё жив — партикл попадания и звук попадания
+                if (shieldHitEffectPrefab != null)
+                {
+                    GameObject spawnedEffect = LeanPool.Spawn(shieldHitEffectPrefab, transform.position, Quaternion.identity);
+                    StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, shieldHitEffectDestroyDelay));
+                }
+
+                _audioService?.PlayRandomShieldHit();
             }
 
             // Сразу перезапускаем отсчёт до следующей единицы, не дожидаясь следующего Update —

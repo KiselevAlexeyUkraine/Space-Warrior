@@ -69,8 +69,8 @@ namespace Components.Enemy
                 case WeaponShooterType.RocketLauncher:
                     _shootStraightDown = false; 
                     // Строка 24: Скорость запуска ракеты, Строка 25: Скорость полета ракеты
-                    _fireInterval = balanceConfig.GetEnemyRocketFireRate(enemyLevel);
-                    _rocketSpeed = balanceConfig.GetEnemyRocketSpeed(enemyLevel);
+                    //_fireInterval = balanceConfig.GetEnemyRocketFireRate(enemyLevel);
+                    //_rocketSpeed = balanceConfig.GetEnemyRocketSpeed(enemyLevel);
                     break;
             }
 

@@ -89,7 +89,7 @@ namespace Components.Enemy
         private bool notifiedOfDestruction = false; 
         protected AudioService _audioService; 
         private PlayerScore _playerScore;
-        private AnimatorService _animatorService; 
+        protected AnimatorService _animatorService; 
         protected BalanceConfig balanceConfig;
 
         private Vector3 _targetLocalPosition;

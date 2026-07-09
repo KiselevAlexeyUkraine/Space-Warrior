@@ -5,6 +5,7 @@ using Components.Weapon;
 using Zenject;
 using Configs;
 using Lean.Pool;
+using Cysharp.Threading.Tasks; // Подключаем UniTask
 
 namespace Components.Player
 {
@@ -16,34 +17,44 @@ namespace Components.Player
 
         [Header("===== Weapons =====")]
         [Tooltip("Список всех оружейных слотов, установленных на корабле игрока.")]
-        [SerializeField]
-        private Components.Weapon.Weapon[] _weapons;
+        [SerializeField] private Components.Weapon.Weapon[] _weapons;
 
-        [Header("===== Shield Visuals =====")]
-        [Tooltip("Эффект частиц (или GameObject визуала щита), который активируется при наличии прочности щита и гаснет при её обнулении.")]
-        [SerializeField]
-        private GameObject _shieldParticle;
+        [Header("===== Shield Visuals & Particles =====")]
+        [Tooltip("Партикл-система щита, висящая на игроке. Использует Play/Stop.")]
+        [SerializeField] private ParticleSystem _shieldParticleSystem;
 
-        [Header("===== Runtime =====")]
-        [Tooltip("Текущий уровень прочности щита игрока в реальном времени.")]
-        [SerializeField]
+        [Tooltip("Партикл, спавнящийся при каждом попадании по щиту, пока он жив.")]
+        [SerializeField] private GameObject shieldHitEffectPrefab;
+        [SerializeField] private float shieldHitEffectDestroyDelay = 2f;
+
+        [Tooltip("Партикл, спавнящийся один раз в момент полного уничтожения щита.")]
+        [SerializeField] private GameObject shieldBreakEffectPrefab;
+        [SerializeField] private float shieldBreakEffectDestroyDelay = 2f;
+
+        [Header("===== Player Death Visuals =====")]
+        [Tooltip("Партикл взрыва самого игрока при смерти (когда здоровье/щиты уходят в минус).")]
+        [SerializeField] private GameObject playerDeathEffectPrefab;
+        [SerializeField] private float playerDeathEffectDestroyDelay = 3f;
+
+        [Tooltip("Компонент или объект игрока, который нужно скрыть в самом начале смерти.")]
+        [SerializeField] private GameObject playerComponent;
+
         private float _shieldLevel;
         
         [Header("===== Layers =====")]
         [Tooltip("Слой, на котором находятся объекты вражеских кораблей.")]
-        [SerializeField]
-        private LayerMask enemyLayer;
+        [SerializeField] private LayerMask enemyLayer;
 
         [Tooltip("Слой, на котором находятся подбираемые бонусы (PowerUps).")]
-        [SerializeField]
-        private LayerMask powerUpLayer;
+        [SerializeField] private LayerMask powerUpLayer;
         
         [Tooltip("Слой, выделенный под лазерные лучи и лазерные ловушки.")]
-        [SerializeField]
-        private LayerMask laserLayer;
+        [SerializeField] private LayerMask laserLayer;
 
         private GameObject _lastTriggerGo;
         private PageSwitcher _pageSwitcher;
+        private bool isShieldParticleActive;
+        private bool isDead; 
 
         [Inject]
         private void Construct(
@@ -60,11 +71,10 @@ namespace Components.Player
 
         private void Start()
         {
-            // Стартовый уровень щита теперь берется из BalanceConfig (Google Sheets)
             _shieldLevel = _balanceConfig.PlayerShield;
 
-            // Принудительно обновляем состояние партикла при старте игры
-            UpdateShieldParticleVisual();
+            isShieldParticleActive = false;
+            SetShieldParticleActive(_shieldLevel > 0, forceRestart: true);
 
             ClearWeapons();
 
@@ -76,6 +86,8 @@ namespace Components.Player
 
         private void OnTriggerEnter(Collider other)
         {
+            if (isDead) return;
+
             GameObject triggerObject = other.gameObject;
 
             if (triggerObject == _lastTriggerGo)
@@ -85,7 +97,6 @@ namespace Components.Player
 
             int objectLayer = triggerObject.layer;
 
-            // 1. ПРИОРИТЕТНАЯ ПРОВЕРКА: СТОЛКНОВЕНИЕ С ЛАЗЕРОМ (По слою ИЛИ по тегу)
             bool isLaser = (laserLayer.value & (1 << objectLayer)) != 0;
 
             try
@@ -95,20 +106,17 @@ namespace Components.Player
                     isLaser = true;
                 }
             }
-            catch { /* Игнорируем ошибку, если тег "Laser" отсутствует в настройках проекта */ }
+            catch { }
 
             if (isLaser)
             {
-                _audioService?.PlayTakeDamage();
-                ShieldLevel--;
+                ProcessDamage();
                 return; 
             }
 
-            // 2. СТОЛКНОВЕНИЕ С САМИМ ВРАГОМ (КОРПУСОМ)
             if ((enemyLayer.value & (1 << objectLayer)) != 0)
             {
-                _audioService?.PlayTakeDamage();
-                ShieldLevel--;
+                ProcessDamage();
 
                 var enemy = triggerObject.GetComponentInParent<Components.Enemy.EnemyBase>();
         
@@ -123,10 +131,22 @@ namespace Components.Player
                 return;
             }
 
-            // 3. СТОЛКНОВЕНИЕ С БОНУСОМ
             if ((powerUpLayer.value & (1 << objectLayer)) != 0)
             {
                 AbsorbPowerUp(triggerObject);
+            }
+        }
+
+        private void ProcessDamage()
+        {
+            if (_shieldLevel > 0)
+            {
+                ShieldLevel--; 
+            }
+            else
+            {
+                _audioService?.PlayTakeDamage();
+                ShieldLevel--; 
             }
         }
 
@@ -146,21 +166,30 @@ namespace Components.Player
 
         public void AbsorbPowerUp(GameObject powerUpObject)
         {
-            PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
+            if (isDead) return;
 
-            _audioService?.PlayItemPickup();
+            PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
 
             switch (powerUp.Type)
             {
                 case WeaponType.shield:
+                    float previousShield = _shieldLevel;
                     ShieldLevel++;
+                    
+                    _audioService?.PlayRandomShieldRegen();
+
+                    if (previousShield <= 0 && _shieldLevel > 0)
+                    {
+                        SetShieldParticleActive(true, forceRestart: true);
+                    }
                     break;
 
                 default:
+                    _audioService?.PlayItemPickup();
+
                     if (powerUp.Type == _weapons[0].Type)
                     {
                         Components.Weapon.Weapon emptyWeapon = GetEmptyWeaponSlot();
-
                         if (emptyWeapon != null)
                         {
                             emptyWeapon.SetType(powerUp.Type);
@@ -180,32 +209,120 @@ namespace Components.Player
         public float ShieldLevel
         {
             get => _shieldLevel;
-
             set
             {
-                // Максимальный уровень щита теперь тоже берется из BalanceConfig
-                _shieldLevel =
-                    Mathf.Min(value, _balanceConfig.PlayerShield);
+                if (isDead) return;
 
-                // АВТОМАТИКА: Включаем или выключаем партикл в зависимости от текущего значения щита
-                UpdateShieldParticleVisual();
+                float oldShieldLevel = _shieldLevel;
+                _shieldLevel = Mathf.Min(value, _balanceConfig.PlayerShield);
 
-                if (_shieldLevel >= 0)
-                    return;
+                if (_shieldLevel < oldShieldLevel && oldShieldLevel > 0)
+                {
+                    if (_shieldLevel <= 0)
+                    {
+                        _shieldLevel = 0;
+                        SetShieldParticleActive(false);
 
-                Destroy(gameObject);
+                        if (shieldBreakEffectPrefab != null)
+                        {
+                            GameObject breakFX = LeanPool.Spawn(shieldBreakEffectPrefab, transform.position, Quaternion.identity);
+                            Destroy(breakFX, shieldBreakEffectDestroyDelay);
+                        }
 
-                _pageSwitcher?.Open(PageName.Failed).Forget();
+                        _audioService?.PlayRandomShieldBreak();
+                    }
+                    else
+                    {
+                        if (shieldHitEffectPrefab != null)
+                        {
+                            GameObject hitFX = LeanPool.Spawn(shieldHitEffectPrefab, transform.position, Quaternion.identity);
+                            Destroy(hitFX, shieldHitEffectDestroyDelay);
+                        }
+
+                        _audioService?.PlayRandomShieldHit();
+                    }
+                }
+                else if (_shieldLevel > 0 && !isShieldParticleActive)
+                {
+                    SetShieldParticleActive(true);
+                }
+
+                // Запуск логики смерти через UniTask
+                if (_shieldLevel < 0 && !isDead)
+                {
+                    PlayerDeathAsync().Forget();
+                }
             }
         }
 
-        // Вспомогательный метод контроля активации объекта партиклов щита
-        private void UpdateShieldParticleVisual()
+        /// <summary>
+        /// Асинхронный метод смерти через UniTask. Не прерывается при выключении GameObject.
+        /// </summary>
+        /// <summary>
+        /// Асинхронный метод смерти через UniTask. Не прерывается при выключении GameObject.
+        /// </summary>
+        private async UniTask PlayerDeathAsync()
         {
-            if (_shieldParticle != null)
+            isDead = true;
+
+            // Запоминаем позицию для спавна эффекта до скрытия/удаления
+            Vector3 spawnPosition = transform.position;
+
+            // Выключаем щит
+            SetShieldParticleActive(false);
+
+            // Отключаем физику текущего объекта на всякий случай
+            if (TryGetComponent<Collider>(out var col))
             {
-                // Щит активен, если его уровень строго больше нуля
-                _shieldParticle.SetActive(_shieldLevel > 0);
+                col.enabled = false;
+            }
+
+            // Полностью гасим целевой playerComponent.
+            if (playerComponent != null)
+            {
+                playerComponent.SetActive(false);
+            }
+
+            // Спавним партикл взрыва на сохраненной позиции
+            if (playerDeathEffectPrefab != null)
+            {
+                GameObject deathFX = LeanPool.Spawn(playerDeathEffectPrefab, spawnPosition, Quaternion.identity);
+                Destroy(deathFX, playerDeathEffectDestroyDelay);
+            }
+
+            // Ожидаем завершения времени жизни партикла
+            await UniTask.Delay(System.TimeSpan.FromSeconds(playerDeathEffectDestroyDelay));
+
+            // Открываем страницу поражения. 
+            // Если Open() возвращает UniTask, пишем просто await. Если возвращает void/UniTaskVoid, уберите await и оставьте метод.
+            if (_pageSwitcher != null)
+            {
+                _pageSwitcher.Open(PageName.Failed);
+            }
+
+            // Уничтожаем корневой объект игрока
+            if (gameObject != null)
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private void SetShieldParticleActive(bool active, bool forceRestart = false)
+        {
+            if (_shieldParticleSystem == null) return;
+
+            if (isShieldParticleActive == active && !forceRestart)
+                return;
+
+            isShieldParticleActive = active;
+
+            if (active)
+            {
+                _shieldParticleSystem.Play();
+            }
+            else
+            {
+                _shieldParticleSystem.Stop();
             }
         }
 
@@ -218,7 +335,6 @@ namespace Components.Player
                     return weapon;
                 }
             }
-
             return null;
         }
 

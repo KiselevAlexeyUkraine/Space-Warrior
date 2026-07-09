@@ -47,11 +47,12 @@ public class BalanceConfig : IInitializable
     private readonly float[] _enemyReflectionCountByLevel = new float[LevelsCount];            
     private readonly float[] _enemyReflectedProjectilesSpeedByLevel = new float[LevelsCount];  
 
+    // ПУБЛИЧНЫЕ МЕТОДЫ ДЛЯ КЛАССА EnemyReflector
     public float GetEnemyReflectionCount(EnemyLevel level) => GetValue(_enemyReflectionCountByLevel, level, "Количество отражений щита");
     public float GetEnemyReflectedProjectileSpeed(EnemyLevel level) => GetValue(_enemyReflectedProjectilesSpeedByLevel, level, "Скорость отраженного снаряда");
     #endregion
 
-    #region Enemy Shooter / Обычные стрелки (Строки 21-22)
+    #region Enemy Shooter / Обычные стрелки
     private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount]; 
     private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];    
 
@@ -59,20 +60,13 @@ public class BalanceConfig : IInitializable
     public float GetEnemyBulletSpeed(EnemyLevel level) => GetValue(_enemyBulletSpeedByLevel, level, "Скорость полета выстрела стрелка");
     #endregion
 
-    #region Enemy Rocket / Ракетницы (Строки 24-25)
+    #region Enemy Rocket / Ракетницы
     private readonly float[] _enemyRocketFireRateByLevel = new float[LevelsCount]; 
     private readonly float[] _enemyRocketSpeedByLevel = new float[LevelsCount];    
-    private readonly float[] _enemyRocketRadiusByLevel = new float[LevelsCount];
-    private readonly float[] _enemyRocketDamageByLevel = new float[LevelsCount];
-
-    public float GetEnemyRocketFireRate(EnemyLevel level) => GetValue(_enemyRocketFireRateByLevel, level, "Скорость запуска ракеты");
-    public float GetEnemyRocketSpeed(EnemyLevel level) => GetValue(_enemyRocketSpeedByLevel, level, "Скорость полета ракеты");
     #endregion
 
     #region Enemy Laser
     private readonly float[] _enemyLaserFireRateByLevel = new float[LevelsCount];
-    private readonly float[] _enemyLaserDelayByLevel = new float[LevelsCount];
-    private readonly float[] _enemyLaserDurationByLevel = new float[LevelsCount];
     #endregion
 
     public void Initialize()
@@ -169,7 +163,9 @@ public class BalanceConfig : IInitializable
         else if (key.Contains("здоров")) CopyTo(_enemyHealthByLevel, levelValues);
         else if (key.Contains("урон от столкновения")) CopyTo(_enemyCollisionDamageByLevel, levelValues);
         else if (key.Contains("восстановление щита")) CopyTo(_enemyShieldRegenIntervalByLevel, levelValues);
-        else if (key.Contains("щит")) CopyTo(_enemyShieldByLevel, levelValues);
+        else if (key.Contains("щит (единицы)")) CopyTo(_enemyShieldByLevel, levelValues); // Уточнено, чтобы не путать с отражениями
+        
+        // РЕФЛЕКТОР (Строки 19-20 в таблице)
         else if (key.Contains("количество отражений")) CopyTo(_enemyReflectionCountByLevel, levelValues);
         else if (key.Contains("скорость отраженного снаряда")) CopyTo(_enemyReflectedProjectilesSpeedByLevel, levelValues);
         
@@ -183,8 +179,6 @@ public class BalanceConfig : IInitializable
         
         // Лазер
         else if (key.Contains("скорострельность лазера")) CopyTo(_enemyLaserFireRateByLevel, levelValues);
-        else if (key.Contains("задержка перед нанесением урона")) CopyTo(_enemyLaserDelayByLevel, levelValues);
-        else if (key.Contains("длительность лазера")) CopyTo(_enemyLaserDurationByLevel, levelValues);
     }
 
     private void CopyTo(float[] target, float[] source)
@@ -202,8 +196,7 @@ public class BalanceConfig : IInitializable
     {
         for (int i = 0; i < LevelsCount; i++)
         {
-            var level = (EnemyLevel)i;
-            Debug.Log($"👾 [{level}] -> ShooterFireRate: {_enemyBulletFireRateByLevel[i]}с, BulletSpeed: {_enemyBulletSpeedByLevel[i]} | RocketFireRate: {_enemyRocketFireRateByLevel[i]}с, RocketSpeed: {_enemyRocketSpeedByLevel[i]}");
+            Debug.Log($"👾 [{i}] -> ReflectionCount: {_enemyReflectionCountByLevel[i]}, ReflectedSpeed: {_enemyReflectedProjectilesSpeedByLevel[i]}");
         }
     }
 

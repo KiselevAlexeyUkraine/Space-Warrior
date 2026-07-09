@@ -131,9 +131,9 @@ MonoBehaviour:
   damageDoneTime: 0
   shieldParticle: {fileID: 871330131242790603}
   shieldHitEffectPrefab: {fileID: 6737900464413028145, guid: 9452ea2d0f09b3c4188ba7a426db668b, type: 3}
-  shieldHitEffectDestroyDelay: 2
+  shieldHitEffectDestroyDelay: 1
   shieldBreakEffectPrefab: {fileID: 6887125505885866370, guid: fe9129abf7f1342418f83ef762669c16, type: 3}
-  shieldBreakEffectDestroyDelay: 2
+  shieldBreakEffectDestroyDelay: 1
   maxShieldLevel: 2
   regenIntervalSeconds: 15
 --- !u!135 &5023009498972792169

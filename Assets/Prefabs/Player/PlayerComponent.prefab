@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4244387933733347550}
   - component: {fileID: 8030490555240087705}
   m_Layer: 0
-  m_Name: PlayerComponent 1
+  m_Name: PlayerComponent
   m_TagString: Damagable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -163,7 +163,7 @@ MonoBehaviour:
   - {fileID: 2930187110597486424}
   - {fileID: 8302120564858080785}
   - {fileID: 5343096525807679796}
-  _shieldParticleSystem: {fileID: 3082458251182626476}
+  _shieldParticleSystem: {fileID: 3082458251182626474}
   shieldHitEffectPrefab: {fileID: 6737900464413028145, guid: 9452ea2d0f09b3c4188ba7a426db668b, type: 3}
   shieldHitEffectDestroyDelay: 1
   shieldBreakEffectPrefab: {fileID: 6887125505885866370, guid: fe9129abf7f1342418f83ef762669c16, type: 3}
@@ -698,9 +698,9 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d822f0070a419f3429838623cc439ce6, type: 3}
---- !u!198 &3082458251182626476 stripped
-ParticleSystem:
-  m_CorrespondingSourceObject: {fileID: 9027514048236820043, guid: d822f0070a419f3429838623cc439ce6, type: 3}
+--- !u!1 &3082458251182626474 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9027514048236820045, guid: d822f0070a419f3429838623cc439ce6, type: 3}
   m_PrefabInstance: {fileID: 6309326752702742759}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &3082458251182626477 stripped

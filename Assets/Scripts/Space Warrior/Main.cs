@@ -17,7 +17,7 @@ namespace Level
             [Tooltip("Индекс волны из GridFormationSpawner (0 = первая волна), для которой действуют эти враги.")]
             public int waveIndex;
 
-            [Tooltip("Враги, которые будут спавниться на этой волне (случайно выбираются из списка).")]
+            [Tooltip("Враги, которые будут спавняться на этой волне (случайно выбираются из списка).")]
             public GameObject[] enemies;
 
             [Tooltip("Если включено — враги спавнятся бесконечно, пока не начнётся следующая волна.")]
@@ -25,6 +25,9 @@ namespace Level
 
             [Tooltip("Максимальное количество врагов для спавна на этой волне. Учитывается только если 'Is Infinite' выключен.")]
             [Min(0)] public int maxEnemyCount = 10;
+
+            [Tooltip("PowerUp'ы, которые могут заспавниться после уничтожения ПОСЛЕДНЕГО врага именно этой волны (случайно выбирается один из списка). Если пусто — после этой волны PowerUp не спавнится.")]
+            public GameObject[] powerUpPrefabs;
 
             [HideInInspector] public int spawnedCount;
         }
@@ -45,20 +48,12 @@ namespace Level
         [Tooltip("Ссылка на GridFormationSpawner, чьи волны определяют, какие враги спавнятся сейчас. ОБЯЗАТЕЛЬНО назначить в инспекторе.")]
         [SerializeField] private GridFormationSpawner gridFormationSpawner;
 
+        [Tooltip("Если включено — для завершения волны и дропа PowerUp нужно убить ВСЕХ врагов (и сетку, и тех, кого спавнит Main). Если выключено — учитываются только враги из сетки.")]
+        [SerializeField] private bool requireAllEnemiesToClearWave = false;
+
         [Tooltip("Список: какая волна (по индексу) — каких врагов спавнить. Если для волны нет записи здесь, обычные враги на ней спавниться не будут (только сетка).")]
         [SerializeField] private List<WaveSpawnSettings> wavePhases = new List<WaveSpawnSettings>();
-
-        [Header("PowerUps")]
-        [Tooltip("Префаб PowerUp, который спавнится при уничтожении последнего врага волны.")]
-        [SerializeField] private GameObject prefabPowerUp;
-
-        [SerializeField] private WeaponType[] powerUpFrequency =
-        {
-            WeaponType.blaster,
-            WeaponType.blaster,
-            WeaponType.spread,
-            WeaponType.shield
-        };
+        
 
         private BoundsCheck _boundsCheck;
         private DiContainer _container;
@@ -158,33 +153,45 @@ namespace Level
             if (enemy == null)
                 return;
 
-            // Проверяем, был ли этот враг последним в текущей волне спавнера.
-            // CheckAndUnregisterLastEnemy сама запускает переход на следующую волну, если это так.
             bool isLastEnemyInWave = false;
+            int completedWaveIndex = 0;
+
             if (gridFormationSpawner != null)
             {
+                completedWaveIndex = gridFormationSpawner.CurrentWaveIndex;
+                
+                // Проверяем, был ли этот враг последним в зарегистрированном списке спавнера
                 isLastEnemyInWave = gridFormationSpawner.CheckAndUnregisterLastEnemy(enemy.gameObject);
             }
 
-            // PowerUp спавнится ТОЛЬКО при уничтожении последнего врага волны.
-            if (isLastEnemyInWave && prefabPowerUp != null)
+            if (isLastEnemyInWave)
             {
-                int index = UnityEngine.Random.Range(0, powerUpFrequency.Length);
-                WeaponType powerUpType = powerUpFrequency[index];
+                // Останавливаем дальнейший спавн летучих врагов для этой волны
+                CancelInvoke(nameof(SpawnEnemy));
+                _spawnLoopActive = false;
 
-                GameObject powerUpObject = LeanPool.Spawn(
-                    prefabPowerUp,
-                    enemy.transform.position,
-                    Quaternion.identity);
+                WaveSpawnSettings completedPhase = wavePhases.Find(p => p.waveIndex == completedWaveIndex);
 
-                PowerUp powerUp = powerUpObject.GetComponent<PowerUp>();
-
-                if (powerUp != null)
+                if (completedPhase != null && completedPhase.powerUpPrefabs != null && completedPhase.powerUpPrefabs.Length > 0)
                 {
-                    powerUp.SetType(powerUpType);
-                }
+                    int prefabIndex = UnityEngine.Random.Range(0, completedPhase.powerUpPrefabs.Length);
+                    GameObject targetPrefab = completedPhase.powerUpPrefabs[prefabIndex];
 
-                Debug.Log("<color=yellow>⭐ Последний враг волны убит! PowerUp заспавнен! ⭐</color>");
+                    if (targetPrefab != null)
+                    {
+                        GameObject powerUpObject = LeanPool.Spawn(
+                            targetPrefab,
+                            enemy.transform.position,
+                            Quaternion.identity);
+
+                        string modeInfo = requireAllEnemiesToClearWave ? "Все враги (включая спавн Main)" : "Сетка";
+                        Debug.Log($"<color=yellow>⭐ {modeInfo} волны {completedWaveIndex} зачищена! Заспавнен PowerUp: {targetPrefab.name} ⭐</color>");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[Main] Для волны {completedWaveIndex} PowerUp'ы не назначены в WaveSpawnSettings — спавн пропущен.");
+                }
             }
 
             SafeDespawn(enemy.gameObject);
@@ -221,9 +228,8 @@ namespace Level
                 enemyPadding = Mathf.Abs(enemyBounds.radius);
             }
 
-            // Регистрируем врага, который спавнится случайно из Main, в общем спавнере волн, 
-            // чтобы он тоже учитывался при подсчете "последнего врага волны"
-            if (gridFormationSpawner != null)
+            // Динамическая регистрация в зависимости от состояния галочки в инспекторе
+            if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
             {
                 gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
@@ -242,7 +248,7 @@ namespace Level
 
             if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
             {
-                _spawnLoopActive = false; // Лимит достигнут — ждём следующую волну.
+                _spawnLoopActive = false;
                 return;
             }
 

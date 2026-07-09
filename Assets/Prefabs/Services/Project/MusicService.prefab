@@ -47,7 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _audioSource: {fileID: 6626726928475425595}
   _musicList:
-  - {fileID: 8300000, guid: cb4229b2f10c49f4ab12aa9c412db9ef, type: 3}
+  - {fileID: 8300000, guid: e10cbc8a61303d549b621e9c0aee02fc, type: 3}
 --- !u!1 &6993118692606349557
 GameObject:
   m_ObjectHideFlags: 0

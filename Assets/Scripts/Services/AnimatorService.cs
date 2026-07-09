@@ -46,6 +46,26 @@ namespace Servise
                 isHomingDirection = false
             });
         }
+        
+        /// <summary>
+        /// Анимирует взлет игрока вверх за пределы экрана, игнорируя паузу (Time.timeScale).
+        /// </summary>
+        public void AnimatePlayerFlyUp(Transform playerTransform, float targetYOffset, float duration, AnimationCurve curve, Action onComplete = null)
+        {
+            if (playerTransform == null) return;
+
+            // Лог старта анимации
+            Debug.Log($"<color=orange>🔥 [AnimatorService] ФИНАЛЬНАЯ АНИМАЦИЯ ЗАПУСТИЛАСЬ! Взлет на Y-смещение: {targetYOffset} за {duration} сек. (Игнорируя Time.timeScale) 🔥</color>");
+
+            // Полностью очищаем старые твины покачивания/движения на игроке, чтобы они не перебивали взлет
+            Tween.StopAll(playerTransform);
+
+            Vector3 targetPosition = playerTransform.position + new Vector3(0f, targetYOffset, 0f);
+
+            // Анимируем позицию независимо от масштаба времени (useUnscaledTime: true)
+            Tween.Position(playerTransform, targetPosition, duration, ease: curve, useUnscaledTime: true)
+                .OnComplete(() => onComplete?.Invoke(), warnIfTargetDestroyed: false);
+        }
 
         public void RegisterDirectedProjectile(GameObject projectileGo, float projectileSpeed, Vector3 moveDirection)
         {

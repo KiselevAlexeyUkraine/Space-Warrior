@@ -77,6 +77,11 @@ namespace Level
 
         /// <summary>Вызывается один раз, когда пройдены все волны.</summary>
         public event Action OnAllWavesCompleted;
+        
+        /// <summary>
+        /// Возвращает true, если генерация сетки завершена и все враги в текущей волне уничтожены.
+        /// </summary>
+        public bool IsGridWaveCleared => !_spawningWaveActive && _activeEnemies.Count == 0;
 
         [Inject]
         private void Construct(DiContainer container, AnimatorService animatorService, PageSwitcher pageSwitcher)

@@ -21,7 +21,7 @@ namespace Components.Player
 
         [Header("===== Shield Visuals & Particles =====")]
         [Tooltip("Партикл-система щита, висящая на игроке. Использует Play/Stop.")]
-        [SerializeField] private ParticleSystem _shieldParticleSystem;
+        [SerializeField] private GameObject _shieldParticleSystem;
 
         [Tooltip("Партикл, спавнящийся при каждом попадании по щиту, пока он жив.")]
         [SerializeField] private GameObject shieldHitEffectPrefab;
@@ -52,6 +52,7 @@ namespace Components.Player
         [SerializeField] private LayerMask laserLayer;
 
         private GameObject _lastTriggerGo;
+        private int _lastTriggerFrame = -1;
         private PageSwitcher _pageSwitcher;
         private bool isShieldParticleActive;
         private bool isDead; 
@@ -90,10 +91,15 @@ namespace Components.Player
 
             GameObject triggerObject = other.gameObject;
 
-            if (triggerObject == _lastTriggerGo)
+            // Защита от нескольких OnTriggerEnter за один и тот же объект В ОДНОМ КАДРЕ
+            // (например, если на игроке несколько коллайдеров). НЕ хранится дольше одного кадра,
+            // иначе после возврата объекта в LeanPool и повторного спавна ТОГО ЖЕ инстанса
+            // (тот же GameObject reference) новый подбор навсегда блокировался бы этой проверкой.
+            if (triggerObject == _lastTriggerGo && Time.frameCount == _lastTriggerFrame)
                 return;
 
             _lastTriggerGo = triggerObject;
+            _lastTriggerFrame = Time.frameCount;
 
             int objectLayer = triggerObject.layer;
 
@@ -119,7 +125,7 @@ namespace Components.Player
                 ProcessDamage();
 
                 var enemy = triggerObject.GetComponentInParent<Components.Enemy.EnemyBase>();
-        
+
                 if (enemy != null)
                 {
                     SafeDespawn(enemy.gameObject);
@@ -175,7 +181,7 @@ namespace Components.Player
                 case WeaponType.shield:
                     float previousShield = _shieldLevel;
                     ShieldLevel++;
-                    
+            
                     _audioService?.PlayRandomShieldRegen();
 
                     if (previousShield <= 0 && _shieldLevel > 0)
@@ -204,6 +210,11 @@ namespace Components.Player
             }
 
             powerUp.AbsorbedBy(gameObject);
+
+            // Гарантированно возвращаем объект в пул после подбора.
+            // Без этого GameObject может остаться активным и висеть в сцене,
+            // блокируя повторный спавн/подбор того же инстанса из LeanPool.
+            SafeDespawn(powerUpObject);
         }
 
         public float ShieldLevel
@@ -318,11 +329,11 @@ namespace Components.Player
 
             if (active)
             {
-                _shieldParticleSystem.Play();
+                _shieldParticleSystem.SetActive(true);
             }
             else
             {
-                _shieldParticleSystem.Stop();
+                _shieldParticleSystem.SetActive(false);
             }
         }
 

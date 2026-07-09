@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 8794771648347080134}
   - component: {fileID: 347840606156906653}
   m_Layer: 12
-  m_Name: PowerUp
+  m_Name: PowerUpShield
   m_TagString: PowerUp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -94,7 +94,7 @@ TextMesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8794771648347080131}
-  m_Text: M
+  m_Text: S
   m_OffsetZ: -2
   m_CharacterSize: 0.5
   m_LineSpacing: 1

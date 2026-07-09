@@ -314,6 +314,12 @@ namespace Components.Enemy
 
             Vector3 tempPos = pos;
             tempPos.x = startFromLeft ? -edgeX : edgeX;
+
+            // ИСПРАВЛЕНИЕ: Опускаем врага по Y в видимую зону экрана
+            // Например, случайная высота в верхней половине экрана (от 0 до camHeight минус отступ)
+            float padding = bndCheck.radius > 0 ? bndCheck.radius : 1f;
+            tempPos.y = Random.Range(0f, bndCheck.camHeight - padding);
+            
             pos = tempPos;
 
             _patternHorizontalDirection = startFromLeft ? 1 : -1;

@@ -48,6 +48,16 @@ MonoBehaviour:
   _audioSource: {fileID: 4683883187229199120}
   _itemPickupClip: {fileID: 8300000, guid: d6471b9b1d406f84889d49b42291d86e, type: 3}
   _takeDamageClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
+  _enemyDeathClips:
+  - {fileID: 8300000, guid: fb3470d42e98da94db150e534e619733, type: 3}
+  - {fileID: 8300000, guid: 7025c012499dd3c4e8aea73ea4f35631, type: 3}
+  - {fileID: 8300000, guid: ba425f6a7f3d50b4e9aaddaec569fcd8, type: 3}
+  - {fileID: 8300000, guid: 56ca446b67706074da777a0be2406468, type: 3}
+  _enemyHitClips:
+  - {fileID: 8300000, guid: 63a1a18194d843f43aaefcf2c46157be, type: 3}
+  - {fileID: 8300000, guid: c135bef755c8bcc4daf5dbd19f3e4a9e, type: 3}
+  - {fileID: 8300000, guid: 14b64fac96fad5148b8c41675581b527, type: 3}
+  - {fileID: 8300000, guid: 716bc7d0fb72581478eab73d93858816, type: 3}
 --- !u!82 &4683883187229199120
 AudioSource:
   m_ObjectHideFlags: 0

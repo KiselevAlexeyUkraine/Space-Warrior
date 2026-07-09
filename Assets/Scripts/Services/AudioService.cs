@@ -11,6 +11,35 @@ namespace Components.Player
         [Header("Player Clips")]
         [SerializeField] private AudioClip _itemPickupClip;
         [SerializeField] private AudioClip _takeDamageClip;
+        
+        [Header("Enemy Clips")]
+        [Tooltip("Пул звуков смерти врагов. При каждом вызове выбирается случайный клип.")]
+        [SerializeField] private AudioClip[] _enemyDeathClips;
+        
+        [Tooltip("Пул звуков попадания по врагу (без уничтожения). При каждом вызове выбирается случайный клип.")]
+        [SerializeField] private AudioClip[] _enemyHitClips;
+        
+        /// <summary>
+        /// Воспроизводит случайный звук смерти врага из пула _enemyDeathClips.
+        /// </summary>
+        public void PlayRandomEnemyDeath()
+        {
+            if (_enemyDeathClips == null || _enemyDeathClips.Length == 0) return;
+
+            AudioClip clip = _enemyDeathClips[Random.Range(0, _enemyDeathClips.Length)];
+            PlayOneShot(clip);
+        }
+        
+        /// <summary>
+        /// Воспроизводит случайный звук попадания по врагу из пула _enemyHitClips.
+        /// </summary>
+        public void PlayRandomEnemyHit()
+        {
+            if (_enemyHitClips == null || _enemyHitClips.Length == 0) return;
+
+            AudioClip clip = _enemyHitClips[Random.Range(0, _enemyHitClips.Length)];
+            PlayOneShot(clip);
+        }
 
         private void Awake()
         {

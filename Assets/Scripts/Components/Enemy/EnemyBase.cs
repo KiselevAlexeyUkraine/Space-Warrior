@@ -67,9 +67,7 @@ namespace Components.Enemy
         [SerializeField] [Tooltip("Амплитуда покачивания вращения по осям Y и Z (в градусах).")] private float bobRotationOffset = 15f;
         [SerializeField] [Tooltip("Время одного цикла покачивания (туда-обратно), в секундах.")] private float bobDuration = 1.5f;
         [SerializeField] [Tooltip("Тип сглаживания PrimeTween анимации покачивания.")] private PrimeTween.Ease bobEase = PrimeTween.Ease.InOutSine;
-
-        [Header("Audio Settings")]
-        [SerializeField] private AudioClip _explosionClip; 
+        
 
         [Header("Visual Effects")]
         [Tooltip("Префаб частиц при уничтожении всего корабля")] [SerializeField] private ParticleSystem _explosionParticlePrefab;
@@ -89,7 +87,6 @@ namespace Components.Enemy
         [HideInInspector] public float damageDoneTime; 
         
         private bool notifiedOfDestruction = false; 
-        private Utils _utils;
         private AudioService _audioService; 
         private PlayerScore _playerScore;
         private AnimatorService _animatorService; 
@@ -119,13 +116,10 @@ namespace Components.Enemy
             get => transform.position;
             set => transform.position = value;
         }
-
-        public bool UseGridFormation => useGridFormation;
         
         [Inject]
-        private void Construct(Utils utils, AudioService audioService, PlayerScore playerScore, Main main, BalanceConfig balanceConfig, AnimatorService animatorService)
+        private void Construct(AudioService audioService, PlayerScore playerScore, Main main, BalanceConfig balanceConfig, AnimatorService animatorService)
         {
-            _utils = utils;
             _audioService = audioService;
             _playerScore = playerScore;
             this.main = main;
@@ -487,11 +481,8 @@ namespace Components.Enemy
                     {
                         LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
                     }
-
-                    if (_audioService != null && _explosionClip != null)
-                    {
-                        _audioService.PlayOneShot(_explosionClip);
-                    }
+                    
+                    _audioService?.PlayRandomEnemyDeath();
 
                     _playerScore?.AddScore(score);
             
@@ -522,8 +513,11 @@ namespace Components.Enemy
                         GameObject spawnedEffect = LeanPool.Spawn(hitEffectPrefab, partPosition, partRotation);
                         StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, effectDestroyDelay));
                     }
+
+                    // Звук попадания
+                    _audioService?.PlayRandomEnemyHit();
                 }
-                
+        
                 // Удаляем именно этот обработанный объект, чтобы он больше не выбирался рандомом
                 _activeObjectsList.RemoveAt(randomIndex);
             }

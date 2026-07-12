@@ -30,6 +30,31 @@ namespace Level
             public GameObject[] powerUpPrefabs;
 
             [HideInInspector] public int spawnedCount;
+
+            // ------------------------------------------------------------------
+            // LINE SPAWN — дополнительный параллельный спавн врагов друг за другом
+            // ------------------------------------------------------------------
+
+            [Header("Line Spawn (доп. спавн врагов друг за другом)")]
+            [Tooltip("Если включено — ДОПОЛНИТЕЛЬНО к обычному спавну этой волны будет запущен ещё один " +
+                     "поток спавна врагов, которые появляются друг за другом с фиксированной периодичностью " +
+                     "(Line Spawn Interval). Позиция спавна такая же, как и у обычных врагов (случайный X, верх экрана).")]
+            public bool useLineSpawn = false;
+
+            [Tooltip("Враги для дополнительного Line Spawn (случайно выбираются из списка). " +
+                     "Если пусто — используется основной список 'Enemies' выше.")]
+            public GameObject[] lineSpawnEnemies;
+
+            [Tooltip("Периодичность появления врагов в режиме Line Spawn, в секундах.")]
+            [Min(0.01f)] public float lineSpawnInterval = 1f;
+
+            [Tooltip("Если включено — Line Spawn спавнится бесконечно, пока не начнётся следующая волна.")]
+            public bool lineSpawnIsInfinite = true;
+
+            [Tooltip("Максимальное количество врагов для Line Spawn на этой волне. Учитывается только если 'Line Spawn Is Infinite' выключен.")]
+            [Min(0)] public int lineSpawnMaxEnemyCount = 5;
+
+            [HideInInspector] public int lineSpawnedCount;
         }
 
         private Dictionary<WeaponType, WeaponConfig> _weaponConfigs;
@@ -53,13 +78,14 @@ namespace Level
 
         [Tooltip("Список: какая волна (по индексу) — каких врагов спавнить. Если для волны нет записи здесь, обычные враги на ней спавниться не будут (только сетка).")]
         [SerializeField] private List<WaveSpawnSettings> wavePhases = new List<WaveSpawnSettings>();
-        
+
 
         private BoundsCheck _boundsCheck;
         private DiContainer _container;
 
         private WaveSpawnSettings _currentPhase;
         private bool _spawnLoopActive;
+        private bool _lineSpawnLoopActive;
 
         [Inject]
         private void Construct(DiContainer container, List<WeaponConfig> injectedConfigs)
@@ -94,7 +120,9 @@ namespace Level
         private void HandleWaveStarted(int waveIndex)
         {
             CancelInvoke(nameof(SpawnEnemy));
+            CancelInvoke(nameof(SpawnEnemyLine));
             _spawnLoopActive = false;
+            _lineSpawnLoopActive = false;
 
             if (!spawnEnemies)
                 return;
@@ -108,17 +136,30 @@ namespace Level
             }
 
             _currentPhase.spawnedCount = 0;
+            _currentPhase.lineSpawnedCount = 0;
             _spawnLoopActive = true;
 
             Debug.Log($"[Main] Волна {waveIndex}: старт спавна врагов ({_currentPhase.enemies.Length} типов, infinite={_currentPhase.isInfinite}).");
-
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
+
+            // Line Spawn — ДОПОЛНИТЕЛЬНЫЙ, независимый поток спавна, работает параллельно с обычным
+            if (_currentPhase.useLineSpawn)
+            {
+                _lineSpawnLoopActive = true;
+
+                Debug.Log($"[Main] Волна {waveIndex}: старт ДОПОЛНИТЕЛЬНОГО line-спавна врагов " +
+                          $"(interval={_currentPhase.lineSpawnInterval}, infinite={_currentPhase.lineSpawnIsInfinite}).");
+
+                Invoke(nameof(SpawnEnemyLine), _currentPhase.lineSpawnInterval);
+            }
         }
 
         private void HandleAllWavesCompleted()
         {
             CancelInvoke(nameof(SpawnEnemy));
+            CancelInvoke(nameof(SpawnEnemyLine));
             _spawnLoopActive = false;
+            _lineSpawnLoopActive = false;
             _currentPhase = null;
         }
 
@@ -159,16 +200,18 @@ namespace Level
             if (gridFormationSpawner != null)
             {
                 completedWaveIndex = gridFormationSpawner.CurrentWaveIndex;
-                
+
                 // Проверяем, был ли этот враг последним в зарегистрированном списке спавнера
                 isLastEnemyInWave = gridFormationSpawner.CheckAndUnregisterLastEnemy(enemy.gameObject);
             }
 
             if (isLastEnemyInWave)
             {
-                // Останавливаем дальнейший спавн летучих врагов для этой волны
+                // Останавливаем дальнейший спавн летучих врагов для этой волны (оба потока)
                 CancelInvoke(nameof(SpawnEnemy));
+                CancelInvoke(nameof(SpawnEnemyLine));
                 _spawnLoopActive = false;
+                _lineSpawnLoopActive = false;
 
                 WaveSpawnSettings completedPhase = wavePhases.Find(p => p.waveIndex == completedWaveIndex);
 
@@ -197,6 +240,28 @@ namespace Level
             SafeDespawn(enemy.gameObject);
         }
 
+        private Vector3 GetRandomTopSpawnPosition(GameObject enemyObject, out float enemyPadding)
+        {
+            enemyPadding = enemyDefaultPadding;
+
+            BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
+
+            if (enemyBounds != null)
+            {
+                enemyPadding = Mathf.Abs(enemyBounds.radius);
+            }
+
+            Vector3 position = Vector3.zero;
+
+            float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
+            float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
+
+            position.x = UnityEngine.Random.Range(xMin, xMax);
+            position.y = _boundsCheck.camHeight + enemyPadding;
+
+            return position;
+        }
+
         public void SpawnEnemy()
         {
             if (!spawnEnemies || !_spawnLoopActive || _currentPhase == null)
@@ -219,29 +284,13 @@ namespace Level
 
             _container?.InjectGameObject(enemyObject);
 
-            float enemyPadding = enemyDefaultPadding;
-
-            BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
-
-            if (enemyBounds != null)
-            {
-                enemyPadding = Mathf.Abs(enemyBounds.radius);
-            }
-
             // Динамическая регистрация в зависимости от состояния галочки в инспекторе
             if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
             {
                 gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
 
-            Vector3 position = Vector3.zero;
-
-            float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
-            float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
-
-            position.x = UnityEngine.Random.Range(xMin, xMax);
-            position.y = _boundsCheck.camHeight + enemyPadding;
-
+            Vector3 position = GetRandomTopSpawnPosition(enemyObject, out _);
             enemyObject.transform.position = position;
 
             _currentPhase.spawnedCount++;
@@ -253,6 +302,54 @@ namespace Level
             }
 
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
+        }
+
+        /// <summary>
+        /// ДОПОЛНИТЕЛЬНЫЙ поток спавна: работает параллельно с обычным SpawnEnemy.
+        /// Враги появляются друг за другом с периодичностью lineSpawnInterval,
+        /// позиция такая же, как и у обычных врагов — случайный X сверху экрана.
+        /// </summary>
+        public void SpawnEnemyLine()
+        {
+            if (!spawnEnemies || !_lineSpawnLoopActive || _currentPhase == null || !_currentPhase.useLineSpawn)
+                return;
+
+            if (!_currentPhase.lineSpawnIsInfinite && _currentPhase.lineSpawnedCount >= _currentPhase.lineSpawnMaxEnemyCount)
+            {
+                _lineSpawnLoopActive = false;
+                return;
+            }
+
+            GameObject[] pool = (_currentPhase.lineSpawnEnemies != null && _currentPhase.lineSpawnEnemies.Length > 0)
+                ? _currentPhase.lineSpawnEnemies
+                : _currentPhase.enemies;
+
+            if (pool == null || pool.Length == 0)
+                return;
+
+            int index = UnityEngine.Random.Range(0, pool.Length);
+
+            GameObject enemyObject = LeanPool.Spawn(pool[index]);
+
+            _container?.InjectGameObject(enemyObject);
+
+            if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
+            {
+                gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
+            }
+
+            Vector3 position = GetRandomTopSpawnPosition(enemyObject, out _);
+            enemyObject.transform.position = position;
+
+            _currentPhase.lineSpawnedCount++;
+
+            if (!_currentPhase.lineSpawnIsInfinite && _currentPhase.lineSpawnedCount >= _currentPhase.lineSpawnMaxEnemyCount)
+            {
+                _lineSpawnLoopActive = false;
+                return;
+            }
+
+            Invoke(nameof(SpawnEnemyLine), _currentPhase.lineSpawnInterval);
         }
 
         private void SafeDespawn(GameObject go)

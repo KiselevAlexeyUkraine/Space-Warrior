@@ -793,18 +793,17 @@ MonoBehaviour:
   - waveName: 1
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
+    maxColumns: 5
+    maxRows: 3
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     cachedLayers: 
   - waveName: 2
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
+    maxColumns: 5
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
@@ -815,12 +814,12 @@ MonoBehaviour:
   - waveName: 3
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
+    maxColumns: 6
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     cachedLayers: 
   - waveName: 4
@@ -832,7 +831,7 @@ MonoBehaviour:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
     - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
     cachedLayers: 
   spawnPerSecond: 2
   criticalYPosition: -65

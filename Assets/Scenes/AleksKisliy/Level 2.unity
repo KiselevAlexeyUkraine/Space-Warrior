@@ -136,7 +136,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &238893473
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -226,7 +226,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &570151358
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -672,22 +672,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnEnemies: 0
-  prefabEnemies:
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 6457830071259349374, guid: 94c4ed3a4dbe2f440a8efa3931ae0ade, type: 3}
   enemySpawnPerSecond: 0.5
   enemyDefaultPadding: 1.5
-  enablePowerUpDrops: 0
-  prefabPowerUp: {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
-  powerUpFrequency: 01000000
+  gridFormationSpawner: {fileID: 0}
+  requireAllEnemiesToClearWave: 0
+  wavePhases: []
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -774,24 +763,23 @@ MonoBehaviour:
   - waveName: 1
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
+    maxColumns: 5
+    maxRows: 4
+    rowPrefabs:
+    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
+    cachedLayers: 
+  - waveName: 2
+    isSingleEnemyWave: 0
+    singleEnemyPrefab: {fileID: 0}
+    maxColumns: 6
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    cachedLayers: 
-  - waveName: 2
-    isSingleEnemyWave: 0
-    singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
-    rowPrefabs:
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
     cachedLayers: 
   - waveName: 3
     isSingleEnemyWave: 0
@@ -799,7 +787,7 @@ MonoBehaviour:
     maxColumns: 7
     maxRows: 4
     rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
+    - {fileID: 1609195960064703657, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
     - {fileID: 7654880680303113404, guid: ee937f873808a37488967a500b70ac61, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
@@ -811,9 +799,9 @@ MonoBehaviour:
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
-    - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
     cachedLayers: 
   - waveName: 5
     isSingleEnemyWave: 0
@@ -821,32 +809,18 @@ MonoBehaviour:
     maxColumns: 7
     maxRows: 4
     rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
-    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 2868998570848813465, guid: efde2c70725855f4aa0f0aa58f403d05, type: 3}
+    - {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
+    - {fileID: 7654880680303113404, guid: be420d2f074b3ca4a89b9339af05eed2, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
     cachedLayers: 
   - waveName: 6
-    isSingleEnemyWave: 0
+    isSingleEnemyWave: 1
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
+    maxColumns: 1
+    maxRows: 1
     rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
-    - {fileID: 7654880680303113404, guid: ee937f873808a37488967a500b70ac61, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    cachedLayers: 
-  - waveName: 7
-    isSingleEnemyWave: 0
-    singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
-    rowPrefabs:
-    - {fileID: 7654880680303113404, guid: efde2c70725855f4aa0f0aa58f403d05, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 4598602158235825869, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
     cachedLayers: 
   spawnPerSecond: 2
   criticalYPosition: -65
@@ -868,7 +842,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &1241598048
 MeshRenderer:
   m_ObjectHideFlags: 0

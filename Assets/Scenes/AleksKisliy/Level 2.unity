@@ -671,23 +671,119 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e3f0e41ce4d5364d97a13f804feeb11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnEnemies: 0
-  prefabEnemies:
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 7654880680303113404, guid: 050d506c9078cbc419db860fc245392e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 6238323985394983492, guid: eab4090f675e86841a243aaaf53c690e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 185822709802943670, guid: 6453c7f719d1e4f4da538d09a9648a5e, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 5240148939293931298, guid: 2286b67279e5d4545b032a8af79227a6, type: 3}
-  - {fileID: 6457830071259349374, guid: 94c4ed3a4dbe2f440a8efa3931ae0ade, type: 3}
+  spawnEnemies: 1
   enemySpawnPerSecond: 0.5
   enemyDefaultPadding: 1.5
-  enablePowerUpDrops: 0
-  prefabPowerUp: {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
-  powerUpFrequency: 01000000
+  gridFormationSpawner: {fileID: 963194232}
+  requireAllEnemiesToClearWave: 0
+  wavePhases:
+  - waveIndex: 0
+    enemies:
+    - {fileID: 7654880680303113404, guid: 35e69893ec183b2448b971822cd8aac9, type: 3}
+    isInfinite: 1
+    maxEnemyCount: 0
+    powerUpPrefabs:
+    - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
+  - waveIndex: 1
+    enemies:
+    - {fileID: 7654880680303113404, guid: c6afe18fa79a88342b5a4a4a0ef4dce5, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 15
+    powerUpPrefabs:
+    - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
+  - waveIndex: 2
+    enemies:
+    - {fileID: 7654880680303113404, guid: 0edc0e87d378cb04e8e82c7c90c7d6ed, type: 3}
+    - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 10
+    powerUpPrefabs:
+    - {fileID: 8794771648347080131, guid: 8958bd6a1bad1dc46bbfab686c8b7ef1, type: 3}
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
+  - waveIndex: 3
+    enemies:
+    - {fileID: 7654880680303113404, guid: 21c3c1817ac994c478a3c916e7d31ff7, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 20
+    powerUpPrefabs:
+    - {fileID: 8794771648347080131, guid: 8958bd6a1bad1dc46bbfab686c8b7ef1, type: 3}
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
+  - waveIndex: 4
+    enemies:
+    - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
+    - {fileID: 7654880680303113404, guid: c19842003282a934f9094472a37a16b6, type: 3}
+    - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 30
+    powerUpPrefabs: []
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
+  - waveIndex: 5
+    enemies:
+    - {fileID: 7654880680303113404, guid: 21c3c1817ac994c478a3c916e7d31ff7, type: 3}
+    - {fileID: 7654880680303113404, guid: 15cf1713c9a43ea4bada52b08d5e6d9f, type: 3}
+    - {fileID: 7654880680303113404, guid: 938aa9106d3d5764c9ac823c7fd8b894, type: 3}
+    - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
+    - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
+    isInfinite: 1
+    maxEnemyCount: 20
+    powerUpPrefabs: []
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -788,10 +884,10 @@ MonoBehaviour:
     maxColumns: 7
     maxRows: 4
     rowPrefabs:
+    - {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 5749343942672456077, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
     cachedLayers: 
   - waveName: 3
     isSingleEnemyWave: 0
@@ -821,32 +917,10 @@ MonoBehaviour:
     maxColumns: 7
     maxRows: 4
     rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
+    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    cachedLayers: 
-  - waveName: 6
-    isSingleEnemyWave: 0
-    singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
-    rowPrefabs:
-    - {fileID: 7654880680303113404, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
-    - {fileID: 7654880680303113404, guid: ee937f873808a37488967a500b70ac61, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    cachedLayers: 
-  - waveName: 7
-    isSingleEnemyWave: 0
-    singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
-    maxRows: 4
-    rowPrefabs:
-    - {fileID: 7654880680303113404, guid: efde2c70725855f4aa0f0aa58f403d05, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
-    - {fileID: 7654880680303113404, guid: 98fb240259315c548ac2c72b85d6740b, type: 3}
+    - {fileID: 1609195960064703657, guid: 1bd32a62cfef4cb4693a7e57db0c786a, type: 3}
     cachedLayers: 
   spawnPerSecond: 2
   criticalYPosition: -65
@@ -968,7 +1042,7 @@ Transform:
   m_GameObject: {fileID: 7772110012771388587}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -4, z: 0}
+  m_LocalPosition: {x: 0, y: 20, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

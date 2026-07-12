@@ -120,7 +120,6 @@ MonoBehaviour:
   bobRotationOffset: 15
   bobDuration: 1.5
   bobEase: 4
-  _explosionClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
   _explosionParticlePrefab: {fileID: 19800000, guid: 77ec3c4e07a36814fb3169ecef41b50a, type: 3}
   objectsToDisable:
   - {fileID: 8716983272949676253}
@@ -184,11 +183,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 311042440382514925, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.92387956
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 311042440382514925, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.38268343
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 311042440382514925, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_LocalRotation.y
@@ -200,7 +199,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 311042440382514925, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -45
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 311042440382514925, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -214,10 +213,34 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1753107871062349286, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
+    - target: {fileID: 1912241544617234174, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
+    - target: {fileID: 4155975646736993599, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
+    - target: {fileID: 6514303286706487328, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
+    - target: {fileID: 7803942999075153595, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
     - target: {fileID: 8291411862721197990, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
       propertyPath: m_Name
       value: 2 LVL
       objectReference: {fileID: 0}
+    - target: {fileID: 9110539098200875689, guid: a91ade26c9a4c8b49980160778135ede, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: dc60a1e64de33bb44979dad0c2529fa1, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

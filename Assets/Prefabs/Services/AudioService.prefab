@@ -58,6 +58,16 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c135bef755c8bcc4daf5dbd19f3e4a9e, type: 3}
   - {fileID: 8300000, guid: 14b64fac96fad5148b8c41675581b527, type: 3}
   - {fileID: 8300000, guid: 716bc7d0fb72581478eab73d93858816, type: 3}
+  _laserPrepareClips:
+  - {fileID: 8300000, guid: 6cd13e8d862d1be46a2bcda942330f47, type: 3}
+  - {fileID: 8300000, guid: d3d1d4072104b3943ac9230925481969, type: 3}
+  - {fileID: 8300000, guid: 143221f6ef6055e47883b64cac2f73a8, type: 3}
+  - {fileID: 8300000, guid: 8873e08ab35bafa41a4f125f5456a75f, type: 3}
+  _laserShootClips:
+  - {fileID: 8300000, guid: 5a528c5ccf089524f93ff0cd025a66e0, type: 3}
+  - {fileID: 8300000, guid: dc9ab81f3b3033a46b352b69c560936a, type: 3}
+  - {fileID: 8300000, guid: 1b10151d46769214ba1c0f1bff13d2a5, type: 3}
+  - {fileID: 8300000, guid: 5eea6c83e7210df4ea7ab01fd497fa8a, type: 3}
   _shieldHitClips:
   - {fileID: 8300000, guid: 2e5dec2d67eb3ec499fdcda256bc8315, type: 3}
   - {fileID: 8300000, guid: 3868f739b6057f94a8d8e8623461e65f, type: 3}

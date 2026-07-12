@@ -823,7 +823,7 @@ MonoBehaviour:
   formationRoot: {fileID: 7215469652385854143}
   defaultColumns: 8
   defaultRows: 8
-  spacingX: 10
+  spacingX: 12
   spacingY: 8
   waves:
   - waveName: 1

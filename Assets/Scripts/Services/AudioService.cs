@@ -18,6 +18,13 @@ namespace Components.Player
         
         [Tooltip("Пул звуков попадания по врагу (без уничтожения). При каждом вызове выбирается случайный клип.")]
         [SerializeField] private AudioClip[] _enemyHitClips;
+
+        [Header("Enemy Laser Clips")]
+        [Tooltip("Пул звуков перед выстрелом лазера (фаза подготовки). При каждом вызове выбирается случайный клип.")]
+        [SerializeField] private AudioClip[] _laserPrepareClips;
+
+        [Tooltip("Пул звуков самого выстрела лазера. При каждом вызове выбирается случайный клип.")]
+        [SerializeField] private AudioClip[] _laserShootClips;
         
         [Header("Shield Clips")]
         [Tooltip("Пул звуков попадания по щиту (щит ещё жив после удара).")]
@@ -80,6 +87,28 @@ namespace Components.Player
             if (_enemyHitClips == null || _enemyHitClips.Length == 0) return;
 
             AudioClip clip = _enemyHitClips[Random.Range(0, _enemyHitClips.Length)];
+            PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук из пула _laserPrepareClips (фаза подготовки лазера к выстрелу).
+        /// </summary>
+        public void PlayRandomLaserPrepare()
+        {
+            if (_laserPrepareClips == null || _laserPrepareClips.Length == 0) return;
+
+            AudioClip clip = _laserPrepareClips[Random.Range(0, _laserPrepareClips.Length)];
+            PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук из пула _laserShootClips (момент самого выстрела лазера).
+        /// </summary>
+        public void PlayRandomLaserShoot()
+        {
+            if (_laserShootClips == null || _laserShootClips.Length == 0) return;
+
+            AudioClip clip = _laserShootClips[Random.Range(0, _laserShootClips.Length)];
             PlayOneShot(clip);
         }
 

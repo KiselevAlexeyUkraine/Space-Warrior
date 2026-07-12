@@ -1,24 +1,30 @@
 using UnityEngine;
 using Components.Weapon;
+using Components.Player;
 using Level;
 using Lean.Pool;
 using Zenject;
 
 public sealed class Projectile : MonoBehaviour 
 {
-    private Renderer rend;
     private Main _main; 
+    private AudioService _audioService;
 
     [Header("Collision Settings")]
     [Tooltip("Слой (или слои), при столкновении с которыми пуля деспавнит цель и себя.")]
     [SerializeField] private LayerMask targetLayerMask;
 
-    // ДОБАВЛЕНО: Слой ракеты, настраиваемый в инспекторе
     [Tooltip("Выберите слой ракеты (Rocket). Объекты на этом слое НЕ будут деспавниться при попадании пули.")]
     [SerializeField] private LayerMask _rocketLayer;
 
+    [Header("Hit Effect")]
+    [Tooltip("Префаб партиклов, который спавнится через LeanPool в точке столкновения при попадании по targetLayerMask.")]
+    [SerializeField] private GameObject _hitEffectPrefab;
+
     [Header("Set Dynamically")]
-    public Rigidbody rigid;
+    [SerializeField] private Rigidbody rigid;
+    
+    public Rigidbody Rigid => rigid;
     [SerializeField] private WeaponType _type;
 
     public WeaponType type
@@ -28,41 +34,49 @@ public sealed class Projectile : MonoBehaviour
     }
 
     [Inject]
-    private void Construct(Main main)
+    private void Construct(Main main, AudioService audioService)
     {
         _main = main;
+        _audioService = audioService;
     }
-
-    void Awake()
-    {
-        rend = GetComponent<Renderer>();
-        rigid = GetComponent<Rigidbody>();
-    }
+    
 
     private void OnTriggerEnter(Collider other)
     {
         GameObject otherGo = other.gameObject;
         int objectLayer = otherGo.layer;
 
-        // Проверяем, входит ли задетый слой в общую маску целей
         if (((1 << objectLayer) & targetLayerMask.value) != 0)
         {
             Debug.Log($"[Пуля] Столкновение с: {otherGo.name} на слое {LayerMask.LayerToName(objectLayer)}");
 
-            // ИСПРАВЛЕНО: Проверяем, является ли этот объект ракетой (через маску из инспектора)
+            SpawnHitEffect();
+            PlayHitSound();
+
             if (((1 << objectLayer) & _rocketLayer.value) != 0)
             {
                 Debug.Log($"[Пуля] Попадание в ракету. Объект {otherGo.name} игнорирует деспавн пули.");
             }
             else
             {
-                // Для всех остальных слоев (например, обычных врагов) — удаляем цель
                 SafeDespawn(otherGo);
             }
             
-            // Саму пулю игрока убираем в любом случае
             SafeDespawn(gameObject);
         }
+    }
+
+    private void SpawnHitEffect()
+    {
+        if (_hitEffectPrefab == null)
+            return;
+
+        LeanPool.Spawn(_hitEffectPrefab, transform.position, transform.rotation);
+    }
+
+    private void PlayHitSound()
+    {
+        _audioService.PlayRandomEnemyHit();
     }
 
     private void SafeDespawn(GameObject go)
@@ -82,21 +96,5 @@ public sealed class Projectile : MonoBehaviour
     public void SetType(WeaponType eType)
     {
         _type = eType;
-
-        if (_main == null)
-        {
-            _main = FindFirstObjectByType<Main>();
-        }
-
-        if (_main == null) return;
-
-        WeaponConfig config = _main.GetWeaponConfig(_type);
-
-        if (config == null) return;
-
-        if (rend != null)
-        {
-            rend.material.color = config.projectileColor;
-        }
     }
 }

@@ -9,11 +9,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3093865460726646026}
-  - component: {fileID: 8424377390539840941}
   - component: {fileID: 6997558440577309661}
   - component: {fileID: 488613920341953093}
+  - component: {fileID: 2578074332172985333}
   m_Layer: 10
-  m_Name: ProjectileHero
+  m_Name: Projectile_Hero_Blaster
   m_TagString: ProjectileHero
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,27 +35,6 @@ Transform:
   - {fileID: 8077442177107519431}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &8424377390539840941
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1843796405803476770}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 10}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &6997558440577309661
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -101,8 +80,30 @@ MonoBehaviour:
   _rocketLayer:
     serializedVersion: 2
     m_Bits: 16384
+  _hitEffectPrefab: {fileID: 715106561643457811, guid: 2703606f3c9819844ad1034e8fe3578a, type: 3}
   rigid: {fileID: 6997558440577309661}
   _type: 1
+--- !u!135 &2578074332172985333
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843796405803476770}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.7
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4481985265271883848
 GameObject:
   m_ObjectHideFlags: 0
@@ -131,7 +132,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3093865460726646026}

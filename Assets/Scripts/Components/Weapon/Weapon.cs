@@ -17,6 +17,9 @@ namespace Components.Weapon
         [Inject]
         private BalanceConfig _balanceConfig; // Динамический баланс из Google Sheets
 
+        [Inject]
+        private DiContainer _container; // Нужен для инжекта заспавненных снарядов
+
         [Header("===== References =====")]
         [Tooltip("Точка (Трансформ), из которой будут физически спавниться снаряды при выстреле.")]
         [SerializeField]
@@ -114,9 +117,9 @@ namespace Components.Weapon
             Projectile projectile = MakeProjectile();
 
             if (projectile != null &&
-                projectile.rigid != null)
+                projectile.Rigid != null)
             {
-                projectile.rigid.linearVelocity = baseVelocity;
+                projectile.Rigid.linearVelocity = baseVelocity;
             }
         }
 
@@ -143,7 +146,7 @@ namespace Components.Weapon
                 Projectile projectile = MakeProjectile();
 
                 if (projectile == null ||
-                    projectile.rigid == null)
+                    projectile.Rigid == null)
                     continue;
 
                 Quaternion rotation =
@@ -151,7 +154,7 @@ namespace Components.Weapon
 
                 projectile.transform.rotation = rotation;
 
-                projectile.rigid.linearVelocity =
+                projectile.Rigid.linearVelocity =
                     rotation * baseVelocity;
             }
         }
@@ -166,6 +169,9 @@ namespace Components.Weapon
                     _config.projectilePrefab,
                     firePoint.position,
                     Quaternion.identity);
+
+            // Прокидываем зависимости Zenject (Main, AudioService и т.д.) в заспавненную пулю
+            _container.InjectGameObject(projectileGo);
 
             Projectile projectile =
                 projectileGo.GetComponent<Projectile>();

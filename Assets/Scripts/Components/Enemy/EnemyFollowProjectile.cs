@@ -3,6 +3,7 @@ using System.Collections;
 using Zenject;
 using Lean.Pool;
 using Components.Player;
+using Components.Enemy;
 
 namespace Components.Weapon
 {
@@ -13,8 +14,15 @@ namespace Components.Weapon
         [SerializeField] private float _speed = 12f;
 
         [Header("Collision Settings")]
-        [Tooltip("Слой, при столкновении с которым пуля взрывается (например, Player).")]
+        [Tooltip("Слой, при столкновении с которым пуля триггерится и взрывается (например, Player).")]
         [SerializeField] private LayerMask _targetLayer;
+
+        [Header("Explosion AoE Settings")]
+        [Tooltip("Радиус уничтожения объектов при взрыве.")]
+        [SerializeField] private float _explosionRadius = 3f;
+        
+        [Tooltip("Слои объектов, которые будут уничтожены/деспавнены при попадании в радиус взрыва (например, Enemy, ProjectileHero, ProjectileEnemy).")]
+        [SerializeField] private LayerMask _layersToDestroyInBlast;
 
         [Header("Visual Settings")]
         [Tooltip("Основной рендерер пули (SpriteRenderer или MeshRenderer), который отключится при взрыве.")]
@@ -31,10 +39,6 @@ namespace Components.Weapon
         [Tooltip("Время (в секундах), на которое включается объект взрыва перед тем, как пуля уйдет в пул.")]
         [SerializeField, Min(0f)] private float _explosionDuration = 1f;
 
-        [Header("Audio Settings")]
-        [Tooltip("Звуковой клип взрыва снаряда.")]
-        [SerializeField] private AudioClip _explosionSound;
-
         private AudioService _audioService;
         private PlayerMove _targetPlayer;
         private Collider _mainCollider;
@@ -47,7 +51,6 @@ namespace Components.Weapon
             _targetPlayer = player;
         }
 
-        // Публичный метод для динамической передачи скорости из таблицы в момент спавна
         public void SetSpeed(float speed)
         {
             _speed = speed;
@@ -91,14 +94,25 @@ namespace Components.Weapon
 
         private void OnTriggerEnter(Collider other)
         {
+            // Если мы уже взрываемся — игнорируем триггер
             if (_isExploding) return;
 
             int objectLayer = other.gameObject.layer;
 
+            // Если коснулись объекта из маски _targetLayer, запускаем взрыв
             if ((_targetLayer.value & (1 << objectLayer)) != 0)
             {
-                StartCoroutine(ExplosionRoutine());
+                ExecuteExplosion();
             }
+        }
+
+        // Публичный метод для цепной детонации
+        public void ExecuteExplosion()
+        {
+            // Проверяем флаг, чтобы корутина не запускалась дважды
+            if (_isExploding) return;
+            
+            StartCoroutine(ExplosionRoutine());
         }
 
         private IEnumerator ExplosionRoutine()
@@ -108,9 +122,9 @@ namespace Components.Weapon
             if (_mainCollider != null) _mainCollider.enabled = false;
             if (_projectileVisual != null) _projectileVisual.SetActive(false);
 
-            if (_audioService != null && _explosionSound != null)
+            if (_audioService != null)
             {
-                _audioService.PlayOneShot(_explosionSound);
+                _audioService.PlayRandomEnemyRocketExplosion();
             }
 
             if (_explosionParticlePrefab != null)
@@ -123,23 +137,76 @@ namespace Components.Weapon
                 _explosionObject.SetActive(true);
             }
 
+            // Ищем и взрываем/деспавним всех вокруг
+            ExplodeAoE();
+
             yield return new WaitForSeconds(_explosionDuration);
 
             if (_explosionObject != null) _explosionObject.SetActive(false);
             
-            SafeDespawn();
+            SafeDespawn(gameObject);
         }
 
-        private void SafeDespawn()
+        private void ExplodeAoE()
         {
-            if (LeanPool.Links.ContainsKey(gameObject))
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position, _explosionRadius, _layersToDestroyInBlast);
+
+            foreach (var hitCollider in hitColliders)
             {
-                LeanPool.Despawn(gameObject);
+                GameObject targetGo = hitCollider.gameObject;
+
+                // Защита от самоподрыва
+                if (targetGo == gameObject) continue;
+
+                // 1. ПРОВЕРКА НА РАКЕТУ (Цепная детонация)
+                var adjacentRocket = targetGo.GetComponent<EnemyFollowProjectile>();
+                if (adjacentRocket != null)
+                {
+                    adjacentRocket.ExecuteExplosion();
+                    continue;
+                }
+
+                // 2. ПРОВЕРКА НА ИГРОКА (Новое)
+                // Ищем скрипт сбора/здоровья игрока на самом объекте или его родителях
+                var player = targetGo.GetComponentInParent<PlayerCollect>();
+                if (player != null)
+                {
+                    // Вызываем публичный/доступный метод нанесения урона у игрока
+                    player.SendMessage("ProcessDamage", SendMessageOptions.DontRequireReceiver);
+                    continue; // Игрока НЕЛЬЗЯ удалять через SafeDespawn! Он должен умереть сам.
+                }
+
+                // 3. ПРОВЕРКА НА ВРАГА
+                var enemy = targetGo.GetComponentInParent<EnemyBase>();
+                if (enemy != null)
+                {
+                    enemy.SendMessage("ProcessDamage", WeaponType.blaster, SendMessageOptions.DontRequireReceiver);
+                    continue; 
+                }
+
+                // 4. Остальные объекты (например, лазеры) просто убираем в пул
+                SafeDespawn(targetGo);
+            }
+        }
+
+        private void SafeDespawn(GameObject go)
+        {
+            if (go == null) return;
+
+            if (LeanPool.Links.ContainsKey(go))
+            {
+                LeanPool.Despawn(go);
             }
             else
             {
-                Destroy(gameObject);
+                Destroy(go);
             }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(transform.position, _explosionRadius);
         }
     }
 }

@@ -19,6 +19,16 @@ namespace Components.Player
         [Tooltip("Пул звуков попадания по врагу (без уничтожения). При каждом вызове выбирается случайный клип.")]
         [SerializeField] private AudioClip[] _enemyHitClips;
 
+        [Header("Enemy Weapon Clips")]
+        [Tooltip("Пул звуков для обычных выстрелов стрелков (StraightDown / TargetPlayer).")]
+        [SerializeField] private AudioClip[] _enemyRegularShootClips;
+
+        [Tooltip("Пул звуков для запуска ракет (RocketLauncher).")]
+        [SerializeField] private AudioClip[] _enemyRocketLaunchClips;
+
+        [Tooltip("Пул звуков для взрыва ракет (EnemyFollowProjectile).")]
+        [SerializeField] private AudioClip[] _enemyRocketExplosionClips;
+
         [Header("Enemy Laser Clips")]
         [Tooltip("Пул звуков перед выстрелом лазера (фаза подготовки). При каждом вызове выбирается случайный клип.")]
         [SerializeField] private AudioClip[] _laserPrepareClips;
@@ -34,7 +44,48 @@ namespace Components.Player
         
         [Tooltip("Пул звуков восстановления щита (при получении +1 единицы щита).")]
         [SerializeField] private AudioClip[] _shieldRegenClips;
-        
+
+        private void Awake()
+        {
+            if (_audioSource == null)
+            {
+                _audioSource = GetComponent<AudioSource>();
+            }
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук взрыва ракеты врага.
+        /// </summary>
+        public void PlayRandomEnemyRocketExplosion()
+        {
+            if (_enemyRocketExplosionClips == null || _enemyRocketExplosionClips.Length == 0) return;
+
+            AudioClip clip = _enemyRocketExplosionClips[Random.Range(0, _enemyRocketExplosionClips.Length)];
+            PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук обычного выстрела врага.
+        /// </summary>
+        public void PlayRandomEnemyRegularShoot()
+        {
+            if (_enemyRegularShootClips == null || _enemyRegularShootClips.Length == 0) return;
+
+            AudioClip clip = _enemyRegularShootClips[Random.Range(0, _enemyRegularShootClips.Length)];
+            PlayOneShot(clip);
+        }
+
+        /// <summary>
+        /// Воспроизводит случайный звук запуска ракеты врага.
+        /// </summary>
+        public void PlayRandomEnemyRocketLaunch()
+        {
+            if (_enemyRocketLaunchClips == null || _enemyRocketLaunchClips.Length == 0) return;
+
+            AudioClip clip = _enemyRocketLaunchClips[Random.Range(0, _enemyRocketLaunchClips.Length)];
+            PlayOneShot(clip);
+        }
+
         /// <summary>
         /// Воспроизводит случайный звук восстановления щита из пула _shieldRegenClips.
         /// </summary>
@@ -110,14 +161,6 @@ namespace Components.Player
 
             AudioClip clip = _laserShootClips[Random.Range(0, _laserShootClips.Length)];
             PlayOneShot(clip);
-        }
-
-        private void Awake()
-        {
-            if (_audioSource == null)
-            {
-                _audioSource = GetComponent<AudioSource>();
-            }
         }
 
         /// <summary>

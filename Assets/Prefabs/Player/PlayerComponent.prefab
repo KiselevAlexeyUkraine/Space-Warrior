@@ -173,7 +173,7 @@ MonoBehaviour:
   playerComponent: {fileID: 5432585683441771137}
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 2560
+    m_Bits: 18944
   powerUpLayer:
     serializedVersion: 2
     m_Bits: 4096

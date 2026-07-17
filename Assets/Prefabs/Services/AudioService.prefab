@@ -58,6 +58,21 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c135bef755c8bcc4daf5dbd19f3e4a9e, type: 3}
   - {fileID: 8300000, guid: 14b64fac96fad5148b8c41675581b527, type: 3}
   - {fileID: 8300000, guid: 716bc7d0fb72581478eab73d93858816, type: 3}
+  _enemyRegularShootClips:
+  - {fileID: 8300000, guid: 2453ab6656ecc754e8e8646c274c25af, type: 3}
+  - {fileID: 8300000, guid: 8d2e0120be6c1674c9bfe4740d25ce48, type: 3}
+  - {fileID: 8300000, guid: d65b4d7647ed5aa48b43612df4842537, type: 3}
+  - {fileID: 8300000, guid: 8b5052f025f406c4e9b070c8773bce5c, type: 3}
+  _enemyRocketLaunchClips:
+  - {fileID: 8300000, guid: f939df3c1c6bc4745a1fd344abd84392, type: 3}
+  - {fileID: 8300000, guid: b079770393972f443801bab60f10ba62, type: 3}
+  - {fileID: 8300000, guid: 21a2511e0234d244fbc92fb9a8dd3ed4, type: 3}
+  - {fileID: 8300000, guid: 4d70cdac8324a104d83ae1daf3c7c59a, type: 3}
+  _enemyRocketExplosionClips:
+  - {fileID: 8300000, guid: d3680bde8b586d94d8a7c7c14ca9e99a, type: 3}
+  - {fileID: 8300000, guid: e473a78739a34c74997a4f0fa5ad88fe, type: 3}
+  - {fileID: 8300000, guid: fce13e2222a9c52468a422b91664a45a, type: 3}
+  - {fileID: 8300000, guid: ab5bb889261ef2146a82c454fa4f9c6a, type: 3}
   _laserPrepareClips:
   - {fileID: 8300000, guid: 6cd13e8d862d1be46a2bcda942330f47, type: 3}
   - {fileID: 8300000, guid: d3d1d4072104b3943ac9230925481969, type: 3}

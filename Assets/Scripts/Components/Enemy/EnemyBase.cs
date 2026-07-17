@@ -76,12 +76,12 @@ namespace Components.Enemy
         [Tooltip("Объекты на враге, которые будут СЛУЧАЙНО выключаться при попадании.")]
         [SerializeField] private GameObject[] objectsToDisable;
         [Tooltip("Объект (например, обломок или взрыв), который временно спавнитcя на месте отстреленной детали.")]
-        [SerializeField] private GameObject hitEffectPrefab;
+        [SerializeField] protected GameObject hitEffectPrefab;
         [Tooltip("Время жизни спавнящегося временного объекта (в секундах).")]
-        [SerializeField] private float effectDestroyDelay = 2f;
+        [SerializeField] protected float effectDestroyDelay = 2f;
 
         // Список для отслеживания еще оставшихся активных деталей
-        private List<GameObject> _activeObjectsList = new List<GameObject>();
+        protected List<GameObject> _activeObjectsList = new List<GameObject>();
 
         [HideInInspector] public bool showingDamage = false;
         [HideInInspector] public float damageDoneTime; 
@@ -315,8 +315,6 @@ namespace Components.Enemy
             Vector3 tempPos = pos;
             tempPos.x = startFromLeft ? -edgeX : edgeX;
 
-            // ИСПРАВЛЕНИЕ: Опускаем врага по Y в видимую зону экрана
-            // Например, случайная высота в верхней половине экрана (от 0 до camHeight минус отступ)
             float padding = bndCheck.radius > 0 ? bndCheck.radius : 1f;
             tempPos.y = Random.Range(0f, bndCheck.camHeight - padding);
             
@@ -497,7 +495,7 @@ namespace Components.Enemy
             }
         }
 
-        private void HandlePartDetachment()
+        protected virtual void HandlePartDetachment()
         {
             if (_activeObjectsList.Count > 0)
             {

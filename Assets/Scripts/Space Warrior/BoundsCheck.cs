@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -61,13 +59,4 @@ public class BoundsCheck : MonoBehaviour
             offRight = offLeft = offUp = offDown = false;
         }
     }
-
-    // Рисует границы в панели Scene с помощью OnDrawGizmos()
-    void OnDrawGizmos()
-    {
-        if (!Application.isPlaying) return;
-        Vector3 boundSize = new Vector3(camWidth * 2, camHeight * 2, 0.1f);
-        Gizmos.DrawWireCube(Vector3.zero, boundSize);
-    }
-    
 }

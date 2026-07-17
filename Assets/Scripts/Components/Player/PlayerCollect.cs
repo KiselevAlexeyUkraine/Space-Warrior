@@ -5,7 +5,7 @@ using Components.Weapon;
 using Zenject;
 using Configs;
 using Lean.Pool;
-using Cysharp.Threading.Tasks; // Подключаем UniTask
+using Cysharp.Threading.Tasks;
 
 namespace Components.Player
 {
@@ -42,8 +42,11 @@ namespace Components.Player
         private float _shieldLevel;
         
         [Header("===== Layers =====")]
-        [Tooltip("Слой, на котором находятся объекты вражеских кораблей.")]
+        [Tooltip("Слой обычных вражеских кораблей (они БУДУТ уничтожаться при таране).")]
         [SerializeField] private LayerMask enemyLayer;
+
+        [Tooltip("Слой особых/крупных врагов, которые НЕ должны уничтожаться при столкновении с игроком.")]
+        [SerializeField] private LayerMask nonDespawnableEnemyLayer;
 
         [Tooltip("Слой, на котором находятся подбираемые бонусы (PowerUps).")]
         [SerializeField] private LayerMask powerUpLayer;
@@ -91,10 +94,6 @@ namespace Components.Player
 
             GameObject triggerObject = other.gameObject;
 
-            // Защита от нескольких OnTriggerEnter за один и тот же объект В ОДНОМ КАДРЕ
-            // (например, если на игроке несколько коллайдеров). НЕ хранится дольше одного кадра,
-            // иначе после возврата объекта в LeanPool и повторного спавна ТОГО ЖЕ инстанса
-            // (тот же GameObject reference) новый подбор навсегда блокировался бы этой проверкой.
             if (triggerObject == _lastTriggerGo && Time.frameCount == _lastTriggerFrame)
                 return;
 
@@ -120,12 +119,20 @@ namespace Components.Player
                 return; 
             }
 
+            // Вариант 1: Враг, который НЕ должен деспавниться
+            if ((nonDespawnableEnemyLayer.value & (1 << objectLayer)) != 0)
+            {
+                ProcessDamage();
+                // Просто наносим урон и выходим, враг остается целым
+                return;
+            }
+
+            // Вариант 2: Обычный враг (урон игроку + деспавн врага)
             if ((enemyLayer.value & (1 << objectLayer)) != 0)
             {
                 ProcessDamage();
 
                 var enemy = triggerObject.GetComponentInParent<Components.Enemy.EnemyBase>();
-
                 if (enemy != null)
                 {
                     SafeDespawn(enemy.gameObject);
@@ -210,10 +217,6 @@ namespace Components.Player
             }
 
             powerUp.AbsorbedBy(gameObject);
-
-            // Гарантированно возвращаем объект в пул после подбора.
-            // Без этого GameObject может остаться активным и висеть в сцене,
-            // блокируя повторный спавн/подбор того же инстанса из LeanPool.
             SafeDespawn(powerUpObject);
         }
 
@@ -258,7 +261,6 @@ namespace Components.Player
                     SetShieldParticleActive(true);
                 }
 
-                // Запуск логики смерти через UniTask
                 if (_shieldLevel < 0 && !isDead)
                 {
                     PlayerDeathAsync().Forget();
@@ -266,52 +268,36 @@ namespace Components.Player
             }
         }
 
-        /// <summary>
-        /// Асинхронный метод смерти через UniTask. Не прерывается при выключении GameObject.
-        /// </summary>
-        /// <summary>
-        /// Асинхронный метод смерти через UniTask. Не прерывается при выключении GameObject.
-        /// </summary>
         private async UniTask PlayerDeathAsync()
         {
             isDead = true;
 
-            // Запоминаем позицию для спавна эффекта до скрытия/удаления
             Vector3 spawnPosition = transform.position;
-
-            // Выключаем щит
             SetShieldParticleActive(false);
 
-            // Отключаем физику текущего объекта на всякий случай
             if (TryGetComponent<Collider>(out var col))
             {
                 col.enabled = false;
             }
 
-            // Полностью гасим целевой playerComponent.
             if (playerComponent != null)
             {
                 playerComponent.SetActive(false);
             }
 
-            // Спавним партикл взрыва на сохраненной позиции
             if (playerDeathEffectPrefab != null)
             {
                 GameObject deathFX = LeanPool.Spawn(playerDeathEffectPrefab, spawnPosition, Quaternion.identity);
                 Destroy(deathFX, playerDeathEffectDestroyDelay);
             }
 
-            // Ожидаем завершения времени жизни партикла
             await UniTask.Delay(System.TimeSpan.FromSeconds(playerDeathEffectDestroyDelay));
 
-            // Открываем страницу поражения. 
-            // Если Open() возвращает UniTask, пишем просто await. Если возвращает void/UniTaskVoid, уберите await и оставьте метод.
             if (_pageSwitcher != null)
             {
                 _pageSwitcher.Open(PageName.Failed);
             }
 
-            // Уничтожаем корневой объект игрока
             if (gameObject != null)
             {
                 Destroy(gameObject);

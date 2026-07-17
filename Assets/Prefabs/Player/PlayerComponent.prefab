@@ -173,7 +173,10 @@ MonoBehaviour:
   playerComponent: {fileID: 5432585683441771137}
   enemyLayer:
     serializedVersion: 2
-    m_Bits: 18944
+    m_Bits: 18432
+  nonDespawnableEnemyLayer:
+    serializedVersion: 2
+    m_Bits: 512
   powerUpLayer:
     serializedVersion: 2
     m_Bits: 4096

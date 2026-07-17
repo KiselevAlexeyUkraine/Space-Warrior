@@ -854,12 +854,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e3f0e41ce4d5364d97a13f804feeb11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnEnemies: 0
+  spawnEnemies: 1
   enemySpawnPerSecond: 0.5
   enemyDefaultPadding: 1.5
-  gridFormationSpawner: {fileID: 0}
+  gridFormationSpawner: {fileID: 963194232}
   requireAllEnemiesToClearWave: 0
-  wavePhases: []
+  wavePhases:
+  - waveIndex: 0
+    enemies:
+    - {fileID: 7654880680303113404, guid: a7c19c5fad084c0428c291d76e98b5bb, type: 3}
+    isInfinite: 0
+    maxEnemyCount: 10
+    powerUpPrefabs: []
+    spawnedCount: 0
+    useLineSpawn: 0
+    lineSpawnEnemies: []
+    lineSpawnInterval: 0
+    lineSpawnDirection: 0
+    lineSpawnStartX: 0
+    lineSpawnStepX: 0
+    lineSpawnCount: 0
+    lineSpawnedInCurrentLine: 0
+    currentLineX: 0
 --- !u!114 &963194230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1157,7 +1173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3189564212117489814, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -35.66
       objectReference: {fileID: 0}
     - target: {fileID: 3189564212117489814, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1340,7 +1356,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 689390540246949307, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 34.85
       objectReference: {fileID: 0}
     - target: {fileID: 689390540246949307, guid: a2ae712686cb88b4a80fb63753bf907b, type: 3}
       propertyPath: m_LocalPosition.z

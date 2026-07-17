@@ -245,7 +245,7 @@ MonoBehaviour:
   _rocketPrefab: {fileID: 1843796405803476770, guid: a4c4d768d0d3d2341a53e98e3de49798, type: 3}
   _rocketFirePoint: {fileID: 3619654431753924435}
   _rotatingPart: {fileID: 689390540246949307}
-  _rotationSpeed: 1
+  _rotationSpeed: 0.5
   _rocketInitialShotDelay: 2
   _rocketMinFireInterval: 4
   _rocketMaxFireInterval: 6
@@ -371,7 +371,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4039838724511414759, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4039838724511414759, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -379,7 +379,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4039838724511414759, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -28.33
+      value: -32.36
       objectReference: {fileID: 0}
     - target: {fileID: 4039838724511414759, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -411,7 +411,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6647304926680453892, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 20
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 6647304926680453892, guid: 94ec12551d97d514a9c495f03a0af57f, type: 3}
       propertyPath: m_LocalPosition.x

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Components.Items;
 using Components.Weapon;
 using Components.Enemy;
 using UnityEngine;
@@ -43,8 +42,7 @@ namespace Level
 
             [Header("Line Spawn (доп. спавн волны со смещением по X)")]
             [Tooltip("Если включено — ДОПОЛНИТЕЛЬНО к обычному случайному спавну этой волны будут " +
-                     "спавниться враги друг за другом: каждый следующий появляется с фиксированной " +
-                     "периодичностью (Line Spawn Interval) и смещением по X (вправо или влево) относительно предыдущего.")]
+                     "спавниться враги друг за другом.")]
             public bool useLineSpawn = false;
 
             [Tooltip("Враги для доп. Line Spawn (случайно выбираются из списка). " +
@@ -92,7 +90,6 @@ namespace Level
 
         [Tooltip("Список: какая волна (по индексу) — каких врагов спавнить. Если для волны нет записи здесь, обычные враги на ней спавниться не будут (только сетка).")]
         [SerializeField] private List<WaveSpawnSettings> wavePhases = new List<WaveSpawnSettings>();
-
 
         private BoundsCheck _boundsCheck;
         private DiContainer _container;
@@ -152,14 +149,12 @@ namespace Level
             _currentPhase.spawnedCount = 0;
             _currentPhase.lineSpawnedInCurrentLine = 0;
 
-            // Обычный случайный спавн — работает всегда
             _spawnLoopActive = true;
 
             Debug.Log($"[Main] Волна {waveIndex}: старт обычного спавна врагов ({_currentPhase.enemies.Length} типов, infinite={_currentPhase.isInfinite}).");
 
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
 
-            // Line Spawn — ДОПОЛНИТЕЛЬНО, если включена галочка
             if (_currentPhase.useLineSpawn)
             {
                 _currentPhase.currentLineX = _currentPhase.lineSpawnStartX;
@@ -218,14 +213,11 @@ namespace Level
             if (gridFormationSpawner != null)
             {
                 completedWaveIndex = gridFormationSpawner.CurrentWaveIndex;
-
-                // Проверяем, был ли этот враг последним в зарегистрированном списке спавнера
                 isLastEnemyInWave = gridFormationSpawner.CheckAndUnregisterLastEnemy(enemy.gameObject);
             }
 
             if (isLastEnemyInWave)
             {
-                // Останавливаем дальнейший спавн врагов (оба режима) для этой волны
                 CancelInvoke(nameof(SpawnEnemy));
                 CancelInvoke(nameof(SpawnEnemyLine));
                 _spawnLoopActive = false;
@@ -240,18 +232,10 @@ namespace Level
 
                     if (targetPrefab != null)
                     {
-                        GameObject powerUpObject = LeanPool.Spawn(
-                            targetPrefab,
-                            enemy.transform.position,
-                            Quaternion.identity);
-
+                        LeanPool.Spawn(targetPrefab, enemy.transform.position, Quaternion.identity);
                         string modeInfo = requireAllEnemiesToClearWave ? "Все враги (включая спавн Main)" : "Сетка";
                         Debug.Log($"<color=yellow>⭐ {modeInfo} волны {completedWaveIndex} зачищена! Заспавнен PowerUp: {targetPrefab.name} ⭐</color>");
                     }
-                }
-                else
-                {
-                    Debug.Log($"[Main] Для волны {completedWaveIndex} PowerUp'ы не назначены в WaveSpawnSettings — спавн пропущен.");
                 }
             }
 
@@ -270,40 +254,45 @@ namespace Level
             }
 
             GameObject[] pool = _currentPhase.enemies;
-
             if (pool == null || pool.Length == 0)
                 return;
 
             int index = UnityEngine.Random.Range(0, pool.Length);
-
             GameObject enemyObject = LeanPool.Spawn(pool[index]);
-
             _container?.InjectGameObject(enemyObject);
 
             float enemyPadding = enemyDefaultPadding;
-
             BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
-
             if (enemyBounds != null)
             {
                 enemyPadding = Mathf.Abs(enemyBounds.radius);
             }
 
-            // Динамическая регистрация в зависимости от состояния галочки в инспекторе
             if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
             {
                 gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
 
+            // --- ИСПРАВЛЕНИЕ СПАВНА ПО ОСИ Y ---
             Vector3 position = Vector3.zero;
-
             float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
             float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
-
             position.x = UnityEngine.Random.Range(xMin, xMax);
-            position.y = _boundsCheck.camHeight + enemyPadding;
+
+            // Вычисляем случайную высоту внутри видимой зоны экрана, а не жестко сверху
+            float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
+            position.y = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
 
             enemyObject.transform.position = position;
+            // ----------------------------------
+
+            // Перезапускаем паттерн движения EnemyBase вручную, так как мы изменили позицию ПОСЛЕ OnEnable
+            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
+            if (enemyScript != null)
+            {
+                // Вызываем приватный метод инициализации через SendMessage, чтобы паттерн подхватил новую точку Y
+                enemyScript.SendMessage("InitMovementPattern", SendMessageOptions.DontRequireReceiver);
+            }
 
             _currentPhase.spawnedCount++;
 
@@ -316,12 +305,6 @@ namespace Level
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
         }
 
-        /// <summary>
-        /// ДОПОЛНИТЕЛЬНЫЙ волновой спавн: враги появляются друг за другом с периодичностью
-        /// lineSpawnInterval, каждый следующий смещается по X на lineSpawnStepX вправо или влево
-        /// (в зависимости от lineSpawnDirection) относительно предыдущего. Высота Y — такая же,
-        /// как и у обычных врагов (верх экрана + отступ).
-        /// </summary>
         public void SpawnEnemyLine()
         {
             if (!spawnEnemies || !_lineSpawnLoopActive || _currentPhase == null || !_currentPhase.useLineSpawn)
@@ -341,9 +324,7 @@ namespace Level
                 return;
 
             int index = UnityEngine.Random.Range(0, pool.Length);
-
             GameObject enemyObject = LeanPool.Spawn(pool[index]);
-
             _container?.InjectGameObject(enemyObject);
 
             if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
@@ -353,24 +334,29 @@ namespace Level
 
             float enemyPadding = enemyDefaultPadding;
             BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
-
             if (enemyBounds != null)
             {
                 enemyPadding = Mathf.Abs(enemyBounds.radius);
             }
 
-            // Ограничиваем X в пределах экрана, чтобы линия не улетала за границы
             float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
             float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
             float clampedX = Mathf.Clamp(_currentPhase.currentLineX, xMin, xMax);
 
-            // Та же высота Y, что и у обычных врагов
-            Vector3 position = new Vector3(
-                clampedX,
-                _boundsCheck.camHeight + enemyPadding,
-                0f);
+            // --- ИСПРАВЛЕНИЕ СПАВНА ПО ОСИ Y ДЛЯ ЛИНИИ ---
+            // Линия спавнится на одной случайной высоте на экране
+            float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
+            float randomLineY = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
 
+            Vector3 position = new Vector3(clampedX, randomLineY, 0f);
             enemyObject.transform.position = position;
+            // ---------------------------------------------
+
+            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
+            if (enemyScript != null)
+            {
+                enemyScript.SendMessage("InitMovementPattern", SendMessageOptions.DontRequireReceiver);
+            }
 
             _currentPhase.spawnedCount++;
             _currentPhase.lineSpawnedInCurrentLine++;
@@ -381,7 +367,6 @@ namespace Level
 
             _currentPhase.currentLineX += xOffset;
 
-            // Если линия закончилась — начинаем новую линию сначала (пока волна активна)
             if (_currentPhase.lineSpawnedInCurrentLine >= _currentPhase.lineSpawnCount)
             {
                 _currentPhase.lineSpawnedInCurrentLine = 0;

@@ -6,7 +6,6 @@ using Components.Effects;
 using Components.Player.Localization;
 using Servise;
 
-
 namespace Installers
 {
     public class ProjectInstaller : MonoInstaller
@@ -18,14 +17,12 @@ namespace Installers
         [SerializeField] private PostProcessingController _postProcessingController;
         [SerializeField] private LocalizationManager _localizationManager;
         [SerializeField] private AnimatorService _animatorService;
-
         
         public override void InstallBindings()
         {
             Container.Bind<SceneService>().FromNew().AsSingle().NonLazy();
 
-            // BalanceConfig реализует IInitializable,
-            Container.BindInterfacesAndSelfTo<BalanceConfig>().FromNew().AsSingle().NonLazy();
+            // ИСПРАВЛЕНО: Строка с BalanceConfig удалена отсюда!
 
             Container.Bind<EventSystem>().FromComponentInNewPrefab(_eventSystem).AsSingle().NonLazy();
             Container.Bind<SettingsService>().FromComponentInNewPrefab(_settingsService).AsSingle().NonLazy();

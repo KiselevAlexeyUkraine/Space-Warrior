@@ -11,6 +11,7 @@ namespace Components.Player
         [Header("Player Clips")]
         [SerializeField] private AudioClip _itemPickupClip;
         [SerializeField] private AudioClip _takeDamageClip;
+        [SerializeField] private AudioClip _levelUpClip; // НОВОЕ: Клип для повышения уровня
         
         [Header("Enemy Clips")]
         [Tooltip("Пул звуков смерти врагов. При каждом вызове выбирается случайный клип.")]
@@ -51,6 +52,14 @@ namespace Components.Player
             {
                 _audioSource = GetComponent<AudioSource>();
             }
+        }
+
+        /// <summary>
+        /// Воспроизводит звук повышения уровня.
+        /// </summary>
+        public void PlayLevelUp()
+        {
+            PlayOneShot(_levelUpClip);
         }
 
         /// <summary>

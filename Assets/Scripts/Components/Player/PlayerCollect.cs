@@ -14,50 +14,40 @@ namespace Components.Player
         private PlayerConfig _playerConfig;
         private AudioService _audioService;
         private BalanceConfig _balanceConfig;
+        private PlayerScore _playerScore;
 
         [Header("===== Weapons =====")]
-        [Tooltip("Список всех оружейных слотов, установленных на корабле игрока.")]
         [SerializeField] private Components.Weapon.Weapon[] _weapons;
 
         [Header("===== Shield Visuals & Particles =====")]
-        [Tooltip("Партикл-система щита, висящая на игроке. Использует Play/Stop.")]
         [SerializeField] private GameObject _shieldParticleSystem;
-
-        [Tooltip("Партикл, спавнящийся при каждом попадании по щиту, пока он жив.")]
         [SerializeField] private GameObject shieldHitEffectPrefab;
         [SerializeField] private float shieldHitEffectDestroyDelay = 2f;
-
-        [Tooltip("Партикл, спавнящийся один раз в момент полного уничтожения щита.")]
         [SerializeField] private GameObject shieldBreakEffectPrefab;
         [SerializeField] private float shieldBreakEffectDestroyDelay = 2f;
 
+        [Header("===== Level Up Visuals =====")]
+        [Tooltip("Партикл повышения уровня, который включается/выключается.")]
+        [SerializeField] private GameObject _levelUpParticleSystem;
+
         [Header("===== Player Death Visuals =====")]
-        [Tooltip("Партикл взрыва самого игрока при смерти (когда здоровье/щиты уходят в минус).")]
         [SerializeField] private GameObject playerDeathEffectPrefab;
         [SerializeField] private float playerDeathEffectDestroyDelay = 3f;
-
-        [Tooltip("Компонент или объект игрока, который нужно скрыть в самом начале смерти.")]
         [SerializeField] private GameObject playerComponent;
 
         private float _shieldLevel;
         
         [Header("===== Layers =====")]
-        [Tooltip("Слой обычных вражеских кораблей (они БУДУТ уничтожаться при таране).")]
         [SerializeField] private LayerMask enemyLayer;
-
-        [Tooltip("Слой особых/крупных врагов, которые НЕ должны уничтожаться при столкновении с игроком.")]
         [SerializeField] private LayerMask nonDespawnableEnemyLayer;
-
-        [Tooltip("Слой, на котором находятся подбираемые бонусы (PowerUps).")]
         [SerializeField] private LayerMask powerUpLayer;
-        
-        [Tooltip("Слой, выделенный под лазерные лучи и лазерные ловушки.")]
         [SerializeField] private LayerMask laserLayer;
 
         private GameObject _lastTriggerGo;
         private int _lastTriggerFrame = -1;
         private PageSwitcher _pageSwitcher;
         private bool isShieldParticleActive;
+        private bool isLevelUpParticleActive;
         private bool isDead; 
 
         [Inject]
@@ -65,12 +55,14 @@ namespace Components.Player
             PageSwitcher pageSwitcher,
             PlayerConfig playerConfig,
             AudioService audioService,
-            BalanceConfig balanceConfig) 
+            BalanceConfig balanceConfig,
+            PlayerScore playerScore) 
         {
             _pageSwitcher = pageSwitcher;
             _playerConfig = playerConfig;
             _audioService = audioService;
             _balanceConfig = balanceConfig;
+            _playerScore = playerScore;
         }
 
         private void Start()
@@ -80,11 +72,50 @@ namespace Components.Player
             isShieldParticleActive = false;
             SetShieldParticleActive(_shieldLevel > 0, forceRestart: true);
 
+            isLevelUpParticleActive = false;
+            SetLevelUpParticleActive(false, forceRestart: true);
+
             ClearWeapons();
 
             if (_weapons.Length > 0)
             {
                 _weapons[0].SetType(_playerConfig.StartWeapon);
+            }
+
+            if (_playerScore != null)
+            {
+                _playerScore.OnLevelChanged += OnPlayerLevelChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_playerScore != null)
+            {
+                _playerScore.OnLevelChanged -= OnPlayerLevelChanged;
+            }
+        }
+
+        private void OnPlayerLevelChanged(int newLevel)
+        {
+            if (isDead) return;
+
+            // Восстанавливаем/обновляем щит согласно новому уровню из баланса
+            ShieldLevel = _balanceConfig.PlayerShield;
+
+            // Включаем партикл повышения уровня
+            SetLevelUpParticleActive(true, forceRestart: true);
+
+            // Автоматически выключаем партикл левел-апа через 2.5 секунды
+            DisableLevelUpParticleAfterDelay(2.5f).Forget();
+        }
+
+        private async UniTaskVoid DisableLevelUpParticleAfterDelay(float delaySeconds)
+        {
+            await UniTask.Delay(System.TimeSpan.FromSeconds(delaySeconds));
+            if (!isDead)
+            {
+                SetLevelUpParticleActive(false);
             }
         }
 
@@ -101,7 +132,6 @@ namespace Components.Player
             _lastTriggerFrame = Time.frameCount;
 
             int objectLayer = triggerObject.layer;
-
             bool isLaser = (laserLayer.value & (1 << objectLayer)) != 0;
 
             try
@@ -119,15 +149,12 @@ namespace Components.Player
                 return; 
             }
 
-            // Вариант 1: Враг, который НЕ должен деспавниться
             if ((nonDespawnableEnemyLayer.value & (1 << objectLayer)) != 0)
             {
                 ProcessDamage();
-                // Просто наносим урон и выходим, враг остается целым
                 return;
             }
 
-            // Вариант 2: Обычный враг (урон игроку + деспавн врага)
             if ((enemyLayer.value & (1 << objectLayer)) != 0)
             {
                 ProcessDamage();
@@ -274,6 +301,7 @@ namespace Components.Player
 
             Vector3 spawnPosition = transform.position;
             SetShieldParticleActive(false);
+            SetLevelUpParticleActive(false);
 
             if (TryGetComponent<Collider>(out var col))
             {
@@ -312,25 +340,28 @@ namespace Components.Player
                 return;
 
             isShieldParticleActive = active;
+            _shieldParticleSystem.SetActive(active);
+        }
 
-            if (active)
-            {
-                _shieldParticleSystem.SetActive(true);
-            }
-            else
-            {
-                _shieldParticleSystem.SetActive(false);
-            }
+        /// <summary>
+        /// Включает или выключает игровой объект партикла повышения уровня.
+        /// </summary>
+        public void SetLevelUpParticleActive(bool active, bool forceRestart = false)
+        {
+            if (_levelUpParticleSystem == null) return;
+
+            if (isLevelUpParticleActive == active && !forceRestart)
+                return;
+
+            isLevelUpParticleActive = active;
+            _levelUpParticleSystem.SetActive(active);
         }
 
         private Components.Weapon.Weapon GetEmptyWeaponSlot()
         {
             foreach (Components.Weapon.Weapon weapon in _weapons)
             {
-                if (weapon.Type == WeaponType.none)
-                {
-                    return weapon;
-                }
+                if (weapon.Type == WeaponType.none) return weapon;
             }
             return null;
         }

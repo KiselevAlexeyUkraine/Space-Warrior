@@ -6,23 +6,44 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using Components.Enemy;
+using Components.Player;
 using Zenject;
 
 public class BalanceConfig : IInitializable
 {
-    private const int LevelsCount = 5;
+    // ИСПРАВЛЕНИЕ: Теперь поддерживается 8 уровней!
+    private const int LevelsCount = 8;
 
     private readonly string googleSheetCsvUrl =
         "https://docs.google.com/spreadsheets/d/1RBHH4UJFLj880j62VlfpAgyu8xRTAwuM/export?format=csv";
 
     private enum TableSection { None, Player, Enemy }
 
+    private PlayerScore _playerScore;
+
+    // Флаг готовности данных
+    public bool IsLoaded { get; private set; }
+
+    [Inject]
+    public void Construct(PlayerScore playerScore)
+    {
+        _playerScore = playerScore;
+    }
+
+    private int CurrentPlayerLevelIndex => _playerScore != null ? Mathf.Clamp(_playerScore.CurrentLevel - 1, 0, LevelsCount - 1) : 0;
+
     #region Player
-    public float PlayerMoveSpeed { get; private set; }
-    public float PlayerFireRate { get; private set; }
-    public float PlayerBulletSpeed { get; private set; }
-    public int PlayerHealth { get; private set; }
-    public int PlayerShield { get; private set; }
+    private readonly float[] _playerMoveSpeedByLevel = new float[LevelsCount];
+    private readonly float[] _playerFireRateByLevel = new float[LevelsCount];
+    private readonly float[] _playerBulletSpeedByLevel = new float[LevelsCount];
+    private readonly int[] _playerHealthByLevel = new int[LevelsCount];
+    private readonly int[] _playerShieldByLevel = new int[LevelsCount];
+
+    public float PlayerMoveSpeed => _playerMoveSpeedByLevel[CurrentPlayerLevelIndex];
+    public float PlayerFireRate => _playerFireRateByLevel[CurrentPlayerLevelIndex];
+    public float PlayerBulletSpeed => _playerBulletSpeedByLevel[CurrentPlayerLevelIndex];
+    public int PlayerHealth => _playerHealthByLevel[CurrentPlayerLevelIndex];
+    public int PlayerShield => _playerShieldByLevel[CurrentPlayerLevelIndex];
     #endregion
 
     #region Enemy Common
@@ -47,12 +68,11 @@ public class BalanceConfig : IInitializable
     private readonly float[] _enemyReflectionCountByLevel = new float[LevelsCount];            
     private readonly float[] _enemyReflectedProjectilesSpeedByLevel = new float[LevelsCount];  
 
-    // ПУБЛИЧНЫЕ МЕТОДЫ ДЛЯ КЛАССА EnemyReflector
     public float GetEnemyReflectionCount(EnemyLevel level) => GetValue(_enemyReflectionCountByLevel, level, "Количество отражений щита");
     public float GetEnemyReflectedProjectileSpeed(EnemyLevel level) => GetValue(_enemyReflectedProjectilesSpeedByLevel, level, "Скорость отраженного снаряда");
     #endregion
 
-    #region Enemy Shooter / Обычные стрелки
+    #region Enemy Shooter
     private readonly float[] _enemyBulletFireRateByLevel = new float[LevelsCount]; 
     private readonly float[] _enemyBulletSpeedByLevel = new float[LevelsCount];    
 
@@ -60,7 +80,7 @@ public class BalanceConfig : IInitializable
     public float GetEnemyBulletSpeed(EnemyLevel level) => GetValue(_enemyBulletSpeedByLevel, level, "Скорость полета выстрела стрелка");
     #endregion
 
-    #region Enemy Rocket / Ракетницы
+    #region Enemy Rocket
     private readonly float[] _enemyRocketFireRateByLevel = new float[LevelsCount]; 
     private readonly float[] _enemyRocketSpeedByLevel = new float[LevelsCount];    
     #endregion
@@ -71,6 +91,7 @@ public class BalanceConfig : IInitializable
 
     public void Initialize()
     {
+        IsLoaded = false;
         LoadAsync().Forget();
     }
 
@@ -90,6 +111,8 @@ public class BalanceConfig : IInitializable
 
         Parse(request.downloadHandler.text);
         LogEnemyBalanceByLevel();
+        
+        IsLoaded = true;
     }
 
     private void Parse(string csv)
@@ -110,14 +133,14 @@ public class BalanceConfig : IInitializable
 
             if (currentSection == TableSection.Player)
             {
-                float? value = ParseFloat(cells[1]);
-                if (value == null) continue;
+                float[] levelValues = ParseLevelValues(cells, 1);
+                if (levelValues == null) continue;
 
-                if (key.Contains("здоров")) PlayerHealth = (int)value.Value;
-                else if (key.Contains("щит")) PlayerShield = (int)value.Value;
-                else if (key.Contains("скорость стрельбы")) PlayerFireRate = value.Value;
-                else if (key.Contains("скорость полета снаряд")) PlayerBulletSpeed = value.Value;
-                else if (key.Contains("скорость движения")) PlayerMoveSpeed = value.Value;
+                if (key.Contains("здоров")) { for(int i = 0; i < LevelsCount; i++) _playerHealthByLevel[i] = (int)levelValues[i]; }
+                else if (key.Contains("щит")) { for(int i = 0; i < LevelsCount; i++) _playerShieldByLevel[i] = (int)levelValues[i]; }
+                else if (key.Contains("скорость стрельбы")) CopyTo(_playerFireRateByLevel, levelValues);
+                else if (key.Contains("скорость полета снаряд")) CopyTo(_playerBulletSpeedByLevel, levelValues);
+                else if (key.Contains("скорость движения")) CopyTo(_playerMoveSpeedByLevel, levelValues);
             }
             else if (currentSection == TableSection.Enemy)
             {
@@ -163,21 +186,17 @@ public class BalanceConfig : IInitializable
         else if (key.Contains("здоров")) CopyTo(_enemyHealthByLevel, levelValues);
         else if (key.Contains("урон от столкновения")) CopyTo(_enemyCollisionDamageByLevel, levelValues);
         else if (key.Contains("восстановление щита")) CopyTo(_enemyShieldRegenIntervalByLevel, levelValues);
-        else if (key.Contains("щит (единицы)")) CopyTo(_enemyShieldByLevel, levelValues); // Уточнено, чтобы не путать с отражениями
+        else if (key.Contains("щит (единицы)")) CopyTo(_enemyShieldByLevel, levelValues); 
         
-        // РЕФЛЕКТОР (Строки 19-20 в таблице)
         else if (key.Contains("количество отражений")) CopyTo(_enemyReflectionCountByLevel, levelValues);
         else if (key.Contains("скорость отраженного снаряда")) CopyTo(_enemyReflectedProjectilesSpeedByLevel, levelValues);
         
-        // Стрелки
         else if (key.Contains("скорость стрельбы") && !key.Contains("раке") && !key.Contains("лазе")) CopyTo(_enemyBulletFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета выстрела")) CopyTo(_enemyBulletSpeedByLevel, levelValues);
 
-        // Ракетницы (Строки 24-25)
         else if (key.Contains("скорость запуска ракеты") || key.Contains("темп запуска ракеты")) CopyTo(_enemyRocketFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета ракеты") || key.Contains("скорость ракеты")) CopyTo(_enemyRocketSpeedByLevel, levelValues);
         
-        // Лазер
         else if (key.Contains("скорострельность лазера")) CopyTo(_enemyLaserFireRateByLevel, levelValues);
     }
 

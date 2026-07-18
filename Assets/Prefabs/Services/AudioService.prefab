@@ -48,6 +48,7 @@ MonoBehaviour:
   _audioSource: {fileID: 4683883187229199120}
   _itemPickupClip: {fileID: 8300000, guid: d6471b9b1d406f84889d49b42291d86e, type: 3}
   _takeDamageClip: {fileID: 8300000, guid: 18cf3162575608047817a8b906403860, type: 3}
+  _levelUpClip: {fileID: 8300000, guid: d6471b9b1d406f84889d49b42291d86e, type: 3}
   _enemyDeathClips:
   - {fileID: 8300000, guid: fb3470d42e98da94db150e534e619733, type: 3}
   - {fileID: 8300000, guid: 7025c012499dd3c4e8aea73ea4f35631, type: 3}

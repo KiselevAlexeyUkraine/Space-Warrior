@@ -273,34 +273,32 @@ namespace Level
                 gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
 
-            // --- ИСПРАВЛЕНИЕ СПАВНА ПО ОСИ Y ---
             Vector3 position = Vector3.zero;
-            float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
-            float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
+            
+            float xMin = -_boundsCheck.camWidth + enemyPadding;
+            float xMax = _boundsCheck.camWidth - enemyPadding;
             position.x = UnityEngine.Random.Range(xMin, xMax);
 
-            // Вычисляем случайную высоту внутри видимой зоны экрана, а не жестко сверху
-            float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
-            position.y = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
+            // Проверяем тип движения у EnemyBase
+            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
+            
+            // Предполагается, что в EnemyBase есть поле/свойство/enum для паттерна, либо проверяем через имя или внутреннюю логику.
+            // Если паттерн горизонтальный (HorizontalEdge), спавним в случайном диапазоне Y экрана
+            if (enemyScript != null && IsHorizontalPattern(enemyScript))
+            {
+                float yMin = -_boundsCheck.camHeight + enemyPadding;
+                float yMax = _boundsCheck.camHeight - enemyPadding;
+                position.y = UnityEngine.Random.Range(yMin, yMax);
+            }
+            else
+            {
+                // Для обычных (летящих вниз) — спавн строго над экраном
+                position.y = _boundsCheck.camHeight + enemyPadding;
+            }
 
             enemyObject.transform.position = position;
-            // ----------------------------------
-
-            // Перезапускаем паттерн движения EnemyBase вручную, так как мы изменили позицию ПОСЛЕ OnEnable
-            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
-            if (enemyScript != null)
-            {
-                // Вызываем приватный метод инициализации через SendMessage, чтобы паттерн подхватил новую точку Y
-                enemyScript.SendMessage("InitMovementPattern", SendMessageOptions.DontRequireReceiver);
-            }
 
             _currentPhase.spawnedCount++;
-
-            if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
-            {
-                _spawnLoopActive = false;
-                return;
-            }
 
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
         }
@@ -339,20 +337,28 @@ namespace Level
                 enemyPadding = Mathf.Abs(enemyBounds.radius);
             }
 
-            float xMin = -_boundsCheck.camWidth - enemyPadding + 2f;
-            float xMax = _boundsCheck.camWidth - enemyPadding - 2f;
+            float xMin = -_boundsCheck.camWidth + enemyPadding;
+            float xMax = _boundsCheck.camWidth - enemyPadding;
             float clampedX = Mathf.Clamp(_currentPhase.currentLineX, xMin, xMax);
 
-            // --- ИСПРАВЛЕНИЕ СПАВНА ПО ОСИ Y ДЛЯ ЛИНИИ ---
-            // Линия спавнится на одной случайной высоте на экране
-            float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
-            float randomLineY = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
-
-            Vector3 position = new Vector3(clampedX, randomLineY, 0f);
-            enemyObject.transform.position = position;
-            // ---------------------------------------------
-
             EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
+            float targetY = 0f;
+
+            // Логика определения Y для спавна линии врагов
+            if (enemyScript != null && IsHorizontalPattern(enemyScript))
+            {
+                float yMin = -_boundsCheck.camHeight + enemyPadding;
+                float yMax = _boundsCheck.camHeight - enemyPadding;
+                targetY = UnityEngine.Random.Range(yMin, yMax);
+            }
+            else
+            {
+                targetY = _boundsCheck.camHeight + enemyPadding;
+            }
+
+            Vector3 position = new Vector3(clampedX, targetY, 0f);
+            enemyObject.transform.position = position;
+
             if (enemyScript != null)
             {
                 enemyScript.SendMessage("InitMovementPattern", SendMessageOptions.DontRequireReceiver);
@@ -380,6 +386,19 @@ namespace Level
             }
 
             Invoke(nameof(SpawnEnemyLine), _currentPhase.lineSpawnInterval);
+        }
+
+        /// <summary>
+        /// Вспомогательный метод определения горизонтального паттерна движения у врага.
+        /// </summary>
+        private bool IsHorizontalPattern(EnemyBase enemy)
+        {
+            // Вариант 1: Если у вас в EnemyBase есть публичное поле/свойство или метод для проверки типа, 
+            // например: return enemy.movementPattern == MovementPattern.HorizontalEdge;
+            
+            // Вариант 2 (Универсальный костыль, если тип скрыт): Проверка по имени префаба/объекта, 
+            // если в названии есть упоминание горизонтального типа.
+            return enemy.gameObject.name.Contains("Horizontal") || enemy.gameObject.name.Contains("Edge");
         }
 
         private void SafeDespawn(GameObject go)

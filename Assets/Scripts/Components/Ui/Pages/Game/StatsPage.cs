@@ -11,6 +11,10 @@ namespace Components.Ui.Pages.Game
         [Header("Status UI Elements")]
         [SerializeField] private Button pauseButton;
         [SerializeField] private TextMeshProUGUI scoreText;
+        
+        [Header("Level System UI (New)")]
+        [SerializeField] private TextMeshProUGUI levelText;      
+        [SerializeField] private Image levelProgressImage;      
 
         private PauseService _pauseService;
         private PageSwitcher _pageSwitcher;
@@ -34,18 +38,28 @@ namespace Components.Ui.Pages.Game
             if (_playerScore != null)
             {
                 _playerScore.OnScoreChanged += UpdateScoreText;
+                _playerScore.OnLevelChanged += UpdateLevelText;
+                _playerScore.OnProgressChanged += UpdateProgressFill;
                 
                 UpdateScoreText(_playerScore.CurrentScore);
+                UpdateLevelText(_playerScore.CurrentLevel);
+                
+                _playerScore.AddScore(0); 
             }
         }
 
         private void OnDestroy()
         {
-            pauseButton?.onClick.RemoveListener(OnPauseClicked);
+            if (pauseButton != null)
+            {
+                pauseButton.onClick.RemoveListener(OnPauseClicked);
+            }
             
             if (_playerScore != null)
             {
                 _playerScore.OnScoreChanged -= UpdateScoreText;
+                _playerScore.OnLevelChanged -= UpdateLevelText;
+                _playerScore.OnProgressChanged -= UpdateProgressFill;
             }
         }
 
@@ -54,6 +68,22 @@ namespace Components.Ui.Pages.Game
             if (scoreText != null)
             {
                 scoreText.text = $"{newScore}";
+            }
+        }
+
+        private void UpdateLevelText(int newLevel)
+        {
+            if (levelText != null)
+            {
+                levelText.text = $"{newLevel}";
+            }
+        }
+
+        private void UpdateProgressFill(float fillAmount)
+        {
+            if (levelProgressImage != null)
+            {
+                levelProgressImage.fillAmount = fillAmount;
             }
         }
 

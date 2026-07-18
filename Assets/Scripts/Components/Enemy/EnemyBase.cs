@@ -42,7 +42,7 @@ namespace Components.Enemy
 
         [Header("Паттерн движения")]
         [Tooltip("Траектория движения врага. Действует ТОЛЬКО если 'Use Grid Formation' выключен — в сетке позиция управляется GridFormationSpawner.")]
-        [SerializeField] protected MovementPattern movementPattern = MovementPattern.StraightDown;
+        public MovementPattern movementPattern = MovementPattern.StraightDown; // Сделано public для Main.cs
 
         [Header("Паттерн: Sine Wave (синусоида)")]
         [Tooltip("Период колебания по X, секунд.")] [SerializeField] protected float waveFrequency = 2f;
@@ -80,7 +80,6 @@ namespace Components.Enemy
         [Tooltip("Время жизни спавнящегося временного объекта (в секундах).")]
         [SerializeField] protected float effectDestroyDelay = 2f;
 
-        // Список для отслеживания еще оставшихся активных деталей
         protected List<GameObject> _activeObjectsList = new List<GameObject>();
 
         [HideInInspector] public bool showingDamage = false;
@@ -246,7 +245,7 @@ namespace Components.Enemy
             }
         }
 
-        private void InitMovementPattern()
+        public void InitMovementPattern()
         {
             _patternBirthTime = Time.time;
 
@@ -315,8 +314,9 @@ namespace Components.Enemy
             Vector3 tempPos = pos;
             tempPos.x = startFromLeft ? -edgeX : edgeX;
 
+            // --- ИСПРАВЛЕНО: Теперь Y рассчитывается от МИНУС camHeight до ПЛЮС camHeight ---
             float padding = bndCheck.radius > 0 ? bndCheck.radius : 1f;
-            tempPos.y = Random.Range(0f, bndCheck.camHeight - padding);
+            tempPos.y = Random.Range(-bndCheck.camHeight + padding, bndCheck.camHeight - padding);
             
             pos = tempPos;
 
@@ -499,7 +499,6 @@ namespace Components.Enemy
         {
             if (_activeObjectsList.Count > 0)
             {
-                // Выбираем РАНДОМНЫЙ индекс из оставшихся элементов списка
                 int randomIndex = Random.Range(0, _activeObjectsList.Count);
                 GameObject targetObj = _activeObjectsList[randomIndex];
 
@@ -508,21 +507,17 @@ namespace Components.Enemy
                     Vector3 partPosition = targetObj.transform.position;
                     Quaternion partRotation = targetObj.transform.rotation;
 
-                    // Выключаем случайный объект
                     targetObj.SetActive(false);
 
-                    // Создаем временный эффект на его месте
                     if (hitEffectPrefab != null)
                     {
                         GameObject spawnedEffect = LeanPool.Spawn(hitEffectPrefab, partPosition, partRotation);
                         StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, effectDestroyDelay));
                     }
 
-                    // Звук попадания
                     _audioService?.PlayRandomEnemyHit();
                 }
         
-                // Удаляем именно этот обработанный объект, чтобы он больше не выбирался рандомом
                 _activeObjectsList.RemoveAt(randomIndex);
             }
         }

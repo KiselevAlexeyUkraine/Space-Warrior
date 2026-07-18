@@ -19,7 +19,6 @@ namespace Installers
         [SerializeField] private PlayerSpawn _playerSpawn;
         [SerializeField] private PauseSwitcher _pauseSwitcher;
 
-
         public override void InstallBindings()
         {
             Container.Bind<Main>().FromInstance(_main).AsSingle().NonLazy();
@@ -27,13 +26,15 @@ namespace Installers
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
             Container.Bind<PlayerScore>().FromNew().AsSingle().NonLazy();
             
+            // ИСПРАВЛЕНО: Теперь BalanceConfig живет на уровне сцены и видит PlayerScore!
+            Container.BindInterfacesAndSelfTo<BalanceConfig>().FromNew().AsSingle().NonLazy();
+            
             Container.Bind<Utils>().FromNew().AsSingle().NonLazy();
             
             Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();
             Container.Bind<PauseSwitcher>().FromComponentInNewPrefab(_pauseSwitcher).AsSingle().NonLazy();
 
-            
             BindPlayer();
         }
 
@@ -43,10 +44,8 @@ namespace Installers
                 _player, _playerSpawn.transform.position, _playerSpawn.transform.rotation, null
             );
           
-            // Оставляем привязку основного компонента
             Container.Bind<PlayerComponent>().FromComponentOn(player).AsSingle().NonLazy();
 
-            // ИСПРАВЛЕНО: Находим дочерний скрипт PlayerMove и биндим его отдельно
             var playerMove = player.GetComponentInChildren<PlayerMove>();
             if (playerMove != null)
             {

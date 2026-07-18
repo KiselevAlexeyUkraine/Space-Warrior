@@ -94,8 +94,8 @@ namespace Components.Weapon
 
         private void OnTriggerEnter(Collider other)
         {
-            // Если мы уже взрываемся — игнорируем триггер
-            if (_isExploding) return;
+            // Если мы уже взрываемся или объект почему-то выключен — игнорируем триггер
+            if (_isExploding || !gameObject.activeInHierarchy) return;
 
             int objectLayer = other.gameObject.layer;
 
@@ -109,8 +109,9 @@ namespace Components.Weapon
         // Публичный метод для цепной детонации
         public void ExecuteExplosion()
         {
-            // Проверяем флаг, чтобы корутина не запускалась дважды
-            if (_isExploding) return;
+            // Проверяем флаг, а также АКТИВНОСТЬ объекта в иерархии сцены.
+            // Если объект НЕ активен, корутину запускать нельзя!
+            if (_isExploding || !gameObject.activeInHierarchy) return;
             
             StartCoroutine(ExplosionRoutine());
         }
@@ -166,14 +167,12 @@ namespace Components.Weapon
                     continue;
                 }
 
-                // 2. ПРОВЕРКА НА ИГРОКА (Новое)
-                // Ищем скрипт сбора/здоровья игрока на самом объекте или его родителях
+                // 2. ПРОВЕРКА НА ИГРОКА
                 var player = targetGo.GetComponentInParent<PlayerCollect>();
                 if (player != null)
                 {
-                    // Вызываем публичный/доступный метод нанесения урона у игрока
                     player.SendMessage("ProcessDamage", SendMessageOptions.DontRequireReceiver);
-                    continue; // Игрока НЕЛЬЗЯ удалять через SafeDespawn! Он должен умереть сам.
+                    continue; // Игрока нельзя удалять через SafeDespawn
                 }
 
                 // 3. ПРОВЕРКА НА ВРАГА

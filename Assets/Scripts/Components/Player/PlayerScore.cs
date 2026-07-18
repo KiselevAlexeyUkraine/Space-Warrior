@@ -9,7 +9,7 @@ namespace Components.Player
         private int _currentScore;
         private int _currentLevel = 1;
         
-        private readonly int[] _levelThresholds = { 1000, 3000, 6000, 10000, 15000, 21000, 28000 };
+        private readonly int[] _levelThresholds = { 1000, 4000, 8000, 12000, 20000, 28000, 40000 };
         
         public event Action<int> OnScoreChanged;
         public event Action<int> OnLevelChanged;

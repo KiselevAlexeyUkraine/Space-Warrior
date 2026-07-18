@@ -105,19 +105,15 @@ MonoBehaviour:
   showDamageDuration: 0.1
   powerUpDropChance: 1
   useGridFormation: 0
-  movementPattern: 4
+  movementPattern: 3
   waveFrequency: 2
   waveWidth: 4
   waveRotY: 45
   diagonalLifeTime: 10
   diagonalEccentricity: 0.6
-  diagonalMinY: -5
-  diagonalMaxY: 5
   swoopLifeTime: 5
   horizontalRandomSide: 1
   horizontalStartFromLeft: 1
-  horizontalMinY: -30
-  horizontalMaxY: 30
   enableBobbing: 1
   visualBobTarget: {fileID: 3371830887840474278}
   bobPositionOffset: 2

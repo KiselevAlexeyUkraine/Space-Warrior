@@ -13,58 +13,23 @@ namespace Level
         [Serializable]
         public class WaveSpawnSettings
         {
-            [Tooltip("Индекс волны из GridFormationSpawner (0 = первая волна), для которой действуют эти враги.")]
             public int waveIndex;
-
-            [Tooltip("Враги, которые будут спавняться на этой волне (случайно выбираются из списка).")]
             public GameObject[] enemies;
-
-            [Tooltip("Если включено — враги спавнятся бесконечно, пока не начнётся следующая волна.")]
             public bool isInfinite = true;
-
-            [Tooltip("Максимальное количество врагов для спавна на этой волне (суммарно, включая линейный спавн, если он включён). Учитывается только если 'Is Infinite' выключен.")]
             [Min(0)] public int maxEnemyCount = 10;
-
-            [Tooltip("PowerUp'ы, которые могут заспавниться после уничтожения ПОСЛЕДНЕГО врага именно этой волны (случайно выбирается один из списка). Если пусто — после этой волны PowerUp не спавнится.")]
             public GameObject[] powerUpPrefabs;
-
             [HideInInspector] public int spawnedCount;
 
-            // ------------------------------------------------------------------
-            // LINE SPAWN — ДОПОЛНИТЕЛЬНЫЙ спавн врагов друг за другом со смещением по X
-            // ------------------------------------------------------------------
-
-            public enum LineSpawnDirection
-            {
-                Right,
-                Left
-            }
+            public enum LineSpawnDirection { Right, Left }
 
             [Header("Line Spawn (доп. спавн волны со смещением по X)")]
-            [Tooltip("Если включено — ДОПОЛНИТЕЛЬНО к обычному случайному спавну этой волны будут " +
-                     "спавниться враги друг за другом.")]
             public bool useLineSpawn = false;
-
-            [Tooltip("Враги для доп. Line Spawn (случайно выбираются из списка). " +
-                     "Если пусто — используется основной список 'Enemies' выше.")]
             public GameObject[] lineSpawnEnemies;
-
-            [Tooltip("Периодичность появления врагов в режиме Line Spawn, в секундах.")]
             [Min(0.01f)] public float lineSpawnInterval = 1f;
-
-            [Tooltip("Направление смещения по X: Right — каждый следующий враг правее предыдущего, Left — левее.")]
             public LineSpawnDirection lineSpawnDirection = LineSpawnDirection.Right;
-
-            [Tooltip("Стартовая позиция по X для первого врага линии.")]
             public float lineSpawnStartX = 0f;
-
-            [Tooltip("Шаг смещения по X между соседними врагами линии.")]
             [Min(0f)] public float lineSpawnStepX = 1.5f;
-
-            [Tooltip("Сколько врагов спавнится в одной линии, прежде чем позиция X сбросится на старт " +
-                     "(линия начнётся заново, пока волна активна).")]
             [Min(1)] public int lineSpawnCount = 5;
-
             [HideInInspector] public int lineSpawnedInCurrentLine;
             [HideInInspector] public float currentLineX;
         }
@@ -72,23 +37,13 @@ namespace Level
         private Dictionary<WeaponType, WeaponConfig> _weaponConfigs;
 
         [Header("Enemy Spawn")]
-        [Tooltip("Если выключено, враги не будут спавниться вообще.")]
         [SerializeField] private bool spawnEnemies = true;
-
-        [Tooltip("Количество врагов в секунду.")]
         [SerializeField] private float enemySpawnPerSecond = 0.5f;
-
-        [Tooltip("Отступ врага от границы экрана.")]
         [SerializeField] private float enemyDefaultPadding = 1.5f;
 
         [Header("Wave-Based Enemy Spawn")]
-        [Tooltip("Ссылка на GridFormationSpawner, чьи волны определяют, какие враги спавнятся сейчас. ОБЯЗАТЕЛЬНО назначить в инспекторе.")]
         [SerializeField] private GridFormationSpawner gridFormationSpawner;
-
-        [Tooltip("Если включено — для завершения волны и дропа PowerUp нужно убить ВСЕХ врагов (и сетку, и тех, кого спавнит Main). Если выключено — учитываются только враги из сетки.")]
         [SerializeField] private bool requireAllEnemiesToClearWave = false;
-
-        [Tooltip("Список: какая волна (по индексу) — каких врагов спавнить. Если для волны нет записи здесь, обычные враги на ней спавниться не будут (только сетка).")]
         [SerializeField] private List<WaveSpawnSettings> wavePhases = new List<WaveSpawnSettings>();
 
         private BoundsCheck _boundsCheck;
@@ -108,15 +63,11 @@ namespace Level
         private void Awake()
         {
             _boundsCheck = GetComponent<BoundsCheck>();
-
-            if (gridFormationSpawner == null)
+            if (gridFormationSpawner != null)
             {
-                Debug.LogWarning("[Main] Grid Formation Spawner не назначен в инспекторе — враги по волнам спавниться не будут.");
-                return;
+                gridFormationSpawner.OnWaveStarted += HandleWaveStarted;
+                gridFormationSpawner.OnAllWavesCompleted += HandleAllWavesCompleted;
             }
-
-            gridFormationSpawner.OnWaveStarted += HandleWaveStarted;
-            gridFormationSpawner.OnAllWavesCompleted += HandleAllWavesCompleted;
         }
 
         private void OnDestroy()
@@ -135,23 +86,14 @@ namespace Level
             _spawnLoopActive = false;
             _lineSpawnLoopActive = false;
 
-            if (!spawnEnemies)
-                return;
+            if (!spawnEnemies) return;
 
             _currentPhase = wavePhases.Find(p => p.waveIndex == waveIndex);
-
-            if (_currentPhase == null || _currentPhase.enemies == null || _currentPhase.enemies.Length == 0)
-            {
-                Debug.Log($"[Main] Для волны {waveIndex} враги не назначены — спавн от Main пропущен.");
-                return;
-            }
+            if (_currentPhase == null || _currentPhase.enemies == null || _currentPhase.enemies.Length == 0) return;
 
             _currentPhase.spawnedCount = 0;
             _currentPhase.lineSpawnedInCurrentLine = 0;
-
             _spawnLoopActive = true;
-
-            Debug.Log($"[Main] Волна {waveIndex}: старт обычного спавна врагов ({_currentPhase.enemies.Length} типов, infinite={_currentPhase.isInfinite}).");
 
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
 
@@ -159,10 +101,6 @@ namespace Level
             {
                 _currentPhase.currentLineX = _currentPhase.lineSpawnStartX;
                 _lineSpawnLoopActive = true;
-
-                Debug.Log($"[Main] Волна {waveIndex}: дополнительно старт LINE-спавна врагов " +
-                          $"(interval={_currentPhase.lineSpawnInterval}, direction={_currentPhase.lineSpawnDirection}).");
-
                 Invoke(nameof(SpawnEnemyLine), _currentPhase.lineSpawnInterval);
             }
         }
@@ -179,34 +117,22 @@ namespace Level
         private void BuildWeaponDictionary(List<WeaponConfig> configs)
         {
             _weaponConfigs = new Dictionary<WeaponType, WeaponConfig>();
-
-            if (configs == null)
-                return;
-
+            if (configs == null) return;
             foreach (WeaponConfig config in configs)
             {
-                if (config == null)
-                    continue;
-
-                _weaponConfigs[config.weaponType] = config;
+                if (config != null) _weaponConfigs[config.weaponType] = config;
             }
         }
 
         public WeaponConfig GetWeaponConfig(WeaponType weaponType)
         {
-            if (_weaponConfigs == null)
-                return null;
-
-            return _weaponConfigs.TryGetValue(weaponType, out WeaponConfig config)
-                ? config
-                : null;
+            if (_weaponConfigs == null) return null;
+            return _weaponConfigs.TryGetValue(weaponType, out WeaponConfig config) ? config : null;
         }
 
         public void ShipDestroyed(EnemyBase enemy)
         {
-            if (enemy == null)
-                return;
-
+            if (enemy == null) return;
             bool isLastEnemyInWave = false;
             int completedWaveIndex = 0;
 
@@ -224,29 +150,19 @@ namespace Level
                 _lineSpawnLoopActive = false;
 
                 WaveSpawnSettings completedPhase = wavePhases.Find(p => p.waveIndex == completedWaveIndex);
-
                 if (completedPhase != null && completedPhase.powerUpPrefabs != null && completedPhase.powerUpPrefabs.Length > 0)
                 {
                     int prefabIndex = UnityEngine.Random.Range(0, completedPhase.powerUpPrefabs.Length);
                     GameObject targetPrefab = completedPhase.powerUpPrefabs[prefabIndex];
-
-                    if (targetPrefab != null)
-                    {
-                        LeanPool.Spawn(targetPrefab, enemy.transform.position, Quaternion.identity);
-                        string modeInfo = requireAllEnemiesToClearWave ? "Все враги (включая спавн Main)" : "Сетка";
-                        Debug.Log($"<color=yellow>⭐ {modeInfo} волны {completedWaveIndex} зачищена! Заспавнен PowerUp: {targetPrefab.name} ⭐</color>");
-                    }
+                    if (targetPrefab != null) LeanPool.Spawn(targetPrefab, enemy.transform.position, Quaternion.identity);
                 }
             }
-
             SafeDespawn(enemy.gameObject);
         }
 
         public void SpawnEnemy()
         {
-            if (!spawnEnemies || !_spawnLoopActive || _currentPhase == null)
-                return;
-
+            if (!spawnEnemies || !_spawnLoopActive || _currentPhase == null) return;
             if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
             {
                 _spawnLoopActive = false;
@@ -254,8 +170,7 @@ namespace Level
             }
 
             GameObject[] pool = _currentPhase.enemies;
-            if (pool == null || pool.Length == 0)
-                return;
+            if (pool == null || pool.Length == 0) return;
 
             int index = UnityEngine.Random.Range(0, pool.Length);
             GameObject enemyObject = LeanPool.Spawn(pool[index]);
@@ -263,51 +178,47 @@ namespace Level
 
             float enemyPadding = enemyDefaultPadding;
             BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
-            if (enemyBounds != null)
-            {
-                enemyPadding = Mathf.Abs(enemyBounds.radius);
-            }
+            if (enemyBounds != null) enemyPadding = Mathf.Abs(enemyBounds.radius);
 
             if (requireAllEnemiesToClearWave && gridFormationSpawner != null)
             {
                 gridFormationSpawner.RegisterAdditionalEnemy(enemyObject);
             }
 
+            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
             Vector3 position = Vector3.zero;
-            
+
             float xMin = -_boundsCheck.camWidth + enemyPadding;
             float xMax = _boundsCheck.camWidth - enemyPadding;
             position.x = UnityEngine.Random.Range(xMin, xMax);
 
-            // Проверяем тип движения у EnemyBase
-            EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
-            
-            // Предполагается, что в EnemyBase есть поле/свойство/enum для паттерна, либо проверяем через имя или внутреннюю логику.
-            // Если паттерн горизонтальный (HorizontalEdge), спавним в случайном диапазоне Y экрана
-            if (enemyScript != null && IsHorizontalPattern(enemyScript))
+            // --- УМНОЕ РАЗДЕЛЕНИЕ СПАВНА ПО Y ---
+            if (enemyScript != null && enemyScript.movementPattern == MovementPattern.HorizontalEdge)
             {
-                float yMin = -_boundsCheck.camHeight + enemyPadding;
-                float yMax = _boundsCheck.camHeight - enemyPadding;
-                position.y = UnityEngine.Random.Range(yMin, yMax);
+                // Для горизонтального паттерна — случайная высота на всем экране на базе BoundsCheck
+                float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
+                position.y = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
             }
             else
             {
-                // Для обычных (летящих вниз) — спавн строго над экраном
+                // Для классических врагов — спавн сверху над экраном
                 position.y = _boundsCheck.camHeight + enemyPadding;
             }
 
             enemyObject.transform.position = position;
 
-            _currentPhase.spawnedCount++;
+            if (enemyScript != null)
+            {
+                enemyScript.SendMessage("InitMovementPattern", SendMessageOptions.DontRequireReceiver);
+            }
 
+            _currentPhase.spawnedCount++;
             Invoke(nameof(SpawnEnemy), 1f / enemySpawnPerSecond);
         }
 
         public void SpawnEnemyLine()
         {
-            if (!spawnEnemies || !_lineSpawnLoopActive || _currentPhase == null || !_currentPhase.useLineSpawn)
-                return;
-
+            if (!spawnEnemies || !_lineSpawnLoopActive || _currentPhase == null || !_currentPhase.useLineSpawn) return;
             if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
             {
                 _lineSpawnLoopActive = false;
@@ -318,8 +229,7 @@ namespace Level
                 ? _currentPhase.lineSpawnEnemies
                 : _currentPhase.enemies;
 
-            if (pool == null || pool.Length == 0)
-                return;
+            if (pool == null || pool.Length == 0) return;
 
             int index = UnityEngine.Random.Range(0, pool.Length);
             GameObject enemyObject = LeanPool.Spawn(pool[index]);
@@ -332,10 +242,7 @@ namespace Level
 
             float enemyPadding = enemyDefaultPadding;
             BoundsCheck enemyBounds = enemyObject.GetComponent<BoundsCheck>();
-            if (enemyBounds != null)
-            {
-                enemyPadding = Mathf.Abs(enemyBounds.radius);
-            }
+            if (enemyBounds != null) enemyPadding = Mathf.Abs(enemyBounds.radius);
 
             float xMin = -_boundsCheck.camWidth + enemyPadding;
             float xMax = _boundsCheck.camWidth - enemyPadding;
@@ -344,12 +251,11 @@ namespace Level
             EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
             float targetY = 0f;
 
-            // Логика определения Y для спавна линии врагов
-            if (enemyScript != null && IsHorizontalPattern(enemyScript))
+            // --- РАЗДЕЛЕНИЕ СПАВНА ПО Y ДЛЯ ЛИНИЙ ---
+            if (enemyScript != null && enemyScript.movementPattern == MovementPattern.HorizontalEdge)
             {
-                float yMin = -_boundsCheck.camHeight + enemyPadding;
-                float yMax = _boundsCheck.camHeight - enemyPadding;
-                targetY = UnityEngine.Random.Range(yMin, yMax);
+                float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
+                targetY = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
             }
             else
             {
@@ -379,41 +285,14 @@ namespace Level
                 _currentPhase.currentLineX = _currentPhase.lineSpawnStartX;
             }
 
-            if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
-            {
-                _lineSpawnLoopActive = false;
-                return;
-            }
-
             Invoke(nameof(SpawnEnemyLine), _currentPhase.lineSpawnInterval);
-        }
-
-        /// <summary>
-        /// Вспомогательный метод определения горизонтального паттерна движения у врага.
-        /// </summary>
-        private bool IsHorizontalPattern(EnemyBase enemy)
-        {
-            // Вариант 1: Если у вас в EnemyBase есть публичное поле/свойство или метод для проверки типа, 
-            // например: return enemy.movementPattern == MovementPattern.HorizontalEdge;
-            
-            // Вариант 2 (Универсальный костыль, если тип скрыт): Проверка по имени префаба/объекта, 
-            // если в названии есть упоминание горизонтального типа.
-            return enemy.gameObject.name.Contains("Horizontal") || enemy.gameObject.name.Contains("Edge");
         }
 
         private void SafeDespawn(GameObject go)
         {
-            if (go == null)
-                return;
-
-            if (LeanPool.Links.ContainsKey(go))
-            {
-                LeanPool.Despawn(go);
-            }
-            else
-            {
-                Destroy(go);
-            }
+            if (go == null) return;
+            if (LeanPool.Links.ContainsKey(go)) LeanPool.Despawn(go);
+            else Destroy(go);
         }
     }
 }

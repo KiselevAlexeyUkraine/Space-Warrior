@@ -187,7 +187,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyOfficer
   speed: 10
   health: 10
-  score: 100
+  score: 2000
   enemyLevel: 4
   debugBalanceValues: 1
   collisionDamage: 1

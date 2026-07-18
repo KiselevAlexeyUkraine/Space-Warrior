@@ -23,9 +23,7 @@ namespace Components.Enemy
     public abstract class EnemyBase : MonoBehaviour
     {
         [Header("Параметры врага (fallback, если BalanceConfig не внедрён)")]
-        [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemySpeed(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
         [SerializeField] protected float speed = 10f;
-        [Tooltip("Реальное значение возьмётся из BalanceConfig.GetEnemyHealth(enemyLevel) в Start(). Это поле используется только как запасной вариант.")]
         [SerializeField] protected float health = 10f;
         [SerializeField] private int score = 100;
 
@@ -38,46 +36,42 @@ namespace Components.Enemy
         public float powerUpDropChance = 1f; 
 
         [Header("Grid Formation (Новое)")]
-        [SerializeField] [Tooltip("Использовать ли логику сетки для этого врага.")] private bool useGridFormation = false;
+        [SerializeField] private bool useGridFormation = false;
 
         [Header("Паттерн движения")]
-        [Tooltip("Траектория движения врага. Действует ТОЛЬКО если 'Use Grid Formation' выключен — в сетке позиция управляется GridFormationSpawner.")]
-        public MovementPattern movementPattern = MovementPattern.StraightDown; // Сделано public для Main.cs
+        [Tooltip("Траектория движения врага.")]
+        public MovementPattern movementPattern = MovementPattern.StraightDown; // Изменено на public, чтобы Main видел тип
 
         [Header("Паттерн: Sine Wave (синусоида)")]
-        [Tooltip("Период колебания по X, секунд.")] [SerializeField] protected float waveFrequency = 2f;
-        [Tooltip("Амплитуда колебания по X.")] [SerializeField] protected float waveWidth = 4f;
-        [Tooltip("Максимальный угол поворота корабля по Y при колебании.")] [SerializeField] protected float waveRotY = 45f;
+        [SerializeField] protected float waveFrequency = 2f;
+        [SerializeField] protected float waveWidth = 4f;
+        [SerializeField] protected float waveRotY = 45f;
 
         [Header("Паттерн: Diagonal Sweep (диагональный пролёт)")]
-        [Tooltip("Время полного пролёта от одного края экрана до другого, секунд.")] [SerializeField] protected float diagonalLifeTime = 10f;
-        [Tooltip("Степень 'выгибания' траектории синусоидой (0 = прямая линия).")] [SerializeField] protected float diagonalEccentricity = 0.6f;
+        [SerializeField] protected float diagonalLifeTime = 10f;
+        [SerializeField] protected float diagonalEccentricity = 0.6f;
 
         [Header("Паттерн: Swoop Curve (дуга вниз)")]
-        [Tooltip("Время прохождения всей дуги, секунд.")] [SerializeField] protected float swoopLifeTime = 5f;
+        [SerializeField] protected float swoopLifeTime = 5f;
 
         [Header("Паттерн: Horizontal Edge (сбоку до края)")]
-        [Tooltip("Если включено — сторона появления (слева/справа) выбирается случайно каждый раз. Если выключено — используется 'Fixed Start Side'.")] [SerializeField] protected bool horizontalRandomSide = true;
-        [Tooltip("Фиксированная сторона появления, если 'Horizontal Random Side' выключен.")] [SerializeField] protected bool horizontalStartFromLeft = true;
+        [SerializeField] protected bool horizontalRandomSide = true;
+        [SerializeField] protected bool horizontalStartFromLeft = true;
 
         [Header("Настройки покачивания (Bobbing Effect)")]
-        [SerializeField] [Tooltip("Включить ли комплексное покачивание (Зависание/Bounce эффекты) для визуальной модели корабля.")] private bool enableBobbing = true;
-        [SerializeField] [Tooltip("Трансформ-объект модели врага (визуальная часть), которую будет покачивать. ВНИМАНИЕ: Не кидайте сюда корневой объект! Создайте дочерний контейнер.")] private Transform visualBobTarget;
-        [SerializeField] [Tooltip("Амплитуда смещения вниз по локальной оси Y.")] private float bobPositionOffset = 0.3f;
-        [SerializeField] [Tooltip("Амплитуда покачивания вращения по осям Y и Z (в градусах).")] private float bobRotationOffset = 15f;
-        [SerializeField] [Tooltip("Время одного цикла покачивания (туда-обратно), в секундах.")] private float bobDuration = 1.5f;
-        [SerializeField] [Tooltip("Тип сглаживания PrimeTween анимации покачивания.")] private PrimeTween.Ease bobEase = PrimeTween.Ease.InOutSine;
-        
+        [SerializeField] private bool enableBobbing = true;
+        [SerializeField] private Transform visualBobTarget;
+        [SerializeField] private float bobPositionOffset = 0.3f;
+        [SerializeField] private float bobRotationOffset = 15f;
+        [SerializeField] private float bobDuration = 1.5f;
+        [SerializeField] private PrimeTween.Ease bobEase = PrimeTween.Ease.InOutSine;
 
         [Header("Visual Effects")]
-        [Tooltip("Префаб частиц при уничтожении всего корабля")] [SerializeField] private ParticleSystem _explosionParticlePrefab;
+        [SerializeField] private ParticleSystem _explosionParticlePrefab;
 
         [Header("Новая механика отстрела деталей")]
-        [Tooltip("Объекты на враге, которые будут СЛУЧАЙНО выключаться при попадании.")]
         [SerializeField] private GameObject[] objectsToDisable;
-        [Tooltip("Объект (например, обломок или взрыв), который временно спавнитcя на месте отстреленной детали.")]
         [SerializeField] protected GameObject hitEffectPrefab;
-        [Tooltip("Время жизни спавнящегося временного объекта (в секундах).")]
         [SerializeField] protected float effectDestroyDelay = 2f;
 
         protected List<GameObject> _activeObjectsList = new List<GameObject>();
@@ -149,25 +143,12 @@ namespace Components.Enemy
         
         protected virtual void ApplyBalanceConfig()
         {
-            if (balanceConfig == null)
-            {
-                if (debugBalanceValues)
-                {
-                    Debug.LogWarning($"[{gameObject.name}] BalanceConfig не внедрён через Zenject — используются значения из инспектора: speed={speed}, health={health}, collisionDamage={collisionDamage}");
-                }
-                return;
-            }
+            if (balanceConfig == null) return;
 
             speed = balanceConfig.GetEnemySpeed(enemyLevel);
             health = balanceConfig.GetEnemyHealth(enemyLevel);
             collisionDamage = balanceConfig.GetEnemyCollisionDamage(enemyLevel);
             _maxHealthCached = health;
-
-            if (debugBalanceValues)
-            {
-                Debug.Log($"[{gameObject.name}] ({GetType().Name}, уровень {enemyLevel}) применены значения баланса: " +
-                          $"Скорость = {speed}, Здоровье = {health}, Урон от столкновения = {collisionDamage}");
-            }
             TriggerBobbingAnimation();
         }
 
@@ -239,13 +220,13 @@ namespace Components.Enemy
             if (useGridFormation) HandleGridMovement();
             else Move();
             
-            if (bndCheck != null && bndCheck.enabled && bndCheck.offDown)
+            if (bndCheck != null && bndCheck.enabled && bndCheck.offDown && movementPattern != MovementPattern.HorizontalEdge)
             {
                 SafeDespawn(gameObject);
             }
         }
 
-        public void InitMovementPattern()
+        private void InitMovementPattern()
         {
             _patternBirthTime = Time.time;
 
@@ -314,12 +295,15 @@ namespace Components.Enemy
             Vector3 tempPos = pos;
             tempPos.x = startFromLeft ? -edgeX : edgeX;
 
-            // --- ИСПРАВЛЕНО: Теперь Y рассчитывается от МИНУС camHeight до ПЛЮС camHeight ---
-            float padding = bndCheck.radius > 0 ? bndCheck.radius : 1f;
-            tempPos.y = Random.Range(-bndCheck.camHeight + padding, bndCheck.camHeight - padding);
+            // Если Main уже рассчитал корректный Y на всем экране, сохраняем его. 
+            // Иначе (fallback) берем случайное значение по всей высоте BoundsCheck
+            if (Mathf.Approximately(tempPos.y, 0f))
+            {
+                float paddingY = bndCheck.radius > 0 ? bndCheck.radius : 1f;
+                tempPos.y = Random.Range(-bndCheck.camHeight + paddingY, bndCheck.camHeight - paddingY);
+            }
             
             pos = tempPos;
-
             _patternHorizontalDirection = startFromLeft ? 1 : -1;
         }
 
@@ -373,12 +357,7 @@ namespace Components.Enemy
         private void MoveDiagonalSweep()
         {
             float u = (Time.time - _patternBirthTime) / diagonalLifeTime;
-
-            if (u > 1)
-            {
-                SafeDespawn(gameObject);
-                return;
-            }
+            if (u > 1) { SafeDespawn(gameObject); return; }
 
             u = u + diagonalEccentricity * Mathf.Sin(u * Mathf.PI * 2);
             pos = (1 - u) * _patternP0 + u * _patternP1;
@@ -386,13 +365,9 @@ namespace Components.Enemy
 
         private void MoveSwoopCurve()
         {
+            // --- МЕТОД ПОЛНОСТЬЮ ВОССТАНОВЛЕН И ИСПРАВЛЕН ---
             float u = (Time.time - _patternBirthTime) / swoopLifeTime;
-
-            if (u > 1)
-            {
-                SafeDespawn(gameObject);
-                return;
-            }
+            if (u > 1) { SafeDespawn(gameObject); return; }
 
             u = u - 0.2f * Mathf.Sin(u * Mathf.PI * 2);
 
@@ -446,17 +421,12 @@ namespace Components.Enemy
         protected virtual void OnTriggerEnter(Collider other)
         {
             if (notifiedOfDestruction) return;
-
             GameObject otherGo = other.gameObject;
             
             if (otherGo.CompareTag("ProjectileHero"))
             {
                 Projectile p = otherGo.GetComponent<Projectile>();
-                if (p != null)
-                {
-                    ProcessDamage(p.type);
-                }
-                
+                if (p != null) ProcessDamage(p.type);
                 SafeDespawn(otherGo);
             }
         }
@@ -468,30 +438,17 @@ namespace Components.Enemy
             WeaponConfig config = main.GetWeaponConfig(weaponType);
             float damage = config != null ? config.damageOnHit : 1f;
 
-            if (health > 1)
-            {
-                HandlePartDetachment();
-            }
+            if (health > 1) HandlePartDetachment();
 
             health -= damage;
 
-            if (health <= 0)
+            if (health <= 0 && !notifiedOfDestruction)
             {
-                if (!notifiedOfDestruction)
-                {
-                    notifiedOfDestruction = true;
-
-                    if (_explosionParticlePrefab != null)
-                    {
-                        LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
-                    }
-                    
-                    _audioService?.PlayRandomEnemyDeath();
-
-                    _playerScore?.AddScore(score);
-            
-                    main.ShipDestroyed(this);
-                }
+                notifiedOfDestruction = true;
+                if (_explosionParticlePrefab != null) LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
+                _audioService?.PlayRandomEnemyDeath();
+                _playerScore?.AddScore(score);
+                main.ShipDestroyed(this);
             }
         }
 
@@ -506,7 +463,6 @@ namespace Components.Enemy
                 {
                     Vector3 partPosition = targetObj.transform.position;
                     Quaternion partRotation = targetObj.transform.rotation;
-
                     targetObj.SetActive(false);
 
                     if (hitEffectPrefab != null)
@@ -514,10 +470,8 @@ namespace Components.Enemy
                         GameObject spawnedEffect = LeanPool.Spawn(hitEffectPrefab, partPosition, partRotation);
                         StartCoroutine(DespawnEffectAfterDelay(spawnedEffect, effectDestroyDelay));
                     }
-
                     _audioService?.PlayRandomEnemyHit();
                 }
-        
                 _activeObjectsList.RemoveAt(randomIndex);
             }
         }
@@ -531,15 +485,8 @@ namespace Components.Enemy
         protected void SafeDespawn(GameObject go)
         {
             if (go == null) return;
-
-            if (LeanPool.Links.ContainsKey(go))
-            {
-                LeanPool.Despawn(go);
-            }
-            else
-            {
-                Destroy(go);
-            }
+            if (LeanPool.Links.ContainsKey(go)) LeanPool.Despawn(go);
+            else Destroy(go);
         }
     }
 }

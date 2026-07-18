@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AleksKisliy/Level 3.unity
     guid: 96a7fa630bbbbb9479a1bf75b76baad5
+  - enabled: 1
+    path: Assets/Scenes/AleksKisliy/Level 4.unity
+    guid: 8cda06385070c1646bafcd15b5b65f8f
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

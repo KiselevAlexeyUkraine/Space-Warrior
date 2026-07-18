@@ -11,8 +11,8 @@ using Zenject;
 
 public class BalanceConfig : IInitializable
 {
-    // ИСПРАВЛЕНИЕ: Теперь поддерживается 8 уровней!
-    private const int LevelsCount = 8;
+    // ИСПРАВЛЕНИЕ: Теперь поддерживается 10 уровней для характеристик из таблицы!
+    private const int LevelsCount = 10;
 
     private readonly string googleSheetCsvUrl =
         "https://docs.google.com/spreadsheets/d/1RBHH4UJFLj880j62VlfpAgyu8xRTAwuM/export?format=csv";
@@ -142,7 +142,7 @@ public class BalanceConfig : IInitializable
                 else if (key.Contains("скорость полета снаряд")) CopyTo(_playerBulletSpeedByLevel, levelValues);
                 else if (key.Contains("скорость движения")) CopyTo(_playerMoveSpeedByLevel, levelValues);
             }
-            else if (currentSection == TableSection.Enemy)
+            else if (currentSection == TableSection.Enemy) // ИСПРАВЛЕНО: Теперь тут правильный оператор ==
             {
                 if (cells.Count < 3) continue;
                 string paramKey = cells[1].Trim().Trim('"').ToLower();

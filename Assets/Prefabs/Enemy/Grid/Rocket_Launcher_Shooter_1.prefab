@@ -153,9 +153,9 @@ MonoBehaviour:
   _firePoint: {fileID: 9056495127113653807}
   _rotatingPart: {fileID: 6787135152942368556}
   _rotationSpeed: 1
-  _initialShotDelay: 1
-  _minFireInterval: 2
-  _maxFireInterval: 4
+  _initialShotDelay: 3
+  _minFireInterval: 4
+  _maxFireInterval: 10
 --- !u!1 &6584488610056242083
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,7 +9,9 @@ namespace Components.Player
         private int _currentScore;
         private int _currentLevel = 1;
         
-        private readonly int[] _levelThresholds = { 1000, 4000, 8000, 12000, 20000, 28000, 40000 };
+        // РАБОТАЕТ КАК РАНЬШЕ: Пороги очков жестко заданы в коде.
+        // Для прокачки до 10 уровня нам нужно ровно 9 порогов перехода (на 2, 3 ... 10 уровни).
+        private readonly int[] _levelThresholds = { 1000, 4000, 8000, 12000, 20000, 28000, 40000, 60000, 90000 };
         
         public event Action<int> OnScoreChanged;
         public event Action<int> OnLevelChanged;
@@ -67,7 +69,7 @@ namespace Components.Player
                     _currentLevel++;
                     OnLevelChanged?.Invoke(_currentLevel);
                     
-                    // НОВОЕ: Проигрываем звук повышения уровня при каждом апе!
+                    // Проигрываем звук повышения уровня при каждом апе!
                     if (_audioService != null)
                     {
                         _audioService.PlayLevelUp();

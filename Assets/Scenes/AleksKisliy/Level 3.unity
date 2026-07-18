@@ -921,7 +921,7 @@ MonoBehaviour:
     lineSpawnCount: 0
     lineSpawnedInCurrentLine: 0
     currentLineX: 0
-  - waveIndex: 6
+  - waveIndex: 5
     enemies:
     - {fileID: 7654880680303113404, guid: c19842003282a934f9094472a37a16b6, type: 3}
     - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
@@ -933,7 +933,7 @@ MonoBehaviour:
     - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
     - {fileID: 7654880680303113404, guid: 21c3c1817ac994c478a3c916e7d31ff7, type: 3}
     isInfinite: 0
-    maxEnemyCount: 15
+    maxEnemyCount: 30
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
     spawnedCount: 0

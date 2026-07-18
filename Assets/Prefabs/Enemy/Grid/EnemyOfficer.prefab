@@ -225,7 +225,7 @@ MonoBehaviour:
   _shieldHitEffectDestroyDelay: 2
   _shieldBreakEffectPrefab: {fileID: 6887125505885866370, guid: fe9129abf7f1342418f83ef762669c16, type: 3}
   _shieldBreakEffectDestroyDelay: 2
-  _maxShieldLevel: 4
+  _maxShieldLevel: 20
   _shieldRegenIntervalSeconds: 15
   _shieldRotationsPerSecond: 0.1
   _reflectedProjectilePrefab: {fileID: 1843796405803476770, guid: c273c771c70bf8d409661f18bfea0f42, type: 3}
@@ -247,8 +247,8 @@ MonoBehaviour:
   _rotatingPart: {fileID: 689390540246949307}
   _rotationSpeed: 0.5
   _rocketInitialShotDelay: 2
-  _rocketMinFireInterval: 4
-  _rocketMaxFireInterval: 6
+  _rocketMinFireInterval: 6
+  _rocketMaxFireInterval: 10
 --- !u!135 &663989653123084350
 SphereCollider:
   m_ObjectHideFlags: 0

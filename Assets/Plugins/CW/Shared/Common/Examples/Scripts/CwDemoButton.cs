@@ -191,7 +191,7 @@ namespace CW.Common
 
 			if (index >= 0)
 			{
-				if (UnityEngine.SceneManagement.SceneManager.GetSceneByBuildIndex(index).handle != scene.handle)
+				if (UnityEngine.SceneManagement.SceneManager.GetSceneByBuildIndex(index).path != scene.path)
 				{
 					return -1;
 				}

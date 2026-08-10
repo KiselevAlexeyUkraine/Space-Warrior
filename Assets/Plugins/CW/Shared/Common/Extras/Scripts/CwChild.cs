@@ -10,19 +10,6 @@ namespace CW.Common
 			bool HasChild(CwChild child);
 		}
 
-		[ContextMenu("Destroy GameObject If Invalid All")]
-		public void DestroyGameObjectIfInvalidAll()
-		{
-			if (transform.parent != null)
-			{
-				foreach (var siblings in transform.parent.GetComponentsInChildren<CwChild>())
-				{
-					siblings.DestroyGameObjectIfInvalid();
-				}
-			}
-		}
-
-		[ContextMenu("Destroy GameObject If Invalid")]
 		public void DestroyGameObjectIfInvalid()
 		{
 			var parent = GetParent();

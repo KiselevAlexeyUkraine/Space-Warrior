@@ -1,12 +1,4 @@
-﻿#if UNITY_2021_3 && !(UNITY_2021_3_0 || UNITY_2021_3_1 || UNITY_2021_3_2 || UNITY_2021_3_3 || UNITY_2021_3_4 || UNITY_2021_3_5 || UNITY_2021_3_6 || UNITY_2021_3_7 || UNITY_2021_3_8 || UNITY_2021_3_9 || UNITY_2021_3_10 || UNITY_2021_3_11 || UNITY_2021_3_12 || UNITY_2021_3_13 || UNITY_2021_3_14 || UNITY_2021_3_15 || UNITY_2021_3_16 || UNITY_2021_3_17)
-	#define CW_HAS_NEW_FIND
-#elif UNITY_2022_2 && !(UNITY_2022_2_0 || UNITY_2022_2_1 || UNITY_2022_2_2 || UNITY_2022_2_3 || UNITY_2022_2_4)
-	#define CW_HAS_NEW_FIND
-#elif UNITY_2023_1_OR_NEWER
-	#define CW_HAS_NEW_FIND
-#endif
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using EventSystem = UnityEngine.EventSystems.EventSystem;
@@ -29,9 +21,6 @@ namespace CW.Common
 
 		private static int uniqueSeed;
 
-		private static Mesh quadMesh;
-		private static bool quadMeshSet;
-
 		static CwHelper()
 		{
 			Camera.onPreRender += (camera) =>
@@ -53,97 +42,6 @@ namespace CW.Common
 				{
 					if (OnCameraPostRender != null) OnCameraPostRender(camera);
 				};
-		}
-
-		public static bool IsSRP
-		{
-			get
-			{
-				return UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null;
-			}
-		}
-
-		public static bool IsBIRP
-		{
-			get
-			{
-				return UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null;
-			}
-		}
-
-		public static bool IsURP
-		{
-			get
-			{
-				var crp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
-
-				if (crp != null)
-				{
-					var title = crp.GetType().ToString();
-
-					if (title.Contains("Universal") == true)
-					{
-						return true;
-					}
-				}
-
-				return false;
-			}
-		}
-
-		public static bool IsHDRP
-		{
-			get
-			{
-				var crp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
-
-				if (crp != null)
-				{
-					var title = crp.GetType().ToString();
-
-					if (title.Contains("HighDefinition") == true)
-					{
-						return true;
-					}
-				}
-
-				return false;
-			}
-		}
-
-		public static T FindAnyObjectByType<T>(bool includeInactive = false)
-			where T : Object
-		{
-#if CW_HAS_NEW_FIND
-			return Object.FindAnyObjectByType<T>(includeInactive == true ? FindObjectsInactive.Include : FindObjectsInactive.Exclude);
-#else
-			return Object.FindObjectOfType<T>(includeInactive);
-#endif
-		}
-
-		public static T[] FindObjectsByType<T>()
-			where T : Object
-		{
-#if CW_HAS_NEW_FIND
-			return Object.FindObjectsByType<T>(FindObjectsSortMode.None);
-#else
-			return Object.FindObjectsOfType<T>();
-#endif
-		}
-
-		public static Mesh GetQuadMesh()
-		{
-			if (quadMeshSet == false)
-			{
-				var gameObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
-
-				quadMeshSet = true;
-				quadMesh    = gameObject.GetComponent<MeshFilter>().sharedMesh;
-
-				Object.DestroyImmediate(gameObject);
-			}
-
-			return quadMesh;
 		}
 
 		public static T GetOrAddComponent<T>(GameObject gameObject, bool recordUndo = true)
@@ -610,7 +508,7 @@ namespace CW.Common
 			// Auto attach to canvas?
 			if (parent == null || parent.GetComponentInParent<Canvas>() == null)
 			{
-				var canvas = FindAnyObjectByType<Canvas>();
+				var canvas = Object.FindObjectOfType<Canvas>();
 
 				if (canvas == null)
 				{
@@ -623,7 +521,7 @@ namespace CW.Common
 					// Make event system?
 					if (EventSystem.current == null)
 					{
-#if ENABLE_INPUT_SYSTEM && __INPUTSYSTEM__
+#if ENABLE_INPUT_SYSTEM
 						new GameObject("EventSystem", typeof(EventSystem), typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
 #else
 						new GameObject("EventSystem", typeof(EventSystem), typeof(UnityEngine.EventSystems.StandaloneInputModule));
@@ -751,7 +649,7 @@ namespace CW.Common
 				}
 
 				var desc          = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32, 0);
-				var renderTexture = CwRenderTextureManager.GetTemporary(desc, "CwHelper GetReadableCopy");
+				var renderTexture = RenderTexture.GetTemporary(desc);
 
 				newTexture = new Texture2D(width, height, format, mipMaps, false);
 
@@ -761,7 +659,7 @@ namespace CW.Common
 					newTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
 				EndActive();
 
-				CwRenderTextureManager.ReleaseTemporary(renderTexture);
+				RenderTexture.ReleaseTemporary(renderTexture);
 
 				newTexture.Apply();
 			}
@@ -778,53 +676,6 @@ namespace CW.Common
 
 	public static partial class CwHelper
 	{
-		private static Material cachedShapeOutline;
-
-		private static readonly int _CW_ShapeTex     = Shader.PropertyToID("_CW_ShapeTex");
-		private static readonly int _CW_ShapeCoords  = Shader.PropertyToID("_CW_ShapeCoords");
-		private static readonly int _CW_ShapeChannel = Shader.PropertyToID("_CW_ShapeChannel");
-		private static readonly int _CW_ShapeColor   = Shader.PropertyToID("_CW_ShapeColor");
-
-		public static void DrawShapeOutline(Texture shapeTexture, int shapeChannel, Matrix4x4 shapeMatrix)
-		{
-			DrawShapeOutline(shapeTexture, shapeChannel, shapeMatrix, new Rect(0, 0, 1, 1), Color.white);
-		}
-
-		public static void DrawShapeOutline(Texture shapeTexture, int shapeChannel, Matrix4x4 shapeMatrix, Color color)
-		{
-			DrawShapeOutline(shapeTexture, shapeChannel, shapeMatrix, new Rect(0, 0, 1, 1), color);
-		}
-
-		public static void DrawShapeOutline(Texture shapeTexture, int shapeChannel, Matrix4x4 shapeMatrix, Rect rect, Color color)
-		{
-			DrawShapeOutline(shapeTexture, shapeChannel, shapeMatrix, new Vector4(rect.xMin, rect.yMin, rect.xMax, rect.yMax), color);
-		}
-
-		public static void DrawShapeOutline(Texture shapeTexture, int shapeChannel, Matrix4x4 shapeMatrix, Vector4 coords, Color color)
-		{
-			if (shapeTexture != null)
-			{
-				if (cachedShapeOutline == null)
-				{
-					cachedShapeOutline = CreateTempMaterial("Shape Outline", "Hidden/CW/ShapeOutline");
-				}
-
-				var channel = Vector4.zero;
-
-				channel[shapeChannel] = 1.0f;
-
-				cachedShapeOutline.SetTexture(_CW_ShapeTex, shapeTexture);
-				cachedShapeOutline.SetVector(_CW_ShapeChannel, channel);
-				cachedShapeOutline.SetVector(_CW_ShapeCoords, coords);
-				cachedShapeOutline.SetColor(_CW_ShapeColor, color);
-
-				if (cachedShapeOutline.SetPass(0) == true)
-				{
-					Graphics.DrawMeshNow(GetQuadMesh(), shapeMatrix);
-				}
-			}
-		}
-
 		public static void ClearSelection()
 		{
 			Selection.objects = new Object[0];

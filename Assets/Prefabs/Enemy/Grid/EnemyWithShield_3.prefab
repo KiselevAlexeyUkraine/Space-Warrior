@@ -99,7 +99,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.EnemyWithShield
   speed: 70
   health: 1
-  score: 300
+  score: 400
   enemyLevel: 2
   debugBalanceValues: 1
   collisionDamage: 1

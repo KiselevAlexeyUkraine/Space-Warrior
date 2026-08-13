@@ -7,6 +7,7 @@ namespace Components.Player
     {
         public event Action OnPlay; 
         public event Action OnPause; 
+        public event Action OnLevelComplete; 
         
         public bool IsPaused { get; private set; }
 
@@ -14,6 +15,7 @@ namespace Components.Player
         {
             OnPlay = null;
             OnPause = null;
+            OnLevelComplete = null;
             
             IsPaused = false;
             Time.timeScale = 1f;
@@ -47,6 +49,18 @@ namespace Components.Player
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
             Time.timeScale = 0f;
+        }
+
+        /// <summary>
+        /// Вызывается при прохождении уровня. Освобождает курсор для UI, но НЕ останавливает время.
+        /// </summary>
+        public void LevelComplete()
+        {
+            OnLevelComplete?.Invoke();
+            IsPaused = false;
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+            Time.timeScale = 1f; // Время продолжает идти
         }
     }
 }

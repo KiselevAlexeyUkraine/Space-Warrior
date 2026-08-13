@@ -26,7 +26,7 @@ namespace Installers
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
             Container.Bind<PlayerScore>().FromNew().AsSingle().NonLazy();
             
-            // ИСПРАВЛЕНО: Теперь BalanceConfig живет на уровне сцены и видит PlayerScore!
+            // BalanceConfig живет на уровне сцены и видит PlayerScore
             Container.BindInterfacesAndSelfTo<BalanceConfig>().FromNew().AsSingle().NonLazy();
             
             Container.Bind<Utils>().FromNew().AsSingle().NonLazy();
@@ -46,6 +46,7 @@ namespace Installers
           
             Container.Bind<PlayerComponent>().FromComponentOn(player).AsSingle().NonLazy();
 
+            // Привязка PlayerMove
             var playerMove = player.GetComponentInChildren<PlayerMove>();
             if (playerMove != null)
             {
@@ -54,6 +55,17 @@ namespace Installers
             else
             {
                 Debug.LogError("[GameInstaller] Компонент PlayerMove не найден в дочерних объектах префаба игрока!", this);
+            }
+
+            // Привязка PlayerCollect
+            var playerCollect = player.GetComponentInChildren<PlayerCollect>();
+            if (playerCollect != null)
+            {
+                Container.Bind<PlayerCollect>().FromInstance(playerCollect).AsSingle().NonLazy();
+            }
+            else
+            {
+                Debug.LogWarning("[GameInstaller] Компонент PlayerCollect не найден в дочерних объектах префаба игрока!", this);
             }
         }
     }

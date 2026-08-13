@@ -49,6 +49,8 @@ namespace Components.Ui.Pages.Game
         private SceneService _sceneService;
         private LocalizationManager _localizationManager;
         private PlayerComponent _playerComponent;
+        private PlayerMove _playerMove;
+        private PlayerCollect _playerCollect;
         private AnimatorService _animatorService;
         private DiContainer _container; 
 
@@ -62,19 +64,27 @@ namespace Components.Ui.Pages.Game
             SceneService sceneService, 
             LocalizationManager localizationManager,
             AnimatorService animatorService,
-            DiContainer container) 
+            DiContainer container,
+            [InjectOptional] PlayerMove playerMove,
+            [InjectOptional] PlayerCollect playerCollect) 
         {
             _sceneService = sceneService;
             _localizationManager = localizationManager;
             _animatorService = animatorService;
             _container = container; 
-            
+            _playerMove = playerMove;
+            _playerCollect = playerCollect;
+
             OnOpen += () =>
             {
                 pauseSwitcher.enabled = false;
-                pauseService.Pause();
+                
+                // Вызываем прохождение уровня (без остановки Time.timeScale)
+                pauseService.LevelComplete();
+                
                 TextsUpdate();
 
+                // Извлекаем PlayerComponent при необходимости
                 if (_playerComponent == null && _container != null)
                 {
                     try
@@ -87,14 +97,43 @@ namespace Components.Ui.Pages.Game
                     }
                 }
 
+                // Пытаемся дополучить Move/Collect, если они не заинжектились сразу
+                if (_playerMove == null && _container != null)
+                {
+                    try { _playerMove = _container.Resolve<PlayerMove>(); } catch { }
+                }
+
+                if (_playerCollect == null && _container != null)
+                {
+                    try { _playerCollect = _container.Resolve<PlayerCollect>(); } catch { }
+                }
+
+                // -------------------------------------------------------------
+                // 1. ОТКЛЮЧЕНИЕ УПРАВЛЕНИЯ, СБОРА И ОРУЖИЯ
+                // -------------------------------------------------------------
+                if (_playerMove != null)
+                {
+                    _playerMove.enabled = false;
+                    Debug.Log("<color=orange>[CompletePage] PlayerMove выключен.</color>");
+                }
+
+                if (_playerCollect != null)
+                {
+                    _playerCollect.enabled = false;
+                    Debug.Log("<color=orange>[CompletePage] PlayerCollect выключен.</color>");
+                }
+
                 if (_playerComponent != null)
                 {
-                    // 1. Выключаем ограничения границ экрана
+                    // Отключаем BoundsCheck
                     if (_playerComponent.BoundsCheck != null)
                     {
                         _playerComponent.BoundsCheck.enabled = false;
                         Debug.Log("<color=yellow>[CompletePage] BoundsCheck выключен.</color>");
                     }
+
+                    // Отключаем все компоненты стрельбы/оружия, прикрепленные к игроку
+                    DisablePlayerWeapons(_playerComponent.gameObject);
 
                     // 2. Включаем победную Cinemachine камеру и запоминаем стартовый FOV
                     float initialFov = 60f;
@@ -154,15 +193,48 @@ namespace Components.Ui.Pages.Game
             };
         }
 
+        /// <summary>
+        /// Находит и деактивирует все объекты или скрипты оружия у игрока.
+        /// </summary>
+        private void DisablePlayerWeapons(GameObject playerGo)
+        {
+            if (playerGo == null) return;
+
+            // Отключаем все скрипты, содержащие "Weapon", "Gun", "Shoot" или "Attack" в имени класса
+            var allMonoBehaviours = playerGo.GetComponentsInChildren<MonoBehaviour>(true);
+            foreach (var script in allMonoBehaviours)
+            {
+                if (script == null) continue;
+
+                string typeName = script.GetType().Name.ToLower();
+                if (typeName.Contains("weapon") || typeName.Contains("gun") || typeName.Contains("shoot") || typeName.Contains("attack"))
+                {
+                    script.enabled = false;
+                    Debug.Log($"<color=red>[CompletePage] Скрипт оружия {script.GetType().Name} деактивирован.</color>");
+                }
+            }
+
+            // Дополнительно ищем дочерние объекты-контейнеры оружия и выключаем SetActive(false)
+            foreach (Transform child in playerGo.GetComponentsInChildren<Transform>(true))
+            {
+                string name = child.name.ToLower();
+                if (name.Contains("weapon") || name.Contains("gun") || name.Contains("armament"))
+                {
+                    child.gameObject.SetActive(false);
+                    Debug.Log($"<color=red>[CompletePage] Объект оружия {child.name} деактивирован.</color>");
+                }
+            }
+        }
+
         private void Update()
         {
             // Начинает вращаться строго после прилета (когда _isSpinning равен true)
             if (_isSpinning && _playerComponent != null)
             {
-                float noise = Mathf.PerlinNoise(_randomSeed, Time.unscaledTime * _speedChangeFrequency);
+                float noise = Mathf.PerlinNoise(_randomSeed, Time.time * _speedChangeFrequency);
                 float currentSpeed = Mathf.Lerp(_minRotationSpeed, _maxRotationSpeed, noise);
 
-                _playerComponent.transform.Rotate(_rotationAxis.normalized, currentSpeed * Time.unscaledDeltaTime, Space.Self);
+                _playerComponent.transform.Rotate(_rotationAxis.normalized, currentSpeed * Time.deltaTime, Space.Self);
             }
         }
 

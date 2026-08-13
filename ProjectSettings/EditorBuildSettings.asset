@@ -12,17 +12,17 @@ EditorBuildSettings:
     path: Assets/Scenes/Complite/Menu.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/Scenes/AleksKisliy/Level 1.unity
-    guid: c327b1ae785c24559b5c07c428f5987b
+    path: Assets/Scenes/AleksKisliyTest/Level 1.unity
+    guid: e624817b979f40a4bb57ff597cf3fe65
   - enabled: 1
-    path: Assets/Scenes/AleksKisliy/Level 2.unity
-    guid: dd04b6c41250bd4458dc70e63f9b6afe
+    path: Assets/Scenes/AleksKisliyTest/Level 2.unity
+    guid: 73e0575fe80428e4c825259c1d6e4c21
   - enabled: 1
-    path: Assets/Scenes/AleksKisliy/Level 3.unity
-    guid: 96a7fa630bbbbb9479a1bf75b76baad5
+    path: Assets/Scenes/AleksKisliyTest/Level 3.unity
+    guid: a4246bb9d500c754c94b5b558f204cb3
   - enabled: 1
-    path: Assets/Scenes/AleksKisliy/Level 4.unity
-    guid: 8cda06385070c1646bafcd15b5b65f8f
+    path: Assets/Scenes/AleksKisliyTest/Level 4.unity
+    guid: 4821e914fd96ef84f8653b20a5c32bb8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

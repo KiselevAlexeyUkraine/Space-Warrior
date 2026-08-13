@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6997558440577309661}
   - component: {fileID: 488613920341953093}
   - component: {fileID: 2578074332172985333}
+  - component: {fileID: 4077135621679117414}
   m_Layer: 10
   m_Name: Projectile_Hero_Blaster
   m_TagString: ProjectileHero
@@ -103,6 +104,27 @@ SphereCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Radius: 0.7
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!65 &4077135621679117414
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1843796405803476770}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 8192
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4481985265271883848
 GameObject:

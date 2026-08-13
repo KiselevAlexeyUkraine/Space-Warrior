@@ -54,17 +54,46 @@ namespace Servise
         {
             if (playerTransform == null) return;
 
-            // Лог старта анимации
-            Debug.Log($"<color=orange>🔥 [AnimatorService] ФИНАЛЬНАЯ АНИМАЦИЯ ЗАПУСТИЛАСЬ! Взлет на Y-смещение: {targetYOffset} за {duration} сек. (Игнорируя Time.timeScale) 🔥</color>");
+            Debug.Log($"<color=orange>🔥 [AnimatorService] Взлет на Y-смещение: {targetYOffset} за {duration} сек. (Игнорируя Time.timeScale) 🔥</color>");
 
-            // Полностью очищаем старые твины покачивания/движения на игроке, чтобы они не перебивали взлет
             Tween.StopAll(playerTransform);
 
             Vector3 targetPosition = playerTransform.position + new Vector3(0f, targetYOffset, 0f);
 
-            // Анимируем позицию независимо от масштаба времени (useUnscaledTime: true)
             Tween.Position(playerTransform, targetPosition, duration, ease: curve, useUnscaledTime: true)
                 .OnComplete(() => onComplete?.Invoke(), warnIfTargetDestroyed: false);
+        }
+
+        /// <summary>
+        /// Комплексная анимация взлета игрока с передачей прогресса (0..1) для смены FOV.
+        /// </summary>
+        public void AnimatePlayerFlyUpCustom(
+            Transform playerTransform, 
+            float targetYOffset, 
+            float duration, 
+            AnimationCurve curve, 
+            Action<float> onUpdateProgress, 
+            Action onComplete = null)
+        {
+            if (playerTransform == null) return;
+
+            Tween.StopAll(playerTransform);
+
+            Vector3 startPos = playerTransform.position;
+            Vector3 targetPos = startPos + new Vector3(0f, targetYOffset, 0f);
+
+            Tween.Custom(0f, 1f, duration, onValueChange: progress =>
+            {
+                if (playerTransform == null) return;
+
+                // Перемещение вверх с учетом кривой
+                float flyProgress = curve != null ? curve.Evaluate(progress) : progress;
+                playerTransform.position = Vector3.Lerp(startPos, targetPos, flyProgress);
+
+                // Передаем прогресс движения дальше для расчета FOV
+                onUpdateProgress?.Invoke(progress);
+            }, ease: Ease.Linear, useUnscaledTime: true)
+            .OnComplete(() => onComplete?.Invoke(), warnIfTargetDestroyed: false);
         }
 
         public void RegisterDirectedProjectile(GameObject projectileGo, float projectileSpeed, Vector3 moveDirection)
@@ -183,24 +212,17 @@ namespace Servise
                 .OnComplete(onResetComplete, warnIfTargetDestroyed: false);
         }
 
-        /// <summary>
-        /// Запускает комплексное покачивание объекта, сохраняя его исходный наклон по оси X.
-        /// </summary>
         public void StartComplexBob(Transform target, float posOffsetMultiplier, float rotOffsetMultiplier, float duration, Ease ease = Ease.InOutSine)
         {
             if (target == null) return;
 
-            // Сбрасываем старые твины на этом объекте перед запуском нового цикла
             Tween.StopAll(target);
 
-            // Запоминаем текущие локальные углы объекта, чтобы сохранить его наклон по X (например, -45)
             Vector3 baseAngles = target.localEulerAngles;
 
-            // 1. Покачивание позиции строго по Y (Локальное)
             Vector3 targetLocalPos = target.localPosition + new Vector3(0f, -Mathf.Abs(posOffsetMultiplier), 0f);
             Tween.LocalPosition(target, targetLocalPos, duration, ease, cycles: -1, cycleMode: CycleMode.Yoyo);
 
-            // 2. Раздельное покачивание вращения по оси Y относительно базового угла
             Tween.LocalEulerAngles(
                 target, 
                 startValue: new Vector3(baseAngles.x, baseAngles.y - rotOffsetMultiplier, baseAngles.z), 
@@ -211,7 +233,6 @@ namespace Servise
                 cycleMode: CycleMode.Yoyo
             );
 
-            // 3. Раздельное покачивание вращения по оси Z относительно базового угла
             Tween.LocalEulerAngles(
                 target, 
                 startValue: new Vector3(baseAngles.x, baseAngles.y, baseAngles.z - rotOffsetMultiplier), 
@@ -223,9 +244,6 @@ namespace Servise
             );
         }
 
-        /// <summary>
-        /// Полностью останавливает комплексное покачивание объекта.
-        /// </summary>
         public void StopComplexBob(Transform target)
         {
             if (target == null) return;

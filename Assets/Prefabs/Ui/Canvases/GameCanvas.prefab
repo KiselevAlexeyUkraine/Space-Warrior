@@ -1342,29 +1342,67 @@ MonoBehaviour:
   _nextLevel: {fileID: 8849424979040321865}
   _restart: {fileID: 7608704065199332383}
   _menu: {fileID: 3118842330237223449}
-  _flyUpDistance: 300
-  _flyDuration: 1.5
+  _flyUpDistance: 100
+  _flySpeed: 50
   _flyCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
       value: 0
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.22654042
+      value: 0.8798074
+      inSlope: 0.39527738
+      outSlope: 0.39527738
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.0738346
+    - serializedVersion: 3
+      time: 1
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
       outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _rotationAxis: {x: 0, y: 1, z: 0}
+  _minRotationSpeed: 10
+  _maxRotationSpeed: 20
+  _speedChangeFrequency: 1.5
+  _targetFov: 70
+  _fovCurve:
+    serializedVersion: 2
+    m_Curve:
     - serializedVersion: 3
-      time: 0.5388429
-      value: 0.20327319
-      inSlope: 0.37724018
-      outSlope: 1.5415968
-      tangentMode: 5
+      time: 0
+      value: 0
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
       weightedMode: 0
-      inWeight: 0.08550395
-      outWeight: 0.085822135
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.10814936
+      value: 0.8381204
+      inSlope: 2.0347066
+      outSlope: 2.0347066
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.21023014
     - serializedVersion: 3
       time: 1
       value: 1

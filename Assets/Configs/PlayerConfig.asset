@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 667b6e0efe06d4f45a88304b2f2fc2cf, type: 3}
   m_Name: PlayerConfig
   m_EditorClassIdentifier: 
-  _speed: 30
-  _rollMult: -45
-  _pitchMult: 30
+  _rollMult: -40
+  _pitchMult: 20
+  _rotationSpeed: 4
   _gameRestartDelay: 2
   _projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
   _projectileSpeed: 40
-  _startShieldLevel: 1
   _maxShieldLevel: 4
   _startWeapon: 1

@@ -16,14 +16,14 @@ namespace Servise
         [SerializeField] private Gradient colorGradient;
 
         [Header("Optimization")]
-        [Tooltip("Минимальный шаг изменения угла (в градусах), при котором обновится скайбокс и освещение. Чем больше число, тем выше FPS.")]
-        [SerializeField, Range(0.1f, 5f)] private float angleUpdateStep = 1.0f;
+        [Tooltip("Интервал в секундах между обновлениями DynamicGI (перерасчет отражений и освещения). Чем больше, тем выше FPS.")]
+        [SerializeField, Min(0.05f)] private float giUpdateInterval = 0.5f;
 
         private Tween _skyboxTween;
         private float _currentAngle;
-        private float _lastUpdatedAngle = -100f; // Заведомо пройденное значение для первого кадра
+        private float _nextGiUpdateTime;
 
-        // Кэшируем ID свойств шейдера для оптимизации
+        // Кэшируем ID свойств шейдера
         private static readonly int RotationProperty = Shader.PropertyToID("_Rotation");
         private static readonly int TintProperty = Shader.PropertyToID("_Tint");
 
@@ -42,7 +42,6 @@ namespace Servise
         {
             _skyboxTween.Stop();
 
-            // Твин теперь просто меняет приватную переменную _currentAngle в фоне без коллбеков
             _skyboxTween = Tween.Custom(
                 startValue: 0f, 
                 endValue: 360f, 
@@ -58,25 +57,24 @@ namespace Servise
         {
             if (skyboxMaterial == null) return;
 
-            // Проверяем, изменился ли угол достаточно сильно с момента последнего обновления
-            if (Mathf.Abs(_currentAngle - _lastUpdatedAngle) >= angleUpdateStep)
+            // 1. Каждый кадр плавно обновляем визуал скайбокса (GPU-friendly)
+            ApplySkyboxVisuals(_currentAngle);
+
+            // 2. Спектр освещения (GI) обновляем по таймеру, чтобы избежать лагов
+            if (Time.time >= _nextGiUpdateTime)
             {
-                ApplyEnvironment(_currentAngle);
-                _lastUpdatedAngle = _currentAngle;
+                DynamicGI.UpdateEnvironment();
+                _nextGiUpdateTime = Time.time + giUpdateInterval;
             }
         }
 
-        private void ApplyEnvironment(float angle)
+        private void ApplySkyboxVisuals(float angle)
         {
             float t = angle / 360f;
             Color color = colorGradient.Evaluate(t);
 
-            // Обновляем параметры материала (теперь редко, а не каждый кадр!)
             skyboxMaterial.SetFloat(RotationProperty, angle);
             skyboxMaterial.SetColor(TintProperty, color);
-
-            // Обновляем освещение сцены
-            DynamicGI.UpdateEnvironment();
         }
     }
 }

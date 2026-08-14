@@ -22,6 +22,7 @@ namespace Components.Ui.Pages
         DiaryGame,
         DiaryMainMenu,
         Tutorial,
-        SavePage
+        SavePage,
+        Upgrade // Добавлено окно прокачки
     }
 }

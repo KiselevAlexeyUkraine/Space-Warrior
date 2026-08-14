@@ -234,7 +234,9 @@ namespace Components.Ui.Pages.Game
 
                     if (_upgradeButtonText != null)
                     {
-                        _upgradeButtonText.text = $"Улучшить ({cost})";
+                        // Подтягиваем localized глагол "Улучшить" / "Upgrade"
+                        string actionText = _localizationManager != null ? _localizationManager.UpgradeAction : "Upgrade";
+                        _upgradeButtonText.text = $"{actionText} ({cost})";
                     }
                 }
             }
@@ -254,10 +256,18 @@ namespace Components.Ui.Pages.Game
         {
             if (_balanceConfig != null && _balanceConfig.TryGetPlayerStatsForLevel(level, out float hp, out float shield, out float speed, out float fireRate))
             {
-                return $"Ур. {level}\nHP: {hp} | Щит: {shield}\nСкорость: {speed}\nТемп стрельбы: {fireRate}";
+                bool isEng = _localizationManager != null && _localizationManager.CurrentLanguage == LocalizationManager.Language.English;
+
+                string lvlText = isEng ? $"Lvl. {level}" : $"Ур. {level}";
+                string shieldText = isEng ? "Shield" : "Щит";
+                string speedText = isEng ? "Speed" : "Скорость";
+                string fireRateText = isEng ? "Fire Rate" : "Темп стрельбы";
+
+                return $"{lvlText}\nHP: {hp} | {shieldText}: {shield}\n{speedText}: {speed}\n{fireRateText}: {fireRate}";
             }
 
-            return $"Уровень {level}";
+            bool isEnglish = _localizationManager != null && _localizationManager.CurrentLanguage == LocalizationManager.Language.English;
+            return isEnglish ? $"Level {level}" : $"Уровень {level}";
         }
 
         private void OnDestroy()
@@ -274,6 +284,9 @@ namespace Components.Ui.Pages.Game
             _nextLevel.GetComponentInChildren<TMP_Text>().text = _localizationManager.NextLevel;
             _restart.GetComponentInChildren<TMP_Text>().text = _localizationManager.Restart;
             _menu.GetComponentInChildren<TMP_Text>().text = _localizationManager.ToMainMenu;
+
+            // Обновляем текст кнопки улучшения и характеристик при открытии/смене языка
+            UpdateUpgradeUI();
         }
     }
 }

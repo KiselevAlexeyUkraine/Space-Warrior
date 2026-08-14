@@ -16,6 +16,12 @@ namespace Configs.Localization
         [Tooltip("Button to start a new game")]
         [SerializeField] private string startGame = "Start Game";
 
+        [Tooltip("Button for upgrades menu")]
+        [SerializeField] private string upgrade = "Upgrades";
+
+        [Tooltip("Button for upgrading action")]
+        [SerializeField] private string upgradeAction = "Upgrade";
+
         [Tooltip("Button to open the credits screen")]
         [SerializeField] private string authors = "Credits";
 
@@ -115,6 +121,8 @@ namespace Configs.Localization
         public string GameTitle => gameTitle;
         public string ChoseLevel => choseLevel;
         public string StartGame => startGame;
+        public string Upgrade => upgrade;
+        public string UpgradeAction => upgradeAction;
         public string Authors => authors;
         public string Settings => settings;
         public string ExitGame => exitGame;
@@ -149,8 +157,8 @@ namespace Configs.Localization
         public string SoundDesigner => soundDesigner;
         public string GameDesigner => gameDesigner;
 
-        public  string DeathTitle1 => deathByEnemy;
-        public  string DeathTitle2 => deathByObstacle;
+        public string DeathTitle1 => deathByEnemy;
+        public string DeathTitle2 => deathByObstacle;
         
         public string Keys => keys;
         

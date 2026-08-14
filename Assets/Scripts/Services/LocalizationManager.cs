@@ -4,7 +4,7 @@ using Configs.Localization;
 
 namespace Components.Player.Localization
 {
-    public class LocalizationManager  : MonoBehaviour
+    public class LocalizationManager : MonoBehaviour
     {
         private LocalizationConfigRus _russianConfig;
         private LocalizationConfigEng _englishConfig;
@@ -16,6 +16,8 @@ namespace Components.Player.Localization
         private string gameTitle;
         private string choseLevel;
         private string startGame;
+        private string upgrade;
+        private string upgradeAction;
         private string authors;
         private string settings;
         private string exitGame;
@@ -73,6 +75,8 @@ namespace Components.Player.Localization
         public string GameTitle => gameTitle;
         public string ChoseLevel => choseLevel;
         public string StartGame => startGame;
+        public string Upgrade => upgrade;
+        public string UpgradeAction => upgradeAction;
         public string Authors => authors;
         public string Settings => settings;
         public string ExitGame => exitGame;
@@ -140,7 +144,6 @@ namespace Components.Player.Localization
             _russianConfig = russianConfig;
             _englishConfig = englishConfig;
             _settingsService = settingsService;
-            
         }
 
         private void Start()
@@ -148,22 +151,18 @@ namespace Components.Player.Localization
             LoadSavedOrDetectSystemLanguage();
         }
 
-
         private void LoadSavedOrDetectSystemLanguage()
         {
-            // 1. Проверяем, есть ли сохраненный индекс языка, отличный от -1 (значения по умолчанию)
             int savedLangIndex = _settingsService.SavedLanguageIndex;
 
             if (savedLangIndex != -1)
             {
-                // Если язык сохранен, просто устанавливаем его
                 var savedLanguage = (Language)savedLangIndex;
                 SetLanguage(savedLanguage);
                 Debug.Log($"[Localization] Saved language found: {savedLanguage} → Loaded.");
                 return;
             }
 
-            // 2. Если сохранения нет, определяем по системному языку (старая логика)
             var sysLang = Application.systemLanguage;
 
             switch (sysLang)
@@ -181,7 +180,6 @@ namespace Components.Player.Localization
                     break;
             }
         }
-
 
         public void SetLanguage(Language language)
         {
@@ -201,10 +199,7 @@ namespace Components.Player.Localization
             UpdateLocalizedValues();
 
             Debug.Log($"[Localization] Switched language to: {CurrentLanguage}");
-
-            //OnLanguageChanged?.Invoke(); // уведомляем подписчиков
         }
-
 
         private void UpdateLocalizedValues()
         {
@@ -218,6 +213,8 @@ namespace Components.Player.Localization
             gameTitle = _currentConfig.GameTitle;
             choseLevel = _currentConfig.ChoseLevel;
             startGame = _currentConfig.StartGame;
+            upgrade = _currentConfig.Upgrade;
+            upgradeAction = _currentConfig.UpgradeAction;
             authors = _currentConfig.Authors;
             settings = _currentConfig.Settings;
             exitGame = _currentConfig.ExitGame;
@@ -269,7 +266,6 @@ namespace Components.Player.Localization
             textWinGame = _currentConfig.TextWinGame;
             nextWinGame = _currentConfig.NextLevel;
         }
-
 
         public void ToggleLanguage()
         {

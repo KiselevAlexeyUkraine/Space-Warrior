@@ -25,7 +25,7 @@ namespace Installers
 
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
 
-            Container.BindInterfacesAndSelfTo<BalanceConfig>().FromNew().AsSingle().NonLazy();
+
 
             Container.Bind<Utils>().FromNew().AsSingle().NonLazy();
 

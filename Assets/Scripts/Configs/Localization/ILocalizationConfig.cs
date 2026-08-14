@@ -60,5 +60,8 @@ namespace Configs.Localization
         string TextWinGame { get; }
         string NextLevel { get; }
         
+        string Upgrade { get; }
+        string UpgradeAction { get; }
+        
     }
 }

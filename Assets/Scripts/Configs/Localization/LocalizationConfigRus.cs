@@ -1,6 +1,5 @@
 using UnityEngine;
 using SO;
-using UnityEngine.Serialization;
 
 namespace Configs.Localization
 {
@@ -16,6 +15,12 @@ namespace Configs.Localization
 
         [Tooltip("Кнопка начала новой игры")]
         [SerializeField] private string startGame = "Начать игру";
+
+        [Tooltip("Кнопка перехода в меню улучшений")]
+        [SerializeField] private string upgrade = "Улучшения";
+
+        [Tooltip("Кнопка действия улучшения")]
+        [SerializeField] private string upgradeAction = "Улучшить";
 
         [Tooltip("Кнопка для перехода к экрану авторов")]
         [SerializeField] private string authors = "Авторы";
@@ -116,6 +121,8 @@ namespace Configs.Localization
         public string GameTitle => gameTitle;
         public string ChoseLevel => choseLevel;
         public string StartGame => startGame;
+        public string Upgrade => upgrade;
+        public string UpgradeAction => upgradeAction;
         public string Authors => authors;
         public string Settings => settings;
         public string ExitGame => exitGame;
@@ -150,8 +157,8 @@ namespace Configs.Localization
         public string SoundDesigner => soundDesigner;
         public string GameDesigner => gameDesigner;
         
-        public  string DeathTitle1 => deathByEnemy;
-        public  string DeathTitle2 => deathByObstacle;
+        public string DeathTitle1 => deathByEnemy;
+        public string DeathTitle2 => deathByObstacle;
         
         public string Keys => keys;
         

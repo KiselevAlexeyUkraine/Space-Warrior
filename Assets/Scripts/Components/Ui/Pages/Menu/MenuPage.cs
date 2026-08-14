@@ -13,10 +13,10 @@ namespace Components.Ui.Pages.Menu
         [SerializeField] private TMP_Text _versionText;
 
         [SerializeField] private Button _start;
+        [SerializeField] private Button _upgrade;
         [SerializeField] private Button _levels;
         [SerializeField] private Button _settings;
         [SerializeField] private Button _authors;
-        [SerializeField] private Button _diary;
         [SerializeField] private Button _exit;
 
         private LocalizationManager _localizationManager;
@@ -33,6 +33,14 @@ namespace Components.Ui.Pages.Menu
             {
                 PageSwitcher.Open(PageName.Start).Forget();
             });
+
+            if (_upgrade != null)
+            {
+                _upgrade.onClick.AddListener(() =>
+                {
+                    PageSwitcher.Open(PageName.Upgrade).Forget();
+                });
+            }
 
             _levels.onClick.AddListener(() =>
             {
@@ -53,11 +61,6 @@ namespace Components.Ui.Pages.Menu
             {
                 PageSwitcher.Open(PageName.Exit).Forget();
             });
-
-            _diary.onClick.AddListener(() =>
-            {
-                PageSwitcher.Open(PageName.DiaryMainMenu).Forget();
-            });
         }
 
         private void OnEnable()
@@ -73,11 +76,11 @@ namespace Components.Ui.Pages.Menu
         private void OnDestroy()
         {
             _start.onClick.RemoveAllListeners();
+            if (_upgrade != null) _upgrade.onClick.RemoveAllListeners();
             _levels.onClick.RemoveAllListeners();
             _settings.onClick.RemoveAllListeners();
             _authors.onClick.RemoveAllListeners();
             _exit.onClick.RemoveAllListeners();
-            _diary.onClick.RemoveAllListeners();
         }
 
         private void ButtonTextsUpdate()
@@ -85,6 +88,16 @@ namespace Components.Ui.Pages.Menu
             _gameTitle.text = _localizationManager.GameTitle;
 
             _start.GetComponentInChildren<TMP_Text>().text = _localizationManager.StartGame;
+
+            if (_upgrade != null)
+            {
+                var upgradeText = _upgrade.GetComponentInChildren<TMP_Text>();
+                if (upgradeText != null)
+                {
+                    upgradeText.text = _localizationManager.Upgrade;
+                }
+            }
+
             _levels.GetComponentInChildren<TMP_Text>().text = _localizationManager.ChoseLevel;
             _settings.GetComponentInChildren<TMP_Text>().text = _localizationManager.Settings;
             _authors.GetComponentInChildren<TMP_Text>().text = _localizationManager.Authors;

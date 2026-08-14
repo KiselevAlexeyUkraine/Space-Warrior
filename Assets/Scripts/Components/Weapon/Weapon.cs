@@ -29,6 +29,7 @@ namespace Components.Weapon
 
         public WeaponType Type => _type;
         public WeaponConfig Config => _config;
+        public float LastShotTime => _lastShotTime;
 
         private float DynamicFireRate => _balanceConfig.PlayerFireRate;
         private float DynamicProjectileSpeed => _balanceConfig.PlayerBulletSpeed;
@@ -43,7 +44,15 @@ namespace Components.Weapon
             Fire();
         }
 
-        public void SetType(WeaponType weaponType)
+        /// <summary>
+        /// Позволяет передать единый таймер выстрела от уже работающего оружия для идеальной синхронизации.
+        /// </summary>
+        public void SyncLastShotTime(float lastShotTime)
+        {
+            _lastShotTime = lastShotTime;
+        }
+
+        public void SetType(WeaponType weaponType, float syncTime = -1f)
         {
             _type = weaponType;
 
@@ -67,7 +76,8 @@ namespace Components.Weapon
                 return;
             }
             
-            _lastShotTime = 0f;
+            // Если передан таймер синхронизации, берем его, иначе ставим Time.time
+            _lastShotTime = syncTime >= 0f ? syncTime : Time.time;
         }
 
         private void Fire()
@@ -78,7 +88,7 @@ namespace Components.Weapon
             if (_config == null || _balanceConfig == null)
                 return;
 
-            // ИСПРАВЛЕНИЕ: Ждем, пока таблица полностью загрузится из сети
+            // Ждем, пока таблица полностью загрузится из сети
             if (!_balanceConfig.IsLoaded)
                 return;
 
@@ -169,7 +179,7 @@ namespace Components.Weapon
             {
                 projectile.type = _type;
                 
-                // ИСПРАВЛЕНИЕ: Полностью сбрасываем старую скорость Rigidbody из пула перед тем, как задать новую
+                // Полностью сбрасываем старую скорость Rigidbody из пула
                 if (projectile.Rigid != null)
                 {
                     projectile.Rigid.linearVelocity = Vector3.zero;

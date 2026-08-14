@@ -231,12 +231,15 @@ namespace Components.Player
                 default:
                     _audioService?.PlayItemPickup();
 
+                    // Находим время выстрела активных пушек для синхронизации
+                    float syncTime = GetActiveWeaponShotTime();
+
                     if (powerUp.Type == _weapons[0].Type)
                     {
                         Components.Weapon.Weapon emptyWeapon = GetEmptyWeaponSlot();
                         if (emptyWeapon != null)
                         {
-                            emptyWeapon.SetType(powerUp.Type);
+                            emptyWeapon.SetType(powerUp.Type, syncTime);
                         }
                     }
                     else
@@ -244,11 +247,44 @@ namespace Components.Player
                         ClearWeapons();
                         _weapons[0].SetType(powerUp.Type);
                     }
+                    
+                    SynchronizeAllWeapons();
                     break;
             }
 
             powerUp.AbsorbedBy(gameObject);
             SafeDespawn(powerUpObject);
+        }
+
+        /// <summary>
+        /// Возвращает время последнего выстрела первого активного оружия.
+        /// </summary>
+        private float GetActiveWeaponShotTime()
+        {
+            foreach (var weapon in _weapons)
+            {
+                if (weapon != null && weapon.gameObject.activeInHierarchy)
+                {
+                    return weapon.LastShotTime;
+                }
+            }
+            return Time.time;
+        }
+
+        /// <summary>
+        /// Выравнивает таймеры стрельбы всех активных орудий для синхронного залпа.
+        /// </summary>
+        private void SynchronizeAllWeapons()
+        {
+            float targetTime = GetActiveWeaponShotTime();
+
+            foreach (var weapon in _weapons)
+            {
+                if (weapon != null && weapon.gameObject.activeInHierarchy)
+                {
+                    weapon.SyncLastShotTime(targetTime);
+                }
+            }
         }
 
         public float ShieldLevel

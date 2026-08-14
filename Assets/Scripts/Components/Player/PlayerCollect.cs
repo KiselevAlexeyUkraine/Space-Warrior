@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Components.Ui.Pages;
 using Components.Items;
@@ -36,6 +37,11 @@ namespace Components.Player
         [SerializeField] private GameObject playerComponent;
 
         private float _shieldLevel;
+
+        /// <summary>
+        /// Событие изменения текущего количества щита у игрока.
+        /// </summary>
+        public event Action<int> OnShieldLevelChanged;
         
         [Header("===== Layers =====")]
         [SerializeField] private LayerMask enemyLayer;
@@ -68,6 +74,7 @@ namespace Components.Player
         private void Start()
         {
             _shieldLevel = _balanceConfig.PlayerShield;
+            OnShieldLevelChanged?.Invoke(Mathf.Max(0, (int)_shieldLevel));
 
             isShieldParticleActive = false;
             SetShieldParticleActive(_shieldLevel > 0, forceRestart: true);
@@ -100,13 +107,10 @@ namespace Components.Player
         {
             if (isDead) return;
 
-            // Восстанавливаем/обновляем щит согласно новому уровню из баланса
             ShieldLevel = _balanceConfig.PlayerShield;
 
-            // Включаем партикл повышения уровня
             SetLevelUpParticleActive(true, forceRestart: true);
 
-            // Автоматически выключаем партикл левел-апа через 2.5 секунды
             DisableLevelUpParticleAfterDelay(2.5f).Forget();
         }
 
@@ -257,6 +261,8 @@ namespace Components.Player
                 float oldShieldLevel = _shieldLevel;
                 _shieldLevel = Mathf.Min(value, _balanceConfig.PlayerShield);
 
+                OnShieldLevelChanged?.Invoke(Mathf.Max(0, (int)_shieldLevel));
+
                 if (_shieldLevel < oldShieldLevel && oldShieldLevel > 0)
                 {
                     if (_shieldLevel <= 0)
@@ -267,7 +273,7 @@ namespace Components.Player
                         if (shieldBreakEffectPrefab != null)
                         {
                             GameObject breakFX = LeanPool.Spawn(shieldBreakEffectPrefab, transform.position, Quaternion.identity);
-                            Destroy(breakFX, shieldBreakEffectDestroyDelay);
+                            LeanPool.Despawn(breakFX, shieldBreakEffectDestroyDelay);
                         }
 
                         _audioService?.PlayRandomShieldBreak();
@@ -277,7 +283,7 @@ namespace Components.Player
                         if (shieldHitEffectPrefab != null)
                         {
                             GameObject hitFX = LeanPool.Spawn(shieldHitEffectPrefab, transform.position, Quaternion.identity);
-                            Destroy(hitFX, shieldHitEffectDestroyDelay);
+                            LeanPool.Despawn(hitFX, shieldHitEffectDestroyDelay);
                         }
 
                         _audioService?.PlayRandomShieldHit();
@@ -316,7 +322,7 @@ namespace Components.Player
             if (playerDeathEffectPrefab != null)
             {
                 GameObject deathFX = LeanPool.Spawn(playerDeathEffectPrefab, spawnPosition, Quaternion.identity);
-                Destroy(deathFX, playerDeathEffectDestroyDelay);
+                LeanPool.Despawn(deathFX, playerDeathEffectDestroyDelay);
             }
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(playerDeathEffectDestroyDelay));
@@ -343,9 +349,6 @@ namespace Components.Player
             _shieldParticleSystem.SetActive(active);
         }
 
-        /// <summary>
-        /// Включает или выключает игровой объект партикла повышения уровня.
-        /// </summary>
         public void SetLevelUpParticleActive(bool active, bool forceRestart = false)
         {
             if (_levelUpParticleSystem == null) return;

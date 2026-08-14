@@ -24,13 +24,11 @@ namespace Installers
             Container.Bind<Main>().FromInstance(_main).AsSingle().NonLazy();
 
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
-            Container.Bind<PlayerScore>().FromNew().AsSingle().NonLazy();
-            
-            // ИСПРАВЛЕНО: Теперь BalanceConfig живет на уровне сцены и видит PlayerScore!
+
             Container.BindInterfacesAndSelfTo<BalanceConfig>().FromNew().AsSingle().NonLazy();
-            
+
             Container.Bind<Utils>().FromNew().AsSingle().NonLazy();
-            
+
             Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();
             Container.Bind<PauseSwitcher>().FromComponentInNewPrefab(_pauseSwitcher).AsSingle().NonLazy();
@@ -43,7 +41,7 @@ namespace Installers
             var player = Container.InstantiatePrefab(
                 _player, _playerSpawn.transform.position, _playerSpawn.transform.rotation, null
             );
-          
+
             Container.Bind<PlayerComponent>().FromComponentOn(player).AsSingle().NonLazy();
 
             var playerMove = player.GetComponentInChildren<PlayerMove>();
@@ -54,6 +52,16 @@ namespace Installers
             else
             {
                 Debug.LogError("[GameInstaller] Компонент PlayerMove не найден в дочерних объектах префаба игрока!", this);
+            }
+
+            var playerCollect = player.GetComponentInChildren<PlayerCollect>();
+            if (playerCollect != null)
+            {
+                Container.Bind<PlayerCollect>().FromInstance(playerCollect).AsSingle().NonLazy();
+            }
+            else
+            {
+                Debug.LogError("[GameInstaller] Компонент PlayerCollect не найден в дочерних объектах префаба игрока!", this);
             }
         }
     }

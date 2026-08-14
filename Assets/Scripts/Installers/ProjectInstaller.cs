@@ -23,7 +23,7 @@ namespace Installers
             Container.Bind<SceneService>().FromNew().AsSingle().NonLazy();
 
             // ИСПРАВЛЕНО: Строка с BalanceConfig удалена отсюда!
-
+            Container.Bind<PlayerScore>().FromNew().AsSingle().NonLazy();
             Container.Bind<EventSystem>().FromComponentInNewPrefab(_eventSystem).AsSingle().NonLazy();
             Container.Bind<SettingsService>().FromComponentInNewPrefab(_settingsService).AsSingle().NonLazy();
             Container.Bind<MusicService>().FromComponentInNewPrefab(_musicService).AsSingle().NonLazy();

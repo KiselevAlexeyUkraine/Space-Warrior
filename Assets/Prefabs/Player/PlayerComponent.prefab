@@ -46,6 +46,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Components.Player.PlayerComponent
   _camera: {fileID: 0}
+  _playerMove: {fileID: 5110806848678614810}
+  _playerCollect: {fileID: 8165905014857216495}
 --- !u!1 &6643152769483826641
 GameObject:
   m_ObjectHideFlags: 0

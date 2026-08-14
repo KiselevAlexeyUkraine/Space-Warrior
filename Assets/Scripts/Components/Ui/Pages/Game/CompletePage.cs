@@ -6,30 +6,41 @@ using Zenject;
 using Components.Player.Localization;
 using Servise; 
 using System;
+using Cysharp.Threading.Tasks;
 
 namespace Components.Ui.Pages.Game
 {
     public class CompletePage : BasePage
     {
         [SerializeField] private TMP_Text _tile;
+        [SerializeField] private TMP_Text _totalScoreText; 
         [SerializeField] private Button _nextLevel;
         [SerializeField] private Button _restart;
         [SerializeField] private Button _menu;
 
-        [Header("Player Fly Up Animation")]
-        [SerializeField] [Tooltip("На сколько единиц вверх улетит игрок.")] 
-        private float _flyUpDistance = 20f;
-        
-        [SerializeField] [Tooltip("Длительность анимации взлета.")] 
-        private float _flyDuration = 1.5f;
+        [Header("Upgrade System Elements")]
+        [SerializeField] private Button _upgradeButton;
+        [SerializeField] private TMP_Text _upgradeButtonText; 
+        [SerializeField] private TMP_Text _currentStatsText; 
+        [SerializeField] private TMP_Text _nextStatsText;    
 
-        [SerializeField] [Tooltip("Кривая анимации взлета (например, резкий старт в конце).")] 
-        private AnimationCurve _flyCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [Header("Reset System Elements")]
+        [SerializeField] private Button _resetProgressButton;
+
+        [Header("Score Animation Settings")]
+        [SerializeField] private float _scoreCountDuration = 1.0f;
+
+        [Header("Player Fly Up Animation")]
+        [SerializeField] private float _flyUpDistance = 20f;
+        [SerializeField] private float _flyDuration = 1.5f;
+        [SerializeField] private AnimationCurve _flyCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         
         private SceneService _sceneService;
         private LocalizationManager _localizationManager;
         private PlayerComponent _playerComponent;
         private AnimatorService _animatorService;
+        private PlayerScore _playerScore;
+        private BalanceConfig _balanceConfig;
         private DiContainer _container; 
 
         [Inject]
@@ -39,11 +50,15 @@ namespace Components.Ui.Pages.Game
             SceneService sceneService, 
             LocalizationManager localizationManager,
             AnimatorService animatorService,
+            PlayerScore playerScore,
+            BalanceConfig balanceConfig,
             DiContainer container) 
         {
             _sceneService = sceneService;
             _localizationManager = localizationManager;
             _animatorService = animatorService;
+            _playerScore = playerScore;
+            _balanceConfig = balanceConfig;
             _container = container; 
             
             OnOpen += () =>
@@ -52,7 +67,12 @@ namespace Components.Ui.Pages.Game
                 pauseService.Pause();
                 TextsUpdate();
 
-                // ИСПРАВЛЕНИЕ: Извлекаем игрока ПРЯМО ЗДЕСЬ, так как Start() не выполнится при Time.timeScale = 0
+                // Запускаем сохранение и плавную анимацию прибавления очков
+                if (_playerScore != null)
+                {
+                    AnimateAndSaveScoreAsync(_playerScore).Forget();
+                }
+
                 if (_playerComponent == null && _container != null)
                 {
                     try
@@ -61,47 +81,38 @@ namespace Components.Ui.Pages.Game
                     }
                     catch (Exception e)
                     {
-                        Debug.LogError($"[CompletePage] Не удалось извлечь PlayerComponent при открытии страницы: {e.Message}");
+                        Debug.LogError($"[CompletePage] Не удалось извлечь PlayerComponent: {e.Message}");
                     }
                 }
 
-                // Запуск анимации взлета при открытии страницы победы
                 if (_playerComponent != null && _animatorService != null)
                 {
-                    Debug.Log("<color=cyan>🚀 [CompletePage] Инициация взлета. Отправляем запрос в AnimatorService... 🚀</color>");
-                    
                     _animatorService.AnimatePlayerFlyUp(
                         _playerComponent.transform, 
                         _flyUpDistance, 
                         _flyDuration, 
                         _flyCurve,
-                        () => Debug.Log("<color=green>🏁 [CompletePage] Финальная анимация взлета успешно ЗАВЕРШЕНА! Игрок на орбите. 🏁</color>")
+                        () => {}
                     );
-                }
-                else
-                {
-                    Debug.LogWarning("[CompletePage] Не удалось запустить анимацию взлета: _playerComponent или _animatorService равен null.");
                 }
             };
         }
 
         private void Awake()
         {
-            _nextLevel.onClick.AddListener(() =>
-            {
-                PageSwitcher.Open(PageName.NextLevel).Forget();
-            });
-
-            _restart.onClick.AddListener(() =>
-            {
-                PageSwitcher.Open(PageName.GameRestart).Forget();
-            });
-
-            _menu.onClick.AddListener(() =>
-            {
-                PageSwitcher.Open(PageName.GameExit).Forget();
-            });
+            _nextLevel.onClick.AddListener(() => PageSwitcher.Open(PageName.NextLevel).Forget());
+            _restart.onClick.AddListener(() => PageSwitcher.Open(PageName.GameRestart).Forget());
+            _menu.onClick.AddListener(() => PageSwitcher.Open(PageName.GameExit).Forget());
             
+            if (_upgradeButton != null)
+            {
+                _upgradeButton.onClick.AddListener(OnUpgradeClicked);
+            }
+
+            if (_resetProgressButton != null)
+            {
+                _resetProgressButton.onClick.AddListener(OnResetProgressClicked);
+            }
 
             int currentSceneIndex = _sceneService.GetCurrentScene();
             int totalScenes = _sceneService.GetScenesCount();
@@ -122,17 +133,131 @@ namespace Components.Ui.Pages.Game
             }
         }
 
-        private void Start()
+        private async UniTaskVoid AnimateAndSaveScoreAsync(PlayerScore playerScore)
         {
-            // Резервное извлечение, если страница просто инициализируется заранее
-            if (_playerComponent == null && _container != null)
+            int oldTotal = playerScore.TotalSavedScore;
+            int levelScore = playerScore.CurrentScore;
+            int targetTotal = oldTotal + levelScore;
+
+            playerScore.SaveLevelScore();
+
+            if (_totalScoreText != null)
             {
-                try
+                if (levelScore <= 0)
                 {
-                    _playerComponent = _container.Resolve<PlayerComponent>();
+                    _totalScoreText.text = targetTotal.ToString();
                 }
-                catch { }
+                else
+                {
+                    float elapsedTime = 0f;
+                    while (elapsedTime < _scoreCountDuration)
+                    {
+                        elapsedTime += Time.unscaledDeltaTime;
+                        float t = Mathf.Clamp01(elapsedTime / _scoreCountDuration);
+                        
+                        int currentDisplayedScore = Mathf.RoundToInt(Mathf.Lerp(oldTotal, targetTotal, t));
+                        _totalScoreText.text = currentDisplayedScore.ToString();
+
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                    }
+                    _totalScoreText.text = targetTotal.ToString();
+                }
             }
+
+            UpdateUpgradeUI();
+        }
+
+        private void OnUpgradeClicked()
+        {
+            if (_balanceConfig == null || _playerScore == null) return;
+
+            int nextLevel = _playerScore.CurrentLevel + 1;
+            int upgradeCost = GetUpgradeCost(nextLevel);
+
+            if (_playerScore.TrySpendTotalScore(upgradeCost))
+            {
+                if (_totalScoreText != null)
+                {
+                    _totalScoreText.text = _playerScore.TotalSavedScore.ToString();
+                }
+
+                UpdateUpgradeUI();
+            }
+        }
+
+        private void OnResetProgressClicked()
+        {
+            if (_playerScore != null)
+            {
+                _playerScore.ResetAllProgress();
+            }
+
+            if (_totalScoreText != null)
+            {
+                _totalScoreText.text = "0";
+            }
+
+            UpdateUpgradeUI();
+        }
+
+        private void UpdateUpgradeUI()
+        {
+            if (_balanceConfig == null || _playerScore == null) return;
+
+            int currentLvl = _playerScore.CurrentLevel;
+            int nextLvl = currentLvl + 1;
+
+            if (_currentStatsText != null)
+            {
+                _currentStatsText.text = GetStatsDescription(currentLvl);
+            }
+
+            int cost = GetUpgradeCost(nextLvl);
+            bool isMaxLevel = cost <= 0;
+
+            if (_nextStatsText != null)
+            {
+                _nextStatsText.text = isMaxLevel ? "MAX LEVEL" : GetStatsDescription(nextLvl);
+            }
+
+            if (_upgradeButton != null)
+            {
+                if (isMaxLevel)
+                {
+                    _upgradeButton.interactable = false;
+                    if (_upgradeButtonText != null) _upgradeButtonText.text = "MAX";
+                }
+                else
+                {
+                    bool canAfford = _playerScore.TotalSavedScore >= cost;
+                    _upgradeButton.interactable = canAfford;
+
+                    if (_upgradeButtonText != null)
+                    {
+                        _upgradeButtonText.text = $"Улучшить ({cost})";
+                    }
+                }
+            }
+        }
+
+        private int GetUpgradeCost(int targetLevel)
+        {
+            if (_balanceConfig != null && _balanceConfig.TryGetUpgradeCost(targetLevel, out int cost))
+            {
+                return cost;
+            }
+            
+            return targetLevel <= 10 ? (targetLevel - 1) * 2000 : 0; 
+        }
+
+        private string GetStatsDescription(int level)
+        {
+            if (_balanceConfig != null && _balanceConfig.TryGetPlayerStatsForLevel(level, out float hp, out float shield, out float speed, out float fireRate))
+            {
+                return $"Ур. {level}\nHP: {hp} | Щит: {shield}\nСкорость: {speed}\nТемп стрельбы: {fireRate}";
+            }
+
+            return $"Уровень {level}";
         }
 
         private void OnDestroy()
@@ -140,6 +265,8 @@ namespace Components.Ui.Pages.Game
             _nextLevel.onClick.RemoveAllListeners();
             _restart.onClick.RemoveAllListeners();
             _menu.onClick.RemoveAllListeners();
+            if (_upgradeButton != null) _upgradeButton.onClick.RemoveAllListeners();
+            if (_resetProgressButton != null) _resetProgressButton.onClick.RemoveAllListeners();
         }
         
         private void TextsUpdate()

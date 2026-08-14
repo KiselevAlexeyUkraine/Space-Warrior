@@ -11,7 +11,7 @@ using Zenject;
 
 public class BalanceConfig : IInitializable
 {
-    // ИСПРАВЛЕНИЕ: Теперь поддерживается 10 уровней для характеристик из таблицы!
+    // Поддерживается 10 уровней для характеристик из таблицы
     private const int LevelsCount = 10;
 
     private readonly string googleSheetCsvUrl =
@@ -44,6 +44,46 @@ public class BalanceConfig : IInitializable
     public float PlayerBulletSpeed => _playerBulletSpeedByLevel[CurrentPlayerLevelIndex];
     public int PlayerHealth => _playerHealthByLevel[CurrentPlayerLevelIndex];
     public int PlayerShield => _playerShieldByLevel[CurrentPlayerLevelIndex];
+
+    /// <summary>
+    /// Возвращает параметры игрока для конкретного уровня (от 1 до 10).
+    /// Используется в CompletePage для отображения характеристик прокачки.
+    /// </summary>
+    public bool TryGetPlayerStatsForLevel(int level, out float hp, out float shield, out float speed, out float fireRate)
+    {
+        hp = 0;
+        shield = 0;
+        speed = 0;
+        fireRate = 0;
+
+        if (level < 1 || level > LevelsCount)
+            return false;
+
+        int index = level - 1;
+        hp = _playerHealthByLevel[index];
+        shield = _playerShieldByLevel[index];
+        speed = _playerMoveSpeedByLevel[index];
+        fireRate = _playerFireRateByLevel[index];
+
+        return true;
+    }
+
+    /// <summary>
+    /// Возвращает стоимость улучшения корабля до указанного целевого уровня.
+    /// </summary>
+    public bool TryGetUpgradeCost(int targetLevel, out int cost)
+    {
+        cost = 0;
+
+        if (targetLevel <= 1 || targetLevel > LevelsCount)
+        {
+            return false; // Достигнут максимум или невалидный уровень
+        }
+
+        // Вы можете заменить эту формулу своей логикой/массивом цен
+        cost = (targetLevel - 1) * 2000; 
+        return true;
+    }
     #endregion
 
     #region Enemy Common
@@ -142,7 +182,7 @@ public class BalanceConfig : IInitializable
                 else if (key.Contains("скорость полета снаряд")) CopyTo(_playerBulletSpeedByLevel, levelValues);
                 else if (key.Contains("скорость движения")) CopyTo(_playerMoveSpeedByLevel, levelValues);
             }
-            else if (currentSection == TableSection.Enemy) // ИСПРАВЛЕНО: Теперь тут правильный оператор ==
+            else if (currentSection == TableSection.Enemy)
             {
                 if (cells.Count < 3) continue;
                 string paramKey = cells[1].Trim().Trim('"').ToLower();

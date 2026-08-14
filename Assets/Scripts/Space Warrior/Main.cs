@@ -48,15 +48,17 @@ namespace Level
 
         private BoundsCheck _boundsCheck;
         private DiContainer _container;
+        private BalanceConfig _balanceConfig;
 
         private WaveSpawnSettings _currentPhase;
         private bool _spawnLoopActive;
         private bool _lineSpawnLoopActive;
 
         [Inject]
-        private void Construct(DiContainer container, List<WeaponConfig> injectedConfigs)
+        private void Construct(DiContainer container, List<WeaponConfig> injectedConfigs, BalanceConfig balanceConfig)
         {
             _container = container;
+            _balanceConfig = balanceConfig;
             BuildWeaponDictionary(injectedConfigs);
         }
 
@@ -163,6 +165,14 @@ namespace Level
         public void SpawnEnemy()
         {
             if (!spawnEnemies || !_spawnLoopActive || _currentPhase == null) return;
+
+            // Страховка: Ждем инициализации таблиц
+            if (_balanceConfig != null && !_balanceConfig.IsLoaded)
+            {
+                Invoke(nameof(SpawnEnemy), 0.1f);
+                return;
+            }
+
             if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
             {
                 _spawnLoopActive = false;
@@ -192,16 +202,13 @@ namespace Level
             float xMax = _boundsCheck.camWidth - enemyPadding;
             position.x = UnityEngine.Random.Range(xMin, xMax);
 
-            // --- УМНОЕ РАЗДЕЛЕНИЕ СПАВНА ПО Y ---
             if (enemyScript != null && enemyScript.movementPattern == MovementPattern.HorizontalEdge)
             {
-                // Для горизонтального паттерна — случайная высота на всем экране на базе BoundsCheck
                 float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;
                 position.y = UnityEngine.Random.Range(-_boundsCheck.camHeight + paddingY, _boundsCheck.camHeight - paddingY);
             }
             else
             {
-                // Для классических врагов — спавн сверху над экраном
                 position.y = _boundsCheck.camHeight + enemyPadding;
             }
 
@@ -219,6 +226,14 @@ namespace Level
         public void SpawnEnemyLine()
         {
             if (!spawnEnemies || !_lineSpawnLoopActive || _currentPhase == null || !_currentPhase.useLineSpawn) return;
+
+            // Страховка: Ждем инициализации таблиц
+            if (_balanceConfig != null && !_balanceConfig.IsLoaded)
+            {
+                Invoke(nameof(SpawnEnemyLine), 0.1f);
+                return;
+            }
+
             if (!_currentPhase.isInfinite && _currentPhase.spawnedCount >= _currentPhase.maxEnemyCount)
             {
                 _lineSpawnLoopActive = false;
@@ -251,7 +266,6 @@ namespace Level
             EnemyBase enemyScript = enemyObject.GetComponent<EnemyBase>();
             float targetY = 0f;
 
-            // --- РАЗДЕЛЕНИЕ СПАВНА ПО Y ДЛЯ ЛИНИЙ ---
             if (enemyScript != null && enemyScript.movementPattern == MovementPattern.HorizontalEdge)
             {
                 float paddingY = _boundsCheck.radius > 0 ? _boundsCheck.radius : 1f;

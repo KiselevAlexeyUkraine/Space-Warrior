@@ -6,6 +6,7 @@ using Lean.Pool;
 using Servise;
 using System.Collections.Generic;
 using Components.Ui.Pages;
+using Cysharp.Threading.Tasks;
 
 namespace Level
 {
@@ -57,6 +58,7 @@ namespace Level
         private DiContainer _container;
         private PageSwitcher _pageSwitcher; 
         private AnimatorService _animatorService; 
+        private BalanceConfig _balanceConfig;
         
         private int _currentWaveIndex = 0;
         private int _currentColumn = 0;
@@ -84,11 +86,12 @@ namespace Level
         public bool IsGridWaveCleared => !_spawningWaveActive && _activeEnemies.Count == 0;
 
         [Inject]
-        private void Construct(DiContainer container, AnimatorService animatorService, PageSwitcher pageSwitcher)
+        private void Construct(DiContainer container, AnimatorService animatorService, PageSwitcher pageSwitcher, BalanceConfig balanceConfig)
         {
             _container = container;
             _animatorService = animatorService;
             _pageSwitcher = pageSwitcher;
+            _balanceConfig = balanceConfig;
         }
 
         private void Awake()
@@ -103,6 +106,19 @@ namespace Level
 
         private void Start()
         {
+            // Ждем инициализации BalanceConfig перед стартом спавна
+            WaitForBalanceAndStart().Forget();
+        }
+
+        private async UniTaskVoid WaitForBalanceAndStart()
+        {
+            if (_balanceConfig != null && !_balanceConfig.IsLoaded)
+            {
+                Debug.Log("⏳ [GridFormationSpawner] Ожидание загрузки BalanceConfig...");
+                await UniTask.WaitUntil(() => _balanceConfig.IsLoaded);
+            }
+
+            Debug.Log("✅ [GridFormationSpawner] BalanceConfig готов! Запуск спавна врагов.");
             StartNextWave();
         }
 
@@ -190,7 +206,6 @@ namespace Level
 
             if (prefab == null)
             {
-                // Если префаб для этого ряда забыли поставить, просто идем дальше
                 AdvanceGridPointers();
                 CheckWaveSpawnCompletion();
                 return;
@@ -257,8 +272,6 @@ namespace Level
                 return;
             }
 
-            // Резервная проверка: ловит врагов, которые исчезли не через Main.ShipDestroyed
-            // (например, улетели за экран и деспавнились сами внутри EnemyBase).
             if (!_spawningWaveActive && _activeEnemies.Count > 0)
             {
                 _activeEnemies.RemoveWhere(item => item == null || !item.activeInHierarchy);
@@ -270,10 +283,6 @@ namespace Level
             }
         }
 
-        /// <summary>
-        /// Позволяет классу Main регистрировать врагов, созданных динамически, 
-        /// чтобы они учитывались в общем списке активных юнитов волны.
-        /// </summary>
         public void RegisterAdditionalEnemy(GameObject enemy)
         {
             if (enemy != null && !_isTransitioningBetweenWaves)
@@ -282,12 +291,6 @@ namespace Level
             }
         }
 
-        /// <summary>
-        /// Вызывается при подтверждённом убийстве врага (через Main.ShipDestroyed).
-        /// Немедленно убирает врага из списка активных и, если это был последний враг волны,
-        /// сразу же запускает переход к следующей волне (не дожидаясь Update()).
-        /// Возвращает true, если враг был последним в волне.
-        /// </summary>
         public bool CheckAndUnregisterLastEnemy(GameObject enemy)
         {
             if (enemy == null || _isTransitioningBetweenWaves) return false;

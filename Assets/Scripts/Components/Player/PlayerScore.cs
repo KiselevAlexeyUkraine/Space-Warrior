@@ -11,10 +11,12 @@ namespace Components.Player
     {
         public const string TOTAL_SCORE_KEY = "Player_Total_Saved_Score";
         public const string PLAYER_UPGRADE_LEVEL_KEY = "Player_Permanent_Upgrade_Level";
+        public const string UNLOCKED_LEVEL_KEY = "Player_Unlocked_Level";
 
         private int _currentScore;
         private int _totalSavedScore;
         private int _shipLevel;
+        private int _unlockedLevel;
 
         private readonly Dictionary<ResourceType, int> _levelResources = new Dictionary<ResourceType, int>();
         private readonly Dictionary<ResourceType, int> _totalResources = new Dictionary<ResourceType, int>();
@@ -27,6 +29,7 @@ namespace Components.Player
         public int CurrentScore => _currentScore;
         public int TotalSavedScore => _totalSavedScore;
         public int CurrentLevel => _shipLevel;
+        public int UnlockedLevel => _unlockedLevel;
 
         private AudioService _audioService;
 
@@ -34,6 +37,7 @@ namespace Components.Player
         {
             _totalSavedScore = PlayerPrefs.GetInt(TOTAL_SCORE_KEY, 0);
             _shipLevel = PlayerPrefs.GetInt(PLAYER_UPGRADE_LEVEL_KEY, 1);
+            _unlockedLevel = PlayerPrefs.GetInt(UNLOCKED_LEVEL_KEY, 1);
             LoadResources();
         }
 
@@ -60,6 +64,17 @@ namespace Components.Player
                 PlayerPrefs.SetInt($"Resource_{kvp.Key}", kvp.Value);
             }
             PlayerPrefs.Save();
+        }
+
+        public void UnlockNextLevel(int completedDisplayLevel)
+        {
+            int nextLevel = completedDisplayLevel + 1;
+            if (nextLevel > _unlockedLevel)
+            {
+                _unlockedLevel = nextLevel;
+                PlayerPrefs.SetInt(UNLOCKED_LEVEL_KEY, _unlockedLevel);
+                PlayerPrefs.Save();
+            }
         }
 
         public int GetLevelResourceAmount(ResourceType type)
@@ -175,9 +190,11 @@ namespace Components.Player
             _currentScore = 0;
             _totalSavedScore = 0;
             _shipLevel = 1;
+            _unlockedLevel = 1;
 
             PlayerPrefs.DeleteKey(TOTAL_SCORE_KEY);
             PlayerPrefs.DeleteKey(PLAYER_UPGRADE_LEVEL_KEY);
+            PlayerPrefs.DeleteKey(UNLOCKED_LEVEL_KEY);
 
             foreach (ResourceType type in Enum.GetValues(typeof(ResourceType)))
             {

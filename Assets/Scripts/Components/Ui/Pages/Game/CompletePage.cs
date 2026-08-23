@@ -74,9 +74,13 @@ namespace Components.Ui.Pages.Game
                 pauseService.Pause();
                 TextsUpdate();
 
-                // Сохраняем заработанные ресурсы/очки и запускаем анимацию подсчета
                 if (_playerScore != null)
                 {
+                    // Разблокируем следующий уровень (текущая сцена индекс минус 1, т.к. 0 - меню, 1 - уровни)
+                    int currentDisplayLevel = _sceneService.GetCurrentScene() - 1;
+                    _playerScore.UnlockNextLevel(currentDisplayLevel);
+
+                    // Сохраняем заработанные ресурсы/очки и запускаем анимацию подсчета
                     AnimateAndSaveScoreAsync(_playerScore).Forget();
                 }
 
@@ -146,7 +150,6 @@ namespace Components.Ui.Pages.Game
             int levelScore = playerScore.CurrentScore;
             int targetTotal = oldTotal + levelScore;
 
-            // Переносит текущие полученные ресурсы и очки за уровень в общий сохранённый банк
             playerScore.SaveLevelScore();
 
             if (_totalScoreText != null)
@@ -181,7 +184,6 @@ namespace Components.Ui.Pages.Game
 
             int nextLevel = _playerScore.CurrentLevel + 1;
 
-            // Получаем полные требования следующего уровня (очки + ресурсы)
             if (_balanceConfig.TryGetUpgradeRequirement(nextLevel, out var req))
             {
                 if (_playerScore.TrySpendRequirement(req))
@@ -218,7 +220,6 @@ namespace Components.Ui.Pages.Game
             int currentLvl = _playerScore.CurrentLevel;
             int nextLvl = currentLvl + 1;
 
-            // Обновляем счетчики всех ресурсов в UI
             if (_ironText != null) _ironText.text = $"I x {_playerScore.GetTotalResourceAmount(ResourceType.Iron)}";
             if (_goldText != null) _goldText.text = $"G x {_playerScore.GetTotalResourceAmount(ResourceType.Gold)}";
             if (_crystalsText != null) _crystalsText.text = $"C x {_playerScore.GetTotalResourceAmount(ResourceType.Crystals)}";
@@ -245,7 +246,6 @@ namespace Components.Ui.Pages.Game
                 }
                 else
                 {
-                    // Проверяем возможность покупки
                     bool canAfford = _playerScore.CanAffordRequirement(req);
                     _upgradeButton.interactable = canAfford;
 
@@ -253,7 +253,6 @@ namespace Components.Ui.Pages.Game
                     {
                         string actionText = _localizationManager != null ? _localizationManager.UpgradeAction : "Upgrade";
 
-                        // Формируем список ресурсов с проверкой > 0
                         string reqResStr = "";
                         if (req.requiredResources != null)
                         {

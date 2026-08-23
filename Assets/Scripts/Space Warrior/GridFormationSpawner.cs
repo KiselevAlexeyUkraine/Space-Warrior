@@ -71,8 +71,11 @@ namespace Level
         private int _currentWaveMaxColumns;
         private int _currentWaveMaxRows;
 
-        /// <summary>Индекс текущей активной волны (0-based). Используется извне (например, в Main) для привязки спавна врагов к волне.</summary>
+        /// <summary>Индекс текущей активной волны (0-based).</summary>
         public int CurrentWaveIndex => _currentWaveIndex;
+
+        /// <summary>Общее количество волн в уровне.</summary>
+        public int TotalWaves => waves != null ? waves.Count : 0;
 
         /// <summary>Вызывается каждый раз при старте новой волны. Параметр — индекс волны (0-based).</summary>
         public event Action<int> OnWaveStarted;
@@ -106,7 +109,6 @@ namespace Level
 
         private void Start()
         {
-            // Ждем инициализации BalanceConfig перед стартом спавна
             WaitForBalanceAndStart().Forget();
         }
 
@@ -200,7 +202,6 @@ namespace Level
 
             WaveConfiguration currentWave = waves[_currentWaveIndex];
             
-            // Получаем префаб и слой для текущего ряда
             GameObject prefab = GetPrefabForCurrentRow(currentWave, _currentRow);
             int layer = GetLayerForCurrentRow(currentWave, _currentRow);
 

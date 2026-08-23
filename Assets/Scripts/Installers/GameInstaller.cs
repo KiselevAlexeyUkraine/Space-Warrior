@@ -11,6 +11,7 @@ namespace Installers
     {
         [Header("Scene References")]
         [SerializeField] private Main _main;
+        [SerializeField] private GridFormationSpawner _spawner; // Ссылка на спавнер на сцене
 
         [Header("Prefabs")]
         [SerializeField] private PageSwitcher _gameCanvas;
@@ -22,12 +23,18 @@ namespace Installers
         public override void InstallBindings()
         {
             Container.Bind<Main>().FromInstance(_main).AsSingle().NonLazy();
-
             Container.Bind<DesktopInput>().FromNew().AsSingle().NonLazy();
-
-
-
             Container.Bind<Utils>().FromNew().AsSingle().NonLazy();
+
+            // Регистрируем Spawner в Zenject
+            if (_spawner != null)
+            {
+                Container.Bind<GridFormationSpawner>().FromInstance(_spawner).AsSingle().NonLazy();
+            }
+            else
+            {
+                Container.Bind<GridFormationSpawner>().FromComponentInHierarchy().AsSingle().NonLazy();
+            }
 
             Container.Bind<PageSwitcher>().FromComponentInNewPrefab(_gameCanvas).AsSingle().NonLazy();
             Container.Bind<PauseService>().FromComponentInNewPrefab(_pauseService).AsSingle().NonLazy();

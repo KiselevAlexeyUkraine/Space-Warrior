@@ -6,6 +6,7 @@ using Components.Enemy;
 using Zenject;
 using System;
 using Servise;
+using Level;
 
 namespace Components.Ui.Pages.Game
 {
@@ -15,6 +16,10 @@ namespace Components.Ui.Pages.Game
         [SerializeField] private Button pauseButton;
         [SerializeField] private TextMeshProUGUI scoreText;  
         [SerializeField] private TextMeshProUGUI shieldText; 
+
+        [Header("Wave Progress Elements")]
+        [SerializeField] private Slider waveSlider;
+        [SerializeField] private TextMeshProUGUI waveText;
 
         [Header("Resource UI Elements")]
         [SerializeField] private TextMeshProUGUI ironText;
@@ -32,6 +37,7 @@ namespace Components.Ui.Pages.Game
         private PlayerCollect _playerCollect;
         private AnimatorService _animatorService;
         private DiContainer _container;
+        private GridFormationSpawner _spawner;
 
         // Кэшированные значения
         private int _lastScore = 0;
@@ -47,7 +53,8 @@ namespace Components.Ui.Pages.Game
             PlayerScore playerScore,
             AnimatorService animatorService,
             DiContainer container,
-            [InjectOptional] PlayerCollect playerCollect)
+            [InjectOptional] PlayerCollect playerCollect,
+            [InjectOptional] GridFormationSpawner spawner)
         {
             _pauseService = pauseService;
             _pageSwitcher = pageSwitcher;
@@ -55,6 +62,7 @@ namespace Components.Ui.Pages.Game
             _animatorService = animatorService;
             _container = container;
             _playerCollect = playerCollect;
+            _spawner = spawner;
 
             OnOpen += () => 
             { 
@@ -62,25 +70,32 @@ namespace Components.Ui.Pages.Game
 
                 if (_playerCollect == null && _container != null)
                 {
-                    try
-                    {
-                        _playerCollect = _container.Resolve<PlayerCollect>();
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogWarning($"[StatsPage] Не удалось извлечь PlayerCollect через DiContainer: {e.Message}");
-                    }
+                    try { _playerCollect = _container.Resolve<PlayerCollect>(); }
+                    catch (Exception e) { Debug.LogWarning($"[StatsPage] Ошибка Resolve PlayerCollect: {e.Message}"); }
+                }
+
+                if (_spawner == null && _container != null)
+                {
+                    try { _spawner = _container.Resolve<GridFormationSpawner>(); }
+                    catch (Exception e) { Debug.LogWarning($"[StatsPage] Ошибка Resolve GridFormationSpawner: {e.Message}"); }
                 }
 
                 SubscribeShieldEvents();
+                SubscribeWaveEvents();
+
                 UpdateShieldText(_playerCollect != null ? Mathf.Max(0, (int)_playerCollect.ShieldLevel) : 0);
-                
                 RefreshUIValues();
+
+                if (_spawner != null)
+                {
+                    UpdateWaveProgress(_spawner.CurrentWaveIndex);
+                }
             };
 
             OnClose += () => 
             {
                 UnsubscribeShieldEvents();
+                UnsubscribeWaveEvents();
                 _pauseService.Pause();
             };
         }
@@ -98,10 +113,7 @@ namespace Components.Ui.Pages.Game
 
         private void OnDestroy()
         {
-            if (pauseButton != null)
-            {
-                pauseButton.onClick.RemoveListener(OnPauseClicked);
-            }
+            if (pauseButton != null) pauseButton.onClick.RemoveListener(OnPauseClicked);
 
             if (_playerScore != null)
             {
@@ -110,6 +122,44 @@ namespace Components.Ui.Pages.Game
             }
 
             UnsubscribeShieldEvents();
+            UnsubscribeWaveEvents();
+        }
+
+        private void SubscribeWaveEvents()
+        {
+            UnsubscribeWaveEvents();
+            if (_spawner != null)
+            {
+                _spawner.OnWaveStarted += UpdateWaveProgress;
+            }
+        }
+
+        private void UnsubscribeWaveEvents()
+        {
+            if (_spawner != null)
+            {
+                _spawner.OnWaveStarted -= UpdateWaveProgress;
+            }
+        }
+
+        private void UpdateWaveProgress(int currentWaveIndex)
+        {
+            if (_spawner == null) return;
+
+            int totalWaves = _spawner.TotalWaves;
+            int currentDisplayWave = currentWaveIndex + 1;
+
+            if (waveSlider != null)
+            {
+                waveSlider.minValue = 0;
+                waveSlider.maxValue = totalWaves;
+                waveSlider.value = currentDisplayWave;
+            }
+
+            if (waveText != null)
+            {
+                waveText.text = currentDisplayWave.ToString();
+            }
         }
 
         private void RefreshUIValues()
@@ -136,7 +186,6 @@ namespace Components.Ui.Pages.Game
         private void SubscribeShieldEvents()
         {
             UnsubscribeShieldEvents();
-
             if (_playerCollect != null)
             {
                 _playerCollect.OnShieldLevelChanged += UpdateShieldText;
@@ -183,19 +232,13 @@ namespace Components.Ui.Pages.Game
 
             int currentAmount = _playerScore.GetLevelResourceAmount(type);
             
-            // Сбрасываем трансформ перед изменением значения
             ResetElementTransform(textElement);
             textElement.text = $"{prefix} x {currentAmount}";
-            
-            // Заставляем VerticalLayoutGroup пересчитать позиции
             RebuildParentLayout(textElement);
 
-            if (currentAmount > lastAmount)
+            if (currentAmount > lastAmount && _animatorService != null)
             {
-                if (_animatorService != null)
-                {
-                    _animatorService.AnimatePunchScaleUI(textElement, animationDuration, punchScale);
-                }
+                _animatorService.AnimatePunchScaleUI(textElement, animationDuration, punchScale);
             }
 
             lastAmount = currentAmount;
@@ -211,9 +254,6 @@ namespace Components.Ui.Pages.Game
             }
         }
 
-        /// <summary>
-        /// Вспомогательный метод для безошибочного обновления текста и восстановления позиционирования в сетке.
-        /// </summary>
         private void UpdateTextAndRebuild(TextMeshProUGUI textElement, string text)
         {
             if (textElement == null) return;
@@ -222,9 +262,6 @@ namespace Components.Ui.Pages.Game
             RebuildParentLayout(textElement);
         }
 
-        /// <summary>
-        /// Сбрасывает масштаб и принудительно восстанавливает родительский Layout.
-        /// </summary>
         private void ResetElementTransform(TextMeshProUGUI textElement)
         {
             textElement.rectTransform.localScale = Vector3.one;

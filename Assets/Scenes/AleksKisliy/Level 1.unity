@@ -360,6 +360,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8030490555240087705, guid: 1f397f38bf16c454984660176b4db58d, type: 3}
     - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: _spawner
+      value: 
+      objectReference: {fileID: 963194232}
+    - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
       propertyPath: _playerSpawn
       value: 
       objectReference: {fileID: 887688787}
@@ -551,8 +555,7 @@ MonoBehaviour:
   requireAllEnemiesToClearWave: 0
   wavePhases:
   - waveIndex: 0
-    enemies:
-    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
+    enemies: []
     isInfinite: 0
     maxEnemyCount: 10
     powerUpPrefabs:
@@ -570,8 +573,9 @@ MonoBehaviour:
   - waveIndex: 1
     enemies:
     - {fileID: 7654880680303113404, guid: 15cf1713c9a43ea4bada52b08d5e6d9f, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
     isInfinite: 0
-    maxEnemyCount: 4
+    maxEnemyCount: 8
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 8958bd6a1bad1dc46bbfab686c8b7ef1, type: 3}
     spawnedCount: 0
@@ -603,6 +607,7 @@ MonoBehaviour:
   - waveIndex: 3
     enemies:
     - {fileID: 7654880680303113404, guid: 15cf1713c9a43ea4bada52b08d5e6d9f, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
     isInfinite: 0
     maxEnemyCount: 40
     powerUpPrefabs: []

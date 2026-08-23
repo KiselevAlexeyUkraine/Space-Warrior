@@ -35,9 +35,9 @@ namespace Servise
         private bool _isMovingRight = false;
         private readonly List<TrackedProjectile> _activeProjectiles = new List<TrackedProjectile>();
 
-        // Кэш текущих активных последовательностей UI для безопасной остановки
-        private Sequence _activeCounterSequence;
-        private Sequence _activePunchSequence;
+        // Словари для хранения активных Sequences для каждого UI элемента
+        private readonly Dictionary<Transform, Sequence> _activeCounterSequences = new Dictionary<Transform, Sequence>();
+        private readonly Dictionary<Transform, Sequence> _activePunchSequences = new Dictionary<Transform, Sequence>();
 
         #region ===== UI Animations (PrimeTween) =====
 
@@ -50,10 +50,10 @@ namespace Servise
 
             RectTransform rectTransform = textElement.rectTransform;
 
-            // Безопасно останавливаем предыдущую родительскую последовательность
-            if (_activeCounterSequence.isAlive)
+            // Останавливаем родительский Sequence, если он уже запущен для этого объекта
+            if (_activeCounterSequences.TryGetValue(rectTransform, out Sequence activeSeq) && activeSeq.isAlive)
             {
-                _activeCounterSequence.Stop();
+                activeSeq.Stop();
             }
 
             // Фиксируем исходную позицию и масштаб перед анимацией
@@ -62,24 +62,24 @@ namespace Servise
 
             float halfDuration = duration * 0.5f;
 
-            _activeCounterSequence = Sequence.Create()
+            Sequence seq = Sequence.Create()
                 .Group(Tween.Custom(startValue, endValue, duration: duration, onValueChange: val =>
                 {
-                    textElement.text = $"{prefix}{Mathf.RoundToInt(val)}";
+                    if (textElement != null)
+                    {
+                        textElement.text = $"{prefix}{Mathf.RoundToInt(val)}";
+                    }
                 }))
                 .Group(Tween.Scale(rectTransform, endValue: Vector3.one * targetScale, duration: halfDuration, ease: Ease.OutQuad))
                 .Chain(Tween.Scale(rectTransform, endValue: Vector3.one, duration: halfDuration, ease: Ease.InQuad))
-                .OnComplete(() =>
+                .OnComplete(rectTransform, target =>
                 {
-                    // Жесткая фиксация позиции и масштаба после завершения
-                    if (rectTransform != null)
-                    {
-                        rectTransform.localScale = Vector3.one;
-                        rectTransform.anchoredPosition = initialAnchoredPos;
-                    }
-                });
+                    target.localScale = Vector3.one;
+                    target.anchoredPosition = initialAnchoredPos;
+                }, warnIfTargetDestroyed: false);
 
-            return _activeCounterSequence;
+            _activeCounterSequences[rectTransform] = seq;
+            return seq;
         }
 
         /// <summary>
@@ -91,10 +91,10 @@ namespace Servise
 
             RectTransform rectTransform = textElement.rectTransform;
 
-            // Безопасно останавливаем предыдущую родительскую последовательность
-            if (_activePunchSequence.isAlive)
+            // Останавливаем родительский Sequence, если он уже запущен для этого объекта
+            if (_activePunchSequences.TryGetValue(rectTransform, out Sequence activeSeq) && activeSeq.isAlive)
             {
-                _activePunchSequence.Stop();
+                activeSeq.Stop();
             }
 
             // Фиксируем исходную позицию и масштаб перед анимацией
@@ -103,18 +103,16 @@ namespace Servise
 
             float halfDuration = duration * 0.5f;
 
-            _activePunchSequence = Sequence.Create()
+            Sequence seq = Sequence.Create()
                 .Chain(Tween.Scale(rectTransform, endValue: Vector3.one * punchScale, duration: halfDuration, ease: Ease.OutBack))
                 .Chain(Tween.Scale(rectTransform, endValue: Vector3.one, duration: halfDuration, ease: Ease.InBack))
-                .OnComplete(() =>
+                .OnComplete(rectTransform, target =>
                 {
-                    // Жесткая фиксация позиции и масштаба после завершения
-                    if (rectTransform != null)
-                    {
-                        rectTransform.localScale = Vector3.one;
-                        rectTransform.anchoredPosition = initialAnchoredPos;
-                    }
-                });
+                    target.localScale = Vector3.one;
+                    target.anchoredPosition = initialAnchoredPos;
+                }, warnIfTargetDestroyed: false);
+
+            _activePunchSequences[rectTransform] = seq;
         }
 
         #endregion
@@ -302,13 +300,22 @@ namespace Servise
 
         private void OnDestroy()
         {
-            if (_activeCounterSequence.isAlive) _activeCounterSequence.Stop();
-            if (_activePunchSequence.isAlive) _activePunchSequence.Stop();
-
             if (_animationCoroutine != null)
                 StopCoroutine(_animationCoroutine);
             if (_formationRoot != null)
                 Tween.StopAll(_formationRoot);
+
+            foreach (var seq in _activeCounterSequences.Values)
+            {
+                if (seq.isAlive) seq.Stop();
+            }
+            foreach (var seq in _activePunchSequences.Values)
+            {
+                if (seq.isAlive) seq.Stop();
+            }
+
+            _activeCounterSequences.Clear();
+            _activePunchSequences.Clear();
             _activeProjectiles.Clear();
         }
     }

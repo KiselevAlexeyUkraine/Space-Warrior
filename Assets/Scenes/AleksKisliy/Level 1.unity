@@ -551,13 +551,14 @@ MonoBehaviour:
   requireAllEnemiesToClearWave: 0
   wavePhases:
   - waveIndex: 0
-    enemies: []
+    enemies:
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
     isInfinite: 0
-    maxEnemyCount: 0
+    maxEnemyCount: 10
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
     spawnedCount: 0
-    useLineSpawn: 1
+    useLineSpawn: 0
     lineSpawnEnemies: []
     lineSpawnInterval: 0.3
     lineSpawnDirection: 0

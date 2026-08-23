@@ -7,6 +7,7 @@ using Components.Player.Localization;
 using Servise; 
 using System;
 using Cysharp.Threading.Tasks;
+using Components.Enemy;
 
 namespace Components.Ui.Pages.Game
 {
@@ -18,19 +19,25 @@ namespace Components.Ui.Pages.Game
         [SerializeField] private Button _restart;
         [SerializeField] private Button _menu;
 
-        [Header("Upgrade System Elements")]
+        [Header("===== Resource UI Elements =====")]
+        [SerializeField] private TMP_Text _ironText;
+        [SerializeField] private TMP_Text _goldText;
+        [SerializeField] private TMP_Text _crystalsText;
+        [SerializeField] private TMP_Text _titaniumText;
+
+        [Header("===== Upgrade System Elements =====")]
         [SerializeField] private Button _upgradeButton;
         [SerializeField] private TMP_Text _upgradeButtonText; 
         [SerializeField] private TMP_Text _currentStatsText; 
         [SerializeField] private TMP_Text _nextStatsText;    
 
-        [Header("Reset System Elements")]
+        [Header("===== Reset System Elements =====")]
         [SerializeField] private Button _resetProgressButton;
 
-        [Header("Score Animation Settings")]
+        [Header("===== Score Animation Settings =====")]
         [SerializeField] private float _scoreCountDuration = 1.0f;
 
-        [Header("Player Fly Up Animation")]
+        [Header("===== Player Fly Up Animation =====")]
         [SerializeField] private float _flyUpDistance = 20f;
         [SerializeField] private float _flyDuration = 1.5f;
         [SerializeField] private AnimationCurve _flyCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -67,7 +74,7 @@ namespace Components.Ui.Pages.Game
                 pauseService.Pause();
                 TextsUpdate();
 
-                // Запускаем сохранение и плавную анимацию прибавления очков
+                // Сохраняем заработанные ресурсы/очки и запускаем анимацию подсчета
                 if (_playerScore != null)
                 {
                     AnimateAndSaveScoreAsync(_playerScore).Forget();
@@ -139,13 +146,14 @@ namespace Components.Ui.Pages.Game
             int levelScore = playerScore.CurrentScore;
             int targetTotal = oldTotal + levelScore;
 
+            // Переносит текущие полученные ресурсы и очки за уровень в общий сохранённый банк
             playerScore.SaveLevelScore();
 
             if (_totalScoreText != null)
             {
                 if (levelScore <= 0)
                 {
-                    _totalScoreText.text = targetTotal.ToString();
+                    _totalScoreText.text = $"$ {targetTotal}";
                 }
                 else
                 {
@@ -156,11 +164,11 @@ namespace Components.Ui.Pages.Game
                         float t = Mathf.Clamp01(elapsedTime / _scoreCountDuration);
                         
                         int currentDisplayedScore = Mathf.RoundToInt(Mathf.Lerp(oldTotal, targetTotal, t));
-                        _totalScoreText.text = currentDisplayedScore.ToString();
+                        _totalScoreText.text = $"$ {currentDisplayedScore}";
 
                         await UniTask.Yield(PlayerLoopTiming.Update);
                     }
-                    _totalScoreText.text = targetTotal.ToString();
+                    _totalScoreText.text = $"$ {targetTotal}";
                 }
             }
 
@@ -172,16 +180,19 @@ namespace Components.Ui.Pages.Game
             if (_balanceConfig == null || _playerScore == null) return;
 
             int nextLevel = _playerScore.CurrentLevel + 1;
-            int upgradeCost = GetUpgradeCost(nextLevel);
 
-            if (_playerScore.TrySpendTotalScore(upgradeCost))
+            // Получаем полные требования следующего уровня (очки + ресурсы)
+            if (_balanceConfig.TryGetUpgradeRequirement(nextLevel, out var req))
             {
-                if (_totalScoreText != null)
+                if (_playerScore.TrySpendRequirement(req))
                 {
-                    _totalScoreText.text = _playerScore.TotalSavedScore.ToString();
-                }
+                    if (_totalScoreText != null)
+                    {
+                        _totalScoreText.text = $"$ {_playerScore.TotalSavedScore}";
+                    }
 
-                UpdateUpgradeUI();
+                    UpdateUpgradeUI();
+                }
             }
         }
 
@@ -194,7 +205,7 @@ namespace Components.Ui.Pages.Game
 
             if (_totalScoreText != null)
             {
-                _totalScoreText.text = "0";
+                _totalScoreText.text = "$ 0";
             }
 
             UpdateUpgradeUI();
@@ -207,49 +218,59 @@ namespace Components.Ui.Pages.Game
             int currentLvl = _playerScore.CurrentLevel;
             int nextLvl = currentLvl + 1;
 
+            // Обновляем счетчики всех ресурсов в UI
+            if (_ironText != null) _ironText.text = $"I x {_playerScore.GetTotalResourceAmount(ResourceType.Iron)}";
+            if (_goldText != null) _goldText.text = $"G x {_playerScore.GetTotalResourceAmount(ResourceType.Gold)}";
+            if (_crystalsText != null) _crystalsText.text = $"C x {_playerScore.GetTotalResourceAmount(ResourceType.Crystals)}";
+            if (_titaniumText != null) _titaniumText.text = $"T x {_playerScore.GetTotalResourceAmount(ResourceType.Titanium)}";
+
             if (_currentStatsText != null)
             {
                 _currentStatsText.text = GetStatsDescription(currentLvl);
             }
 
-            int cost = GetUpgradeCost(nextLvl);
-            bool isMaxLevel = cost <= 0;
+            bool hasRequirement = _balanceConfig.TryGetUpgradeRequirement(nextLvl, out var req);
 
             if (_nextStatsText != null)
             {
-                _nextStatsText.text = isMaxLevel ? "MAX LEVEL" : GetStatsDescription(nextLvl);
+                _nextStatsText.text = !hasRequirement ? "MAX LEVEL" : GetStatsDescription(nextLvl);
             }
 
             if (_upgradeButton != null)
             {
-                if (isMaxLevel)
+                if (!hasRequirement)
                 {
                     _upgradeButton.interactable = false;
                     if (_upgradeButtonText != null) _upgradeButtonText.text = "MAX";
                 }
                 else
                 {
-                    bool canAfford = _playerScore.TotalSavedScore >= cost;
+                    // Проверяем возможность покупки
+                    bool canAfford = _playerScore.CanAffordRequirement(req);
                     _upgradeButton.interactable = canAfford;
 
                     if (_upgradeButtonText != null)
                     {
-                        // Подтягиваем localized глагол "Улучшить" / "Upgrade"
                         string actionText = _localizationManager != null ? _localizationManager.UpgradeAction : "Upgrade";
-                        _upgradeButtonText.text = $"{actionText} ({cost})";
+
+                        // Формируем список ресурсов с проверкой > 0
+                        string reqResStr = "";
+                        if (req.requiredResources != null)
+                        {
+                            foreach (var res in req.requiredResources)
+                            {
+                                if (res.amount > 0)
+                                {
+                                    char resourceLetter = res.resourceType.ToString()[0];
+                                    reqResStr += $" | {resourceLetter}:{res.amount}";
+                                }
+                            }
+                        }
+
+                        _upgradeButtonText.text = $"{actionText} (${req.scoreCost}{reqResStr})";
                     }
                 }
             }
-        }
-
-        private int GetUpgradeCost(int targetLevel)
-        {
-            if (_balanceConfig != null && _balanceConfig.TryGetUpgradeCost(targetLevel, out int cost))
-            {
-                return cost;
-            }
-            
-            return targetLevel <= 10 ? (targetLevel - 1) * 2000 : 0; 
         }
 
         private string GetStatsDescription(int level)
@@ -285,7 +306,6 @@ namespace Components.Ui.Pages.Game
             _restart.GetComponentInChildren<TMP_Text>().text = _localizationManager.Restart;
             _menu.GetComponentInChildren<TMP_Text>().text = _localizationManager.ToMainMenu;
 
-            // Обновляем текст кнопки улучшения и характеристик при открытии/смене языка
             UpdateUpgradeUI();
         }
     }

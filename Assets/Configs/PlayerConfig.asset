@@ -18,6 +18,19 @@ MonoBehaviour:
   _gameRestartDelay: 2
   _projectilePrefab: {fileID: 1843796405803476770, guid: cfecb469aab4ce24fad722f006650415, type: 3}
   _projectileSpeed: 40
-  _startShieldLevel: 1
   _maxShieldLevel: 4
   _startWeapon: 1
+  _upgradeRequirements:
+  - targetLevel: 2
+    scoreCost: 10000
+    requiredResources: []
+  - targetLevel: 3
+    scoreCost: 20000
+    requiredResources:
+    - resourceType: 0
+      amount: 50
+  - targetLevel: 4
+    scoreCost: 50000
+    requiredResources:
+    - resourceType: 0
+      amount: 500

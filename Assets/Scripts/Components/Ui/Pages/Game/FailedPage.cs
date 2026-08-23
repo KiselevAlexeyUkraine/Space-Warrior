@@ -18,21 +18,27 @@ namespace Components.Ui.Pages.Game
         private PauseService _pauseService;
         private PauseSwitcher _pauseSwitcher;
         private LocalizationManager _localizationManager;
+        private PlayerScore _playerScore;
 
         [Inject]
         private void Construct(
             PauseService pauseService,
             PauseSwitcher pauseSwitcher,
-            LocalizationManager localizationManager)
+            LocalizationManager localizationManager,
+            [InjectOptional] PlayerScore playerScore)
         {
             _pauseService = pauseService;
             _pauseSwitcher = pauseSwitcher;
             _localizationManager = localizationManager;
+            _playerScore = playerScore;
 
             OnOpen += () =>
             {
                 _pauseSwitcher.enabled = false;
                 _pauseService.Pause();
+
+                // Сбрасываем ресурсы при смерти игрока
+                _playerScore?.ResetScore();
             };
 
             OnOpenWithParam += ShowFailureUI;
@@ -43,11 +49,13 @@ namespace Components.Ui.Pages.Game
             TextsUpdate();
             _restart.onClick.AddListener(() =>
             {
+                _playerScore?.ResetScore();
                 PageSwitcher.Open(PageName.GameRestart).Forget();
             });
 
             _menu.onClick.AddListener(() =>
             {
+                _playerScore?.ResetScore();
                 PageSwitcher.Open(PageName.GameExit).Forget();
             });
         }
@@ -69,17 +77,17 @@ namespace Components.Ui.Pages.Game
                 _failureText.text = _localizationManager.TextFaild;
             }
         }
-        
 
         private void TextsUpdate()
         {
-            _failureText.text = _localizationManager.TextFaild;
+            if (_failureText != null)
+                _failureText.text = _localizationManager.TextFaild;
             
-            _restart.GetComponentInChildren<TMP_Text>().text =
-                _localizationManager.Restart;
+            if (_restart != null && _restart.GetComponentInChildren<TMP_Text>() != null)
+                _restart.GetComponentInChildren<TMP_Text>().text = _localizationManager.Restart;
 
-            _menu.GetComponentInChildren<TMP_Text>().text =
-                _localizationManager.ToMainMenu;
+            if (_menu != null && _menu.GetComponentInChildren<TMP_Text>() != null)
+                _menu.GetComponentInChildren<TMP_Text>().text = _localizationManager.ToMainMenu;
         }
     }
 }

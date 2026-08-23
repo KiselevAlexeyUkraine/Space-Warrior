@@ -22,6 +22,12 @@ namespace Components.Enemy
     [RequireComponent(typeof(BoundsCheck))]
     public abstract class EnemyBase : MonoBehaviour
     {
+        [Header("Настройки Астероида и Ресурсов")]
+        [SerializeField] protected bool isAsteroid = false;
+        [SerializeField] private float minRotationSpeed = 20f;
+        [SerializeField] private float maxRotationSpeed = 90f;
+        [SerializeField] protected List<ResourceDrop> resourceDrops = new List<ResourceDrop>();
+
         [Header("Параметры врага (fallback, если BalanceConfig не внедрён)")]
         [SerializeField] protected float speed = 10f;
         [SerializeField] protected float health = 10f;
@@ -40,7 +46,7 @@ namespace Components.Enemy
 
         [Header("Паттерн движения")]
         [Tooltip("Траектория движения врага.")]
-        public MovementPattern movementPattern = MovementPattern.StraightDown; // Изменено на public, чтобы Main видел тип
+        public MovementPattern movementPattern = MovementPattern.StraightDown;
 
         [Header("Паттерн: Sine Wave (синусоида)")]
         [SerializeField] protected float waveFrequency = 2f;
@@ -101,6 +107,9 @@ namespace Components.Enemy
         private Quaternion _initialVisualLocalRot;
         private bool _isAwaken = false;
 
+        private Vector3 _asteroidRotationAxis;
+        private float _asteroidRotationSpeed;
+
         protected BoundsCheck bndCheck;
         protected Main main;
 
@@ -132,6 +141,7 @@ namespace Components.Enemy
             }
 
             _isAwaken = true;
+            InitAsteroidRotation();
         }
 
         protected virtual void Start()
@@ -162,6 +172,7 @@ namespace Components.Enemy
 
             InitializeActiveObjectsList();
             ApplyBalanceConfig();
+            InitAsteroidRotation();
 
             if (bndCheck != null)
             {
@@ -189,9 +200,18 @@ namespace Components.Enemy
             }
         }
 
+        private void InitAsteroidRotation()
+        {
+            if (isAsteroid)
+            {
+                _asteroidRotationAxis = Random.onUnitSphere;
+                _asteroidRotationSpeed = Random.Range(minRotationSpeed, maxRotationSpeed);
+            }
+        }
+
         private void TriggerBobbingAnimation()
         {
-            if (enableBobbing && visualBobTarget != null && _animatorService != null)
+            if (!isAsteroid && enableBobbing && visualBobTarget != null && _animatorService != null)
             {
                 _animatorService.StartComplexBob(visualBobTarget, bobPositionOffset, bobRotationOffset, bobDuration, bobEase);
             }
@@ -219,6 +239,11 @@ namespace Components.Enemy
 
             if (useGridFormation) HandleGridMovement();
             else Move();
+
+            if (isAsteroid)
+            {
+                transform.Rotate(_asteroidRotationAxis * (_asteroidRotationSpeed * Time.deltaTime));
+            }
             
             if (bndCheck != null && bndCheck.enabled && bndCheck.offDown && movementPattern != MovementPattern.HorizontalEdge)
             {
@@ -295,8 +320,6 @@ namespace Components.Enemy
             Vector3 tempPos = pos;
             tempPos.x = startFromLeft ? -edgeX : edgeX;
 
-            // Если Main уже рассчитал корректный Y на всем экране, сохраняем его. 
-            // Иначе (fallback) берем случайное значение по всей высоте BoundsCheck
             if (Mathf.Approximately(tempPos.y, 0f))
             {
                 float paddingY = bndCheck.radius > 0 ? bndCheck.radius : 1f;
@@ -347,7 +370,7 @@ namespace Components.Enemy
             tempPos.y -= speed * Time.deltaTime;
             pos = tempPos;
 
-            if (!enableBobbing)
+            if (!enableBobbing && !isAsteroid)
             {
                 Vector3 rot = new Vector3(0, sin * waveRotY, 0);
                 transform.rotation = Quaternion.Euler(rot);
@@ -365,7 +388,6 @@ namespace Components.Enemy
 
         private void MoveSwoopCurve()
         {
-            // --- МЕТОД ПОЛНОСТЬЮ ВОССТАНОВЛЕН И ИСПРАВЛЕН ---
             float u = (Time.time - _patternBirthTime) / swoopLifeTime;
             if (u > 1) { SafeDespawn(gameObject); return; }
 
@@ -445,10 +467,30 @@ namespace Components.Enemy
             if (health <= 0 && !notifiedOfDestruction)
             {
                 notifiedOfDestruction = true;
+                
+                if (isAsteroid)
+                {
+                    DropResources();
+                }
+
                 if (_explosionParticlePrefab != null) LeanPool.Spawn(_explosionParticlePrefab, transform.position, Quaternion.identity);
                 _audioService?.PlayRandomEnemyDeath();
                 _playerScore?.AddScore(score);
                 main.ShipDestroyed(this);
+            }
+        }
+
+        private void DropResources()
+        {
+            if (_playerScore == null || resourceDrops == null) return;
+
+            foreach (var drop in resourceDrops)
+            {
+                int amount = Random.Range(drop.minAmount, drop.maxAmount + 1);
+                if (amount > 0)
+                {
+                    _playerScore.AddResource(drop.resourceType, amount);
+                }
             }
         }
 

@@ -1,3 +1,4 @@
+using Components.Enemy;
 using Components.Player;
 using Components.Player.Localization;
 using Configs;
@@ -12,6 +13,12 @@ namespace Components.Ui.Pages.Menu
     {
         [Header("===== Score & Level Display =====")]
         [SerializeField] private TMP_Text _totalScoreText;
+
+        [Header("===== Resource UI Elements =====")]
+        [SerializeField] private TMP_Text _ironText;
+        [SerializeField] private TMP_Text _goldText;
+        [SerializeField] private TMP_Text _crystalsText;
+        [SerializeField] private TMP_Text _titaniumText;
 
         [Header("===== Upgrade System Elements =====")]
         [SerializeField] private Button _upgradeButton;
@@ -41,20 +48,9 @@ namespace Components.Ui.Pages.Menu
 
         private void Awake()
         {
-            if (_upgradeButton != null)
-            {
-                _upgradeButton.onClick.AddListener(OnUpgradeClicked);
-            }
-
-            if (_backButton != null)
-            {
-                _backButton.onClick.AddListener(OnBackClicked);
-            }
-
-            if (_resetProgressButton != null)
-            {
-                _resetProgressButton.onClick.AddListener(OnResetProgressClicked);
-            }
+            if (_upgradeButton != null) _upgradeButton.onClick.AddListener(OnUpgradeClicked);
+            if (_backButton != null) _backButton.onClick.AddListener(OnBackClicked);
+            if (_resetProgressButton != null) _resetProgressButton.onClick.AddListener(OnResetProgressClicked);
         }
 
         private void OnEnable()
@@ -63,6 +59,7 @@ namespace Components.Ui.Pages.Menu
             {
                 _playerScore.OnTotalScoreChanged += OnTotalScoreChanged;
                 _playerScore.OnLevelChanged += OnLevelChanged;
+                _playerScore.OnResourcesChanged += UpdateUpgradeUI;
             }
 
             UpdateUpgradeUI();
@@ -74,6 +71,7 @@ namespace Components.Ui.Pages.Menu
             {
                 _playerScore.OnTotalScoreChanged -= OnTotalScoreChanged;
                 _playerScore.OnLevelChanged -= OnLevelChanged;
+                _playerScore.OnResourcesChanged -= UpdateUpgradeUI;
             }
         }
 
@@ -89,11 +87,13 @@ namespace Components.Ui.Pages.Menu
             if (_balanceConfig == null || _playerScore == null) return;
 
             int nextLevel = _playerScore.CurrentLevel + 1;
-            int upgradeCost = GetUpgradeCost(nextLevel);
-
-            if (_playerScore.TrySpendTotalScore(upgradeCost))
+            
+            if (_balanceConfig.TryGetUpgradeRequirement(nextLevel, out var req))
             {
-                UpdateUpgradeUI();
+                if (_playerScore.TrySpendRequirement(req))
+                {
+                    UpdateUpgradeUI();
+                }
             }
         }
 
@@ -112,21 +112,13 @@ namespace Components.Ui.Pages.Menu
             PageSwitcher.Open(PageName.Menu).Forget();
         }
 
-        private void OnTotalScoreChanged(int newTotalScore)
-        {
-            UpdateUpgradeUI();
-        }
-
-        private void OnLevelChanged(int newLevel)
-        {
-            UpdateUpgradeUI();
-        }
+        private void OnTotalScoreChanged(int newTotalScore) => UpdateUpgradeUI();
+        private void OnLevelChanged(int newLevel) => UpdateUpgradeUI();
 
         private void UpdateUpgradeUI()
         {
             if (_balanceConfig == null || _playerScore == null) return;
 
-            // Локализация кнопки "Назад"
             if (_backButtonText != null && _localizationManager != null)
             {
                 _backButtonText.text = _localizationManager.Back;
@@ -135,53 +127,55 @@ namespace Components.Ui.Pages.Menu
             int currentLvl = _playerScore.CurrentLevel;
             int nextLvl = currentLvl + 1;
 
-            if (_totalScoreText != null)
-            {
-                _totalScoreText.text = _playerScore.TotalSavedScore.ToString();
-            }
+            if (_totalScoreText != null) _totalScoreText.text = $"$ {_playerScore.TotalSavedScore}";
 
-            if (_currentStatsText != null)
-            {
-                _currentStatsText.text = GetStatsDescription(currentLvl);
-            }
+            if (_ironText != null) _ironText.text = $"I x {_playerScore.GetTotalResourceAmount(ResourceType.Iron)}";
+            if (_goldText != null) _goldText.text = $"G x {_playerScore.GetTotalResourceAmount(ResourceType.Gold)}";
+            if (_crystalsText != null) _crystalsText.text = $"C x {_playerScore.GetTotalResourceAmount(ResourceType.Crystals)}";
+            if (_titaniumText != null) _titaniumText.text = $"T x {_playerScore.GetTotalResourceAmount(ResourceType.Titanium)}";
 
-            int cost = GetUpgradeCost(nextLvl);
-            bool isMaxLevel = cost <= 0;
+            if (_currentStatsText != null) _currentStatsText.text = GetStatsDescription(currentLvl);
+
+            bool hasRequirement = _balanceConfig.TryGetUpgradeRequirement(nextLvl, out var req);
 
             if (_nextStatsText != null)
             {
-                _nextStatsText.text = isMaxLevel ? "MAX LEVEL" : GetStatsDescription(nextLvl);
+                _nextStatsText.text = !hasRequirement ? "MAX LEVEL" : GetStatsDescription(nextLvl);
             }
 
             if (_upgradeButton != null)
             {
-                if (isMaxLevel)
+                if (!hasRequirement)
                 {
                     _upgradeButton.interactable = false;
                     if (_upgradeButtonText != null) _upgradeButtonText.text = "MAX";
                 }
                 else
                 {
-                    bool canAfford = _playerScore.TotalSavedScore >= cost;
+                    bool canAfford = _playerScore.CanAffordRequirement(req);
                     _upgradeButton.interactable = canAfford;
 
                     if (_upgradeButtonText != null)
                     {
                         string actionText = _localizationManager != null ? _localizationManager.UpgradeAction : "Upgrade";
-                        _upgradeButtonText.text = $"{actionText} ({cost})";
+
+                        string reqResStr = "";
+                        if (req.requiredResources != null)
+                        {
+                            foreach (var res in req.requiredResources)
+                            {
+                                if (res.amount > 0)
+                                {
+                                    char resourceLetter = res.resourceType.ToString()[0];
+                                    reqResStr += $" | {resourceLetter}:{res.amount}";
+                                }
+                            }
+                        }
+
+                        _upgradeButtonText.text = $"{actionText} (${req.scoreCost}{reqResStr})";
                     }
                 }
             }
-        }
-
-        private int GetUpgradeCost(int targetLevel)
-        {
-            if (_balanceConfig != null && _balanceConfig.TryGetUpgradeCost(targetLevel, out int cost))
-            {
-                return cost;
-            }
-
-            return targetLevel <= 10 ? (targetLevel - 1) * 2000 : 0;
         }
 
         private string GetStatsDescription(int level)

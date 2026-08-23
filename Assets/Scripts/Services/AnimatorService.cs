@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Lean.Pool;
 using System;
+using TMPro;
 
 namespace Servise
 {
@@ -34,6 +35,90 @@ namespace Servise
         private bool _isMovingRight = false;
         private readonly List<TrackedProjectile> _activeProjectiles = new List<TrackedProjectile>();
 
+        // Кэш текущих активных последовательностей UI для безопасной остановки
+        private Sequence _activeCounterSequence;
+        private Sequence _activePunchSequence;
+
+        #region ===== UI Animations (PrimeTween) =====
+
+        /// <summary>
+        /// Анимирует счетчик очков с плавным изменением числа и масштабированием UI элемента без сдвига позиции.
+        /// </summary>
+        public Sequence AnimateCounterUI(TMP_Text textElement, int startValue, int endValue, float duration = 0.4f, string prefix = "$ ", float targetScale = 1.3f)
+        {
+            if (textElement == null) return default;
+
+            RectTransform rectTransform = textElement.rectTransform;
+
+            // Безопасно останавливаем предыдущую родительскую последовательность
+            if (_activeCounterSequence.isAlive)
+            {
+                _activeCounterSequence.Stop();
+            }
+
+            // Фиксируем исходную позицию и масштаб перед анимацией
+            Vector2 initialAnchoredPos = rectTransform.anchoredPosition;
+            rectTransform.localScale = Vector3.one;
+
+            float halfDuration = duration * 0.5f;
+
+            _activeCounterSequence = Sequence.Create()
+                .Group(Tween.Custom(startValue, endValue, duration: duration, onValueChange: val =>
+                {
+                    textElement.text = $"{prefix}{Mathf.RoundToInt(val)}";
+                }))
+                .Group(Tween.Scale(rectTransform, endValue: Vector3.one * targetScale, duration: halfDuration, ease: Ease.OutQuad))
+                .Chain(Tween.Scale(rectTransform, endValue: Vector3.one, duration: halfDuration, ease: Ease.InQuad))
+                .OnComplete(() =>
+                {
+                    // Жесткая фиксация позиции и масштаба после завершения
+                    if (rectTransform != null)
+                    {
+                        rectTransform.localScale = Vector3.one;
+                        rectTransform.anchoredPosition = initialAnchoredPos;
+                    }
+                });
+
+            return _activeCounterSequence;
+        }
+
+        /// <summary>
+        /// Анимирует одиночную импульсную вспышку/увеличение (Punch Scale) UI элемента без сдвига позиции.
+        /// </summary>
+        public void AnimatePunchScaleUI(TMP_Text textElement, float duration = 0.35f, float punchScale = 1.3f)
+        {
+            if (textElement == null) return;
+
+            RectTransform rectTransform = textElement.rectTransform;
+
+            // Безопасно останавливаем предыдущую родительскую последовательность
+            if (_activePunchSequence.isAlive)
+            {
+                _activePunchSequence.Stop();
+            }
+
+            // Фиксируем исходную позицию и масштаб перед анимацией
+            Vector2 initialAnchoredPos = rectTransform.anchoredPosition;
+            rectTransform.localScale = Vector3.one;
+
+            float halfDuration = duration * 0.5f;
+
+            _activePunchSequence = Sequence.Create()
+                .Chain(Tween.Scale(rectTransform, endValue: Vector3.one * punchScale, duration: halfDuration, ease: Ease.OutBack))
+                .Chain(Tween.Scale(rectTransform, endValue: Vector3.one, duration: halfDuration, ease: Ease.InBack))
+                .OnComplete(() =>
+                {
+                    // Жесткая фиксация позиции и масштаба после завершения
+                    if (rectTransform != null)
+                    {
+                        rectTransform.localScale = Vector3.one;
+                        rectTransform.anchoredPosition = initialAnchoredPos;
+                    }
+                });
+        }
+
+        #endregion
+
         public void RegisterProjectile(GameObject projectileGo, float projectileSpeed)
         {
             if (projectileGo == null) return;
@@ -47,22 +132,16 @@ namespace Servise
             });
         }
         
-        /// <summary>
-        /// Анимирует взлет игрока вверх за пределы экрана, игнорируя паузу (Time.timeScale).
-        /// </summary>
         public void AnimatePlayerFlyUp(Transform playerTransform, float targetYOffset, float duration, AnimationCurve curve, Action onComplete = null)
         {
             if (playerTransform == null) return;
 
-            // Лог старта анимации
-            Debug.Log($"<color=orange>🔥 [AnimatorService] ФИНАЛЬНАЯ АНИМАЦИЯ ЗАПУСТИЛАСЬ! Взлет на Y-смещение: {targetYOffset} за {duration} сек. (Игнорируя Time.timeScale) 🔥</color>");
+            Debug.Log($"<color=orange>🔥 [AnimatorService] ФИНАЛЬНАЯ АНИМАЦИЯ ЗАПУСТИЛАСЬ! Взлет на Y-смещение: {targetYOffset} за {duration} сек. 🔥</color>");
 
-            // Полностью очищаем старые твины покачивания/движения на игроке, чтобы они не перебивали взлет
             Tween.StopAll(playerTransform);
 
             Vector3 targetPosition = playerTransform.position + new Vector3(0f, targetYOffset, 0f);
 
-            // Анимируем позицию независимо от масштаба времени (useUnscaledTime: true)
             Tween.Position(playerTransform, targetPosition, duration, ease: curve, useUnscaledTime: true)
                 .OnComplete(() => onComplete?.Invoke(), warnIfTargetDestroyed: false);
         }
@@ -183,24 +262,17 @@ namespace Servise
                 .OnComplete(onResetComplete, warnIfTargetDestroyed: false);
         }
 
-        /// <summary>
-        /// Запускает комплексное покачивание объекта, сохраняя его исходный наклон по оси X.
-        /// </summary>
         public void StartComplexBob(Transform target, float posOffsetMultiplier, float rotOffsetMultiplier, float duration, Ease ease = Ease.InOutSine)
         {
             if (target == null) return;
 
-            // Сбрасываем старые твины на этом объекте перед запуском нового цикла
             Tween.StopAll(target);
 
-            // Запоминаем текущие локальные углы объекта, чтобы сохранить его наклон по X (например, -45)
             Vector3 baseAngles = target.localEulerAngles;
 
-            // 1. Покачивание позиции строго по Y (Локальное)
             Vector3 targetLocalPos = target.localPosition + new Vector3(0f, -Mathf.Abs(posOffsetMultiplier), 0f);
             Tween.LocalPosition(target, targetLocalPos, duration, ease, cycles: -1, cycleMode: CycleMode.Yoyo);
 
-            // 2. Раздельное покачивание вращения по оси Y относительно базового угла
             Tween.LocalEulerAngles(
                 target, 
                 startValue: new Vector3(baseAngles.x, baseAngles.y - rotOffsetMultiplier, baseAngles.z), 
@@ -211,7 +283,6 @@ namespace Servise
                 cycleMode: CycleMode.Yoyo
             );
 
-            // 3. Раздельное покачивание вращения по оси Z относительно базового угла
             Tween.LocalEulerAngles(
                 target, 
                 startValue: new Vector3(baseAngles.x, baseAngles.y, baseAngles.z - rotOffsetMultiplier), 
@@ -223,9 +294,6 @@ namespace Servise
             );
         }
 
-        /// <summary>
-        /// Полностью останавливает комплексное покачивание объекта.
-        /// </summary>
         public void StopComplexBob(Transform target)
         {
             if (target == null) return;
@@ -234,6 +302,9 @@ namespace Servise
 
         private void OnDestroy()
         {
+            if (_activeCounterSequence.isAlive) _activeCounterSequence.Stop();
+            if (_activePunchSequence.isAlive) _activePunchSequence.Stop();
+
             if (_animationCoroutine != null)
                 StopCoroutine(_animationCoroutine);
             if (_formationRoot != null)

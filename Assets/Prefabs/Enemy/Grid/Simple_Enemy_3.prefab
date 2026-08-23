@@ -96,6 +96,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b93dc490413fc894bb7e305d3769411c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Components.Enemy.Enemy_0
+  isAsteroid: 0
+  minRotationSpeed: 20
+  maxRotationSpeed: 90
+  resourceDrops: []
   speed: 20
   health: 8
   score: 200

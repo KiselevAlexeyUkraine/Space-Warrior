@@ -2,8 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Components.Player;
+using Components.Enemy;
 using Zenject;
 using System;
+using Servise;
 
 namespace Components.Ui.Pages.Game
 {
@@ -11,35 +13,53 @@ namespace Components.Ui.Pages.Game
     {
         [Header("Status UI Elements")]
         [SerializeField] private Button pauseButton;
-        [SerializeField] private TextMeshProUGUI scoreText;  // Текст текущего счета
-        [SerializeField] private TextMeshProUGUI shieldText; // Текст для отображения уровня щита (S x N)
+        [SerializeField] private TextMeshProUGUI scoreText;  
+        [SerializeField] private TextMeshProUGUI shieldText; 
+
+        [Header("Resource UI Elements")]
+        [SerializeField] private TextMeshProUGUI ironText;
+        [SerializeField] private TextMeshProUGUI goldText;
+        [SerializeField] private TextMeshProUGUI crystalsText;
+        [SerializeField] private TextMeshProUGUI titaniumText;
+
+        [Header("Animation Scale Settings")]
+        [SerializeField] private float punchScale = 1.3f;
+        [SerializeField] private float animationDuration = 0.4f;
 
         private PauseService _pauseService;
         private PageSwitcher _pageSwitcher;
         private PlayerScore _playerScore;
         private PlayerCollect _playerCollect;
+        private AnimatorService _animatorService;
         private DiContainer _container;
+
+        // Кэшированные значения
+        private int _lastScore = 0;
+        private int _lastIron = 0;
+        private int _lastGold = 0;
+        private int _lastCrystals = 0;
+        private int _lastTitanium = 0;
 
         [Inject]
         private void Construct(
             PauseService pauseService, 
             PageSwitcher pageSwitcher, 
             PlayerScore playerScore,
+            AnimatorService animatorService,
             DiContainer container,
             [InjectOptional] PlayerCollect playerCollect)
         {
             _pauseService = pauseService;
             _pageSwitcher = pageSwitcher;
             _playerScore = playerScore;
+            _animatorService = animatorService;
             _container = container;
             _playerCollect = playerCollect;
 
             OnOpen += () => 
             { 
                 _pauseService.Play(); 
-                _playerScore?.ResetScore();
 
-                // Если PlayerCollect не был передан при создании, пытаемся разрешить его через DiContainer
                 if (_playerCollect == null && _container != null)
                 {
                     try
@@ -52,9 +72,10 @@ namespace Components.Ui.Pages.Game
                     }
                 }
 
-                // Подписываемся на события и обновляем интерфейс при каждом открытии
                 SubscribeShieldEvents();
                 UpdateShieldText(_playerCollect != null ? Mathf.Max(0, (int)_playerCollect.ShieldLevel) : 0);
+                
+                RefreshUIValues();
             };
 
             OnClose += () => 
@@ -70,9 +91,8 @@ namespace Components.Ui.Pages.Game
 
             if (_playerScore != null)
             {
-                _playerScore.OnScoreChanged += UpdateScoreText;
-                UpdateScoreText(_playerScore.CurrentScore);
-                _playerScore.AddScore(0);
+                _playerScore.OnScoreChanged += OnScoreUpdated;
+                _playerScore.OnResourcesChanged += OnResourcesUpdated;
             }
         }
 
@@ -85,15 +105,37 @@ namespace Components.Ui.Pages.Game
 
             if (_playerScore != null)
             {
-                _playerScore.OnScoreChanged -= UpdateScoreText;
+                _playerScore.OnScoreChanged -= OnScoreUpdated;
+                _playerScore.OnResourcesChanged -= OnResourcesUpdated;
             }
 
             UnsubscribeShieldEvents();
         }
 
+        private void RefreshUIValues()
+        {
+            if (_playerScore != null)
+            {
+                _lastScore = _playerScore.CurrentScore;
+                UpdateTextAndRebuild(scoreText, $"$ {_lastScore}");
+
+                _lastIron = _playerScore.GetLevelResourceAmount(ResourceType.Iron);
+                UpdateTextAndRebuild(ironText, $"I x {_lastIron}");
+
+                _lastGold = _playerScore.GetLevelResourceAmount(ResourceType.Gold);
+                UpdateTextAndRebuild(goldText, $"G x {_lastGold}");
+
+                _lastCrystals = _playerScore.GetLevelResourceAmount(ResourceType.Crystals);
+                UpdateTextAndRebuild(crystalsText, $"C x {_lastCrystals}");
+
+                _lastTitanium = _playerScore.GetLevelResourceAmount(ResourceType.Titanium);
+                UpdateTextAndRebuild(titaniumText, $"T x {_lastTitanium}");
+            }
+        }
+
         private void SubscribeShieldEvents()
         {
-            UnsubscribeShieldEvents(); // Предотвращаем дублирование подписок
+            UnsubscribeShieldEvents();
 
             if (_playerCollect != null)
             {
@@ -109,19 +151,90 @@ namespace Components.Ui.Pages.Game
             }
         }
 
-        private void UpdateScoreText(int newScore)
+        private void OnScoreUpdated(int newScore)
         {
-            if (scoreText != null)
+            if (scoreText == null) return;
+
+            if (newScore > _lastScore && _animatorService != null)
             {
-                scoreText.text = $"{newScore}";
+                _animatorService.AnimateCounterUI(scoreText, _lastScore, newScore, animationDuration, "$ ", punchScale);
             }
+            else
+            {
+                UpdateTextAndRebuild(scoreText, $"$ {newScore}");
+            }
+
+            _lastScore = newScore;
+        }
+
+        private void OnResourcesUpdated()
+        {
+            if (_playerScore == null) return;
+
+            CheckAndAnimateResource(ironText, "I", ResourceType.Iron, ref _lastIron);
+            CheckAndAnimateResource(goldText, "G", ResourceType.Gold, ref _lastGold);
+            CheckAndAnimateResource(crystalsText, "C", ResourceType.Crystals, ref _lastCrystals);
+            CheckAndAnimateResource(titaniumText, "T", ResourceType.Titanium, ref _lastTitanium);
+        }
+
+        private void CheckAndAnimateResource(TextMeshProUGUI textElement, string prefix, ResourceType type, ref int lastAmount)
+        {
+            if (textElement == null) return;
+
+            int currentAmount = _playerScore.GetLevelResourceAmount(type);
+            
+            // Сбрасываем трансформ перед изменением значения
+            ResetElementTransform(textElement);
+            textElement.text = $"{prefix} x {currentAmount}";
+            
+            // Заставляем VerticalLayoutGroup пересчитать позиции
+            RebuildParentLayout(textElement);
+
+            if (currentAmount > lastAmount)
+            {
+                if (_animatorService != null)
+                {
+                    _animatorService.AnimatePunchScaleUI(textElement, animationDuration, punchScale);
+                }
+            }
+
+            lastAmount = currentAmount;
         }
 
         private void UpdateShieldText(int currentShield)
         {
             if (shieldText != null)
             {
+                ResetElementTransform(shieldText);
                 shieldText.text = $"S x {currentShield}";
+                RebuildParentLayout(shieldText);
+            }
+        }
+
+        /// <summary>
+        /// Вспомогательный метод для безошибочного обновления текста и восстановления позиционирования в сетке.
+        /// </summary>
+        private void UpdateTextAndRebuild(TextMeshProUGUI textElement, string text)
+        {
+            if (textElement == null) return;
+            ResetElementTransform(textElement);
+            textElement.text = text;
+            RebuildParentLayout(textElement);
+        }
+
+        /// <summary>
+        /// Сбрасывает масштаб и принудительно восстанавливает родительский Layout.
+        /// </summary>
+        private void ResetElementTransform(TextMeshProUGUI textElement)
+        {
+            textElement.rectTransform.localScale = Vector3.one;
+        }
+
+        private void RebuildParentLayout(TextMeshProUGUI textElement)
+        {
+            if (textElement.transform.parent is RectTransform parentRect)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
             }
         }
 

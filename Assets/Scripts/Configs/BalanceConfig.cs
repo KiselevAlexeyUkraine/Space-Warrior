@@ -7,11 +7,11 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Components.Enemy;
 using Components.Player;
+using Configs;
 using Zenject;
 
 public class BalanceConfig : IInitializable
 {
-    // Поддерживается 10 уровней для характеристик из таблицы
     private const int LevelsCount = 10;
 
     private readonly string googleSheetCsvUrl =
@@ -20,14 +20,15 @@ public class BalanceConfig : IInitializable
     private enum TableSection { None, Player, Enemy }
 
     private PlayerScore _playerScore;
+    private PlayerConfig _playerConfig;
 
-    // Флаг готовности данных
     public bool IsLoaded { get; private set; }
 
     [Inject]
-    public void Construct(PlayerScore playerScore)
+    public void Construct(PlayerScore playerScore, [InjectOptional] PlayerConfig playerConfig)
     {
         _playerScore = playerScore;
+        _playerConfig = playerConfig;
     }
 
     private int CurrentPlayerLevelIndex => _playerScore != null ? Mathf.Clamp(_playerScore.CurrentLevel - 1, 0, LevelsCount - 1) : 0;
@@ -45,16 +46,9 @@ public class BalanceConfig : IInitializable
     public int PlayerHealth => _playerHealthByLevel[CurrentPlayerLevelIndex];
     public int PlayerShield => _playerShieldByLevel[CurrentPlayerLevelIndex];
 
-    /// <summary>
-    /// Возвращает параметры игрока для конкретного уровня (от 1 до 10).
-    /// Используется в CompletePage для отображения характеристик прокачки.
-    /// </summary>
     public bool TryGetPlayerStatsForLevel(int level, out float hp, out float shield, out float speed, out float fireRate)
     {
-        hp = 0;
-        shield = 0;
-        speed = 0;
-        fireRate = 0;
+        hp = 0; shield = 0; speed = 0; fireRate = 0;
 
         if (level < 1 || level > LevelsCount)
             return false;
@@ -68,20 +62,39 @@ public class BalanceConfig : IInitializable
         return true;
     }
 
-    /// <summary>
-    /// Возвращает стоимость улучшения корабля до указанного целевого уровня.
-    /// </summary>
     public bool TryGetUpgradeCost(int targetLevel, out int cost)
     {
         cost = 0;
+        if (targetLevel <= 1 || targetLevel > LevelsCount) return false;
 
-        if (targetLevel <= 1 || targetLevel > LevelsCount)
+        if (_playerConfig != null && _playerConfig.TryGetUpgradeRequirement(targetLevel, out var req))
         {
-            return false; // Достигнут максимум или невалидный уровень
+            cost = req.scoreCost;
+            return true;
         }
 
-        // Вы можете заменить эту формулу своей логикой/массивом цен
         cost = (targetLevel - 1) * 2000; 
+        return true;
+    }
+
+    public bool TryGetUpgradeRequirement(int targetLevel, out Configs.LevelUpgradeRequirement req)
+    {
+        req = default;
+        if (targetLevel <= 1 || targetLevel > LevelsCount) return false;
+
+        if (_playerConfig != null && _playerConfig.TryGetUpgradeRequirement(targetLevel, out req))
+        {
+            return true;
+        }
+
+        // Запасное значение, если PlayerConfig не назначен
+        req = new Configs.LevelUpgradeRequirement
+        {
+            targetLevel = targetLevel,
+            scoreCost = (targetLevel - 1) * 2000,
+            requiredResources = new List<Configs.ResourceCost>()
+        };
+
         return true;
     }
     #endregion
@@ -150,7 +163,6 @@ public class BalanceConfig : IInitializable
         if (request.result != UnityWebRequest.Result.Success) return;
 
         Parse(request.downloadHandler.text);
-        LogEnemyBalanceByLevel();
         
         IsLoaded = true;
     }
@@ -227,16 +239,12 @@ public class BalanceConfig : IInitializable
         else if (key.Contains("урон от столкновения")) CopyTo(_enemyCollisionDamageByLevel, levelValues);
         else if (key.Contains("восстановление щита")) CopyTo(_enemyShieldRegenIntervalByLevel, levelValues);
         else if (key.Contains("щит (единицы)")) CopyTo(_enemyShieldByLevel, levelValues); 
-        
         else if (key.Contains("количество отражений")) CopyTo(_enemyReflectionCountByLevel, levelValues);
         else if (key.Contains("скорость отраженного снаряда")) CopyTo(_enemyReflectedProjectilesSpeedByLevel, levelValues);
-        
         else if (key.Contains("скорость стрельбы") && !key.Contains("раке") && !key.Contains("лазе")) CopyTo(_enemyBulletFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета выстрела")) CopyTo(_enemyBulletSpeedByLevel, levelValues);
-
         else if (key.Contains("скорость запуска ракеты") || key.Contains("темп запуска ракеты")) CopyTo(_enemyRocketFireRateByLevel, levelValues);
         else if (key.Contains("скорость полета ракеты") || key.Contains("скорость ракеты")) CopyTo(_enemyRocketSpeedByLevel, levelValues);
-        
         else if (key.Contains("скорострельность лазера")) CopyTo(_enemyLaserFireRateByLevel, levelValues);
     }
 
@@ -249,14 +257,6 @@ public class BalanceConfig : IInitializable
     {
         int index = Mathf.Clamp((int)level, 0, LevelsCount - 1);
         return array[index];
-    }
-
-    private void LogEnemyBalanceByLevel()
-    {
-        for (int i = 0; i < LevelsCount; i++)
-        {
-            Debug.Log($"👾 [{i}] -> ReflectionCount: {_enemyReflectionCountByLevel[i]}, ReflectedSpeed: {_enemyReflectedProjectilesSpeedByLevel[i]}");
-        }
     }
 
     private List<string> SplitCsvLine(string line)

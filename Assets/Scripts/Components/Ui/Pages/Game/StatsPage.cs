@@ -7,6 +7,7 @@ using Zenject;
 using System;
 using Servise;
 using Level;
+using Cysharp.Threading.Tasks;
 
 namespace Components.Ui.Pages.Game
 {
@@ -31,6 +32,10 @@ namespace Components.Ui.Pages.Game
         [SerializeField] private float punchScale = 1.3f;
         [SerializeField] private float animationDuration = 0.4f;
 
+        [Header("Wave Animation Settings")]
+        [SerializeField] private float waveAnimationDuration = 0.8f;
+        [SerializeField] private float waveTextPunchScale = 1.5f;
+
         private PauseService _pauseService;
         private PageSwitcher _pageSwitcher;
         private PlayerScore _playerScore;
@@ -45,6 +50,7 @@ namespace Components.Ui.Pages.Game
         private int _lastGold = 0;
         private int _lastCrystals = 0;
         private int _lastTitanium = 0;
+        private int _currentDisplayedWaveIndex = -1;
 
         [Inject]
         private void Construct(
@@ -88,7 +94,8 @@ namespace Components.Ui.Pages.Game
 
                 if (_spawner != null)
                 {
-                    UpdateWaveProgress(_spawner.CurrentWaveIndex);
+                    _currentDisplayedWaveIndex = _spawner.CurrentWaveIndex;
+                    InitWaveSliderInstant(_currentDisplayedWaveIndex);
                 }
             };
 
@@ -142,7 +149,7 @@ namespace Components.Ui.Pages.Game
             }
         }
 
-        private void UpdateWaveProgress(int currentWaveIndex)
+        private void InitWaveSliderInstant(int currentWaveIndex)
         {
             if (_spawner == null) return;
 
@@ -160,6 +167,63 @@ namespace Components.Ui.Pages.Game
             {
                 waveText.text = currentDisplayWave.ToString();
             }
+        }
+
+        private void UpdateWaveProgress(int currentWaveIndex)
+        {
+            if (_spawner == null) return;
+
+            // Запускаем асинхронную анимацию при смене волны
+            AnimateWaveTransitionAsync(currentWaveIndex).Forget();
+        }
+
+        private async UniTaskVoid AnimateWaveTransitionAsync(int newWaveIndex)
+        {
+            if (_spawner == null) return;
+
+            int totalWaves = _spawner.TotalWaves;
+            int targetDisplayWave = newWaveIndex + 1;
+
+            float startValue = waveSlider != null ? waveSlider.value : _currentDisplayedWaveIndex + 1;
+            float targetValue = targetDisplayWave;
+
+            if (waveSlider != null)
+            {
+                waveSlider.minValue = 0;
+                waveSlider.maxValue = totalWaves;
+            }
+
+            // Анимация текста волны (Punch scale)
+            if (waveText != null)
+            {
+                ResetElementTransform(waveText);
+                waveText.text = targetDisplayWave.ToString();
+                RebuildParentLayout(waveText);
+
+                if (_animatorService != null)
+                {
+                    _animatorService.AnimatePunchScaleUI(waveText, waveAnimationDuration, waveTextPunchScale);
+                }
+            }
+
+            // Плавно заполняем слайдер волны
+            if (waveSlider != null)
+            {
+                float elapsedTime = 0f;
+                while (elapsedTime < waveAnimationDuration)
+                {
+                    elapsedTime += Time.unscaledDeltaTime;
+                    float t = Mathf.Clamp01(elapsedTime / waveAnimationDuration);
+
+                    waveSlider.value = Mathf.Lerp(startValue, targetValue, t);
+
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+
+                waveSlider.value = targetValue;
+            }
+
+            _currentDisplayedWaveIndex = newWaveIndex;
         }
 
         private void RefreshUIValues()

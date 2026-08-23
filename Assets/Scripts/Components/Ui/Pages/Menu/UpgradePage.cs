@@ -189,7 +189,7 @@ namespace Components.Ui.Pages.Menu
                 string speedText = isEng ? "Speed" : "Скорость";
                 string fireRateText = isEng ? "Fire Rate" : "Темп стрельбы";
 
-                return $"{lvlText}\nHP: {hp} | {shieldText}: {shield}\n{speedText}: {speed}\n{fireRateText}: {fireRate}";
+                return $"{lvlText}\nW: {hp} | {shieldText}: {shield}\n{speedText}: {speed}\n{fireRateText}: {fireRate}";
             }
 
             return $"Level {level}";

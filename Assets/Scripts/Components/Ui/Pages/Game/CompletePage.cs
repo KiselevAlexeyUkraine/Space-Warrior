@@ -274,16 +274,17 @@ namespace Components.Ui.Pages.Game
 
         private string GetStatsDescription(int level)
         {
-            if (_balanceConfig != null && _balanceConfig.TryGetPlayerStatsForLevel(level, out float hp, out float shield, out float speed, out float fireRate))
+            if (_balanceConfig != null && _balanceConfig.TryGetPlayerStatsForLevel(level, out float weaponsCount, out float shield, out float speed, out float fireRate))
             {
                 bool isEng = _localizationManager != null && _localizationManager.CurrentLanguage == LocalizationManager.Language.English;
 
                 string lvlText = isEng ? $"Lvl. {level}" : $"Ур. {level}";
                 string shieldText = isEng ? "Shield" : "Щит";
+                string weaponText = isEng ? "Weapon" : "Оружие";
                 string speedText = isEng ? "Speed" : "Скорость";
                 string fireRateText = isEng ? "Fire Rate" : "Темп стрельбы";
 
-                return $"{lvlText}\nHP: {hp} | {shieldText}: {shield}\n{speedText}: {speed}\n{fireRateText}: {fireRate}";
+                return $"{lvlText}\n{weaponText}: W x{weaponsCount} | {shieldText}: {shield}\n{speedText}: {speed}\n{fireRateText}: {fireRate}";
             }
 
             bool isEnglish = _localizationManager != null && _localizationManager.CurrentLanguage == LocalizationManager.Language.English;

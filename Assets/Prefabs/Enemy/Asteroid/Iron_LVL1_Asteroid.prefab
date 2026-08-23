@@ -230,6 +230,10 @@ PrefabInstance:
       propertyPath: m_LocalRotation.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300006, guid: 5dec0a8589ad1f94b9574adf228fe1cf, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 5f7ae90c058065244b56e0b538ce7974, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 100004, guid: 5dec0a8589ad1f94b9574adf228fe1cf, type: 3}

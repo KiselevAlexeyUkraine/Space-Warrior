@@ -25,12 +25,29 @@ MonoBehaviour:
     scoreCost: 10000
     requiredResources: []
   - targetLevel: 3
+    scoreCost: 15000
+    requiredResources:
+    - resourceType: 0
+      amount: 150
+  - targetLevel: 4
     scoreCost: 20000
     requiredResources:
     - resourceType: 0
-      amount: 50
-  - targetLevel: 4
-    scoreCost: 50000
+      amount: 500
+  - targetLevel: 5
+    scoreCost: 25000
     requiredResources:
     - resourceType: 0
+      amount: 1000
+  - targetLevel: 6
+    scoreCost: 35000
+    requiredResources:
+    - resourceType: 0
+      amount: 2000
+  - targetLevel: 6
+    scoreCost: 45000
+    requiredResources:
+    - resourceType: 0
+      amount: 5000
+    - resourceType: 1
       amount: 500

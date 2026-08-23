@@ -487,9 +487,93 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8030490555240087705, guid: 1f397f38bf16c454984660176b4db58d, type: 3}
     - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: _spawner
+      value: 
+      objectReference: {fileID: 963194232}
+    - target: {fileID: 7705888969145305711, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
       propertyPath: _playerSpawn
       value: 
       objectReference: {fileID: 887688787}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.atime1
+      value: 15806
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.atime2
+      value: 33346
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.atime3
+      value: 52043
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.atime4
+      value: 65535
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key1.a
+      value: 0.668743
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key1.b
+      value: 0.015686275
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key1.g
+      value: 0.9215687
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key1.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key2.a
+      value: 0.48597464
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key2.b
+      value: 0.2794144
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key2.g
+      value: 0.6213395
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key2.r
+      value: 0.6509434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key3.a
+      value: 0.7814605
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key3.b
+      value: 0.015686275
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key3.g
+      value: 0.8705883
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key3.r
+      value: 0.9450981
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key4.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key4.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.key4.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8615768902386028826, guid: 09c151f57ebb97545a731eeeda153306, type: 3}
+      propertyPath: colorGradient.m_NumAlphaKeys
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -680,7 +764,7 @@ MonoBehaviour:
   - waveIndex: 0
     enemies:
     - {fileID: 7654880680303113404, guid: 35e69893ec183b2448b971822cd8aac9, type: 3}
-    isInfinite: 1
+    isInfinite: 0
     maxEnemyCount: 0
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
@@ -697,16 +781,23 @@ MonoBehaviour:
   - waveIndex: 1
     enemies:
     - {fileID: 7654880680303113404, guid: c6afe18fa79a88342b5a4a4a0ef4dce5, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
+    - {fileID: 7654880680303113404, guid: c7d3a4d151575b24cb658580b25fc6ce, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
+    - {fileID: 7654880680303113404, guid: f1a8d046c4ad6e042b38aa726dbf8405, type: 3}
+    - {fileID: 7654880680303113404, guid: e075021caba297748a3fa1839ca2960a, type: 3}
     isInfinite: 0
-    maxEnemyCount: 15
+    maxEnemyCount: 20
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 198114d253cfdd546b5b06bcbce7d5d0, type: 3}
     spawnedCount: 0
     useLineSpawn: 0
-    lineSpawnEnemies: []
-    lineSpawnInterval: 0
+    lineSpawnEnemies:
+    - {fileID: 7654880680303113404, guid: 44affa0a78854c34c80996d2e7c94a45, type: 3}
+    - {fileID: 7654880680303113404, guid: f47caed610ef0f04ba3d634f042c764d, type: 3}
+    lineSpawnInterval: 0.5
     lineSpawnDirection: 0
-    lineSpawnStartX: 0
+    lineSpawnStartX: 0.5
     lineSpawnStepX: 0
     lineSpawnCount: 0
     lineSpawnedInCurrentLine: 0
@@ -715,8 +806,12 @@ MonoBehaviour:
     enemies:
     - {fileID: 7654880680303113404, guid: 0edc0e87d378cb04e8e82c7c90c7d6ed, type: 3}
     - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
+    - {fileID: 7654880680303113404, guid: 39d4c78283ee8934d8446aa5230f68ff, type: 3}
+    - {fileID: 7654880680303113404, guid: f47caed610ef0f04ba3d634f042c764d, type: 3}
+    - {fileID: 7654880680303113404, guid: e075021caba297748a3fa1839ca2960a, type: 3}
+    - {fileID: 7654880680303113404, guid: f721a81215f40a244af0027f5a41f010, type: 3}
     isInfinite: 0
-    maxEnemyCount: 10
+    maxEnemyCount: 40
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 8958bd6a1bad1dc46bbfab686c8b7ef1, type: 3}
     spawnedCount: 0
@@ -732,8 +827,13 @@ MonoBehaviour:
   - waveIndex: 3
     enemies:
     - {fileID: 7654880680303113404, guid: 21c3c1817ac994c478a3c916e7d31ff7, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
+    - {fileID: 7654880680303113404, guid: 39d4c78283ee8934d8446aa5230f68ff, type: 3}
+    - {fileID: 7654880680303113404, guid: 44affa0a78854c34c80996d2e7c94a45, type: 3}
+    - {fileID: 7654880680303113404, guid: e075021caba297748a3fa1839ca2960a, type: 3}
+    - {fileID: 7654880680303113404, guid: 44affa0a78854c34c80996d2e7c94a45, type: 3}
     isInfinite: 0
-    maxEnemyCount: 20
+    maxEnemyCount: 50
     powerUpPrefabs:
     - {fileID: 8794771648347080131, guid: 8958bd6a1bad1dc46bbfab686c8b7ef1, type: 3}
     spawnedCount: 0
@@ -751,15 +851,19 @@ MonoBehaviour:
     - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
     - {fileID: 7654880680303113404, guid: c19842003282a934f9094472a37a16b6, type: 3}
     - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
-    isInfinite: 0
+    - {fileID: 7654880680303113404, guid: 39d4c78283ee8934d8446aa5230f68ff, type: 3}
+    - {fileID: 7654880680303113404, guid: f47caed610ef0f04ba3d634f042c764d, type: 3}
+    - {fileID: 7654880680303113404, guid: c7d3a4d151575b24cb658580b25fc6ce, type: 3}
+    - {fileID: 7654880680303113404, guid: 44affa0a78854c34c80996d2e7c94a45, type: 3}
+    isInfinite: 1
     maxEnemyCount: 30
     powerUpPrefabs: []
     spawnedCount: 0
     useLineSpawn: 0
     lineSpawnEnemies: []
-    lineSpawnInterval: 0
-    lineSpawnDirection: 0
-    lineSpawnStartX: 0
+    lineSpawnInterval: 0.5
+    lineSpawnDirection: 1
+    lineSpawnStartX: 1
     lineSpawnStepX: 0
     lineSpawnCount: 0
     lineSpawnedInCurrentLine: 0
@@ -771,6 +875,13 @@ MonoBehaviour:
     - {fileID: 7654880680303113404, guid: 938aa9106d3d5764c9ac823c7fd8b894, type: 3}
     - {fileID: 7654880680303113404, guid: 69a622c04583acc41a615950d0c5d0f1, type: 3}
     - {fileID: 7654880680303113404, guid: 142e8b2257eed3d418eeee66427e2f4a, type: 3}
+    - {fileID: 7654880680303113404, guid: 44affa0a78854c34c80996d2e7c94a45, type: 3}
+    - {fileID: 7654880680303113404, guid: 39d4c78283ee8934d8446aa5230f68ff, type: 3}
+    - {fileID: 7654880680303113404, guid: b4cbd813d3861c549950cf24700dd6b8, type: 3}
+    - {fileID: 7654880680303113404, guid: f47caed610ef0f04ba3d634f042c764d, type: 3}
+    - {fileID: 7654880680303113404, guid: c7d3a4d151575b24cb658580b25fc6ce, type: 3}
+    - {fileID: 7654880680303113404, guid: f721a81215f40a244af0027f5a41f010, type: 3}
+    - {fileID: 7654880680303113404, guid: 8a7ab272456c245419203ea255034371, type: 3}
     isInfinite: 1
     maxEnemyCount: 20
     powerUpPrefabs: []
@@ -870,18 +981,18 @@ MonoBehaviour:
   - waveName: 1
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
+    maxColumns: 4
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: 44cd207d17c593845bc735224111c940, type: 3}
+    - {fileID: 7654880680303113404, guid: 93ebd608d08fc394d967aa5efb1d3172, type: 3}
     - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: ada89c70d9db72541b492e71b81380fc, type: 3}
-    - {fileID: 7654880680303113404, guid: d66a8896c48ae5247a551ae2d865178c, type: 3}
+    - {fileID: 7654880680303113404, guid: 3d27e1697bbe7e041a208477e8f3990b, type: 3}
     cachedLayers: 
   - waveName: 2
     isSingleEnemyWave: 0
     singleEnemyPrefab: {fileID: 0}
-    maxColumns: 7
+    maxColumns: 5
     maxRows: 4
     rowPrefabs:
     - {fileID: 7654880680303113404, guid: ab51b9f5776de25488bab9d1833d02d5, type: 3}
